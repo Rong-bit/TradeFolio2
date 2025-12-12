@@ -151,7 +151,8 @@ function App() {
     
     const annual = calculateAnnualPerformance(chart);
     
-    const accPerf = calculateAccountPerformance(data.accounts, calculatedHoldings, data.cashFlows, data.exchangeRate);
+    // Fix: Use updatedAccounts here to get correct cash balances
+    const accPerf = calculateAccountPerformance(updatedAccounts, calculatedHoldings, data.cashFlows, data.exchangeRate);
 
     return {
         holdings: calculatedHoldings,
