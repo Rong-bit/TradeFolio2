@@ -1,3 +1,4 @@
+
 import { 
   Transaction, 
   CashFlow, 
@@ -49,12 +50,6 @@ export const calculateHoldings = (
 
      const h = map.get(key)!;
      
-     // Calculate Cost/Proceeds
-     // For BUY/TRANSFER_IN/DIVIDEND: Cost = Amount (if set) OR (Price * Qty + Fees)
-     // For SELL/CASH_DIVIDEND/TRANSFER_OUT: Proceeds = Amount (if set) OR (Price * Qty - Fees)
-     
-     // Note: In calculateAccountBalances, Amount is strictly used if present. Here we do same logic.
-     
      if (tx.type === TransactionType.BUY || tx.type === TransactionType.TRANSFER_IN || tx.type === TransactionType.DIVIDEND) {
        const txCost = tx.amount !== undefined ? tx.amount : (tx.price * tx.quantity + (tx.fees || 0));
        const newTotalCost = h.totalCost + txCost;
@@ -63,16 +58,12 @@ export const calculateHoldings = (
        h.totalCost = newTotalCost;
        h.quantity = newQty;
        
-       // XIRR Flows
        const flowDate = new Date(tx.date).getTime();
        if (tx.type === TransactionType.BUY) {
           flows.push({ amount: -txCost, date: flowDate });
        } else if (tx.type === TransactionType.TRANSFER_IN) {
-          // Transfer In acts as a Buy at that date's value
           flows.push({ amount: -txCost, date: flowDate });
        }
-       // TransactionType.DIVIDEND (Reinvest) is NOT an external cash flow for Portfolio Performance, 
-       // so we exclude it from XIRR flows to reflect true return on capital invested from outside.
        
      } else if (tx.type === TransactionType.SELL || tx.type === TransactionType.TRANSFER_OUT) {
        if (h.quantity > 0) {
@@ -81,19 +72,16 @@ export const calculateHoldings = (
          h.totalCost -= costOfSold;
          h.quantity -= tx.quantity;
          
-         // XIRR Flows
          const proceeds = tx.amount !== undefined ? tx.amount : ((tx.price * tx.quantity) - (tx.fees || 0));
          const flowDate = new Date(tx.date).getTime();
          
          if (tx.type === TransactionType.SELL) {
             flows.push({ amount: proceeds, date: flowDate });
          } else {
-            // Transfer Out acts as a Sell/Exit
             flows.push({ amount: proceeds, date: flowDate });
          }
        }
      } else if (tx.type === TransactionType.CASH_DIVIDEND) {
-        // Cash Dividend is a return on investment (Inflow)
         const proceeds = tx.amount !== undefined ? tx.amount : ((tx.price * tx.quantity) - (tx.fees || 0));
         flows.push({ amount: proceeds, date: new Date(tx.date).getTime() });
      }
@@ -108,13 +96,10 @@ export const calculateHoldings = (
       const unrealizedPL = currentValue - h.totalCost;
       const unrealizedPLPercent = h.totalCost > 0 ? (unrealizedPL / h.totalCost) * 100 : 0;
       
-      // XIRR Calculation
       const flows = flowsMap.get(`${h.accountId}-${h.ticker}`) || [];
-      // Add current value as final positive flow (Hypothetical Sell today)
       const xirrFlows = [...flows, { amount: currentValue, date: Date.now() }];
       const annualizedReturn = calculateGenericXIRR(xirrFlows);
 
-      // Price Details
       const details = priceDetails?.[priceKey];
       const dailyChange = details ? details.change : 0;
       const dailyChangePercent = details ? details.changePercent : 0;
@@ -136,7 +121,6 @@ export const calculateAccountBalances = (accounts: Account[], cashFlows: CashFlo
     const balMap: Record<string, number> = {};
     accounts.forEach(a => balMap[a.id] = 0); 
     
-    // 1. Cash Flows
     cashFlows.forEach(cf => {
       if (cf.type === CashFlowType.DEPOSIT || cf.type === CashFlowType.INTEREST) {
         balMap[cf.accountId] = (balMap[cf.accountId] || 0) + cf.amount;
@@ -162,7 +146,6 @@ export const calculateAccountBalances = (accounts: Account[], cashFlows: CashFlo
       }
     });
 
-    // 2. Transactions
     transactions.forEach(tx => {
        const cost = tx.amount !== undefined ? tx.amount : (tx.price * tx.quantity + (tx.fees || 0));
        
@@ -396,18 +379,10 @@ export const calculateAccountPerformance = (
       }
       
       if (cf.targetAccountId === acc.id && cf.type === CashFlowType.TRANSFER) {
-        // Approximate incoming transfer value in TWD
         if (cf.exchangeRate) {
-           // If exchange rate exists, it means cross currency. 
-           // 這裡的邏輯比較複雜，通常跨幣別轉帳時，紀錄上的 exchangeRate 是指換匯匯率
-           // 我們假設轉入金額以該匯率換算為目標貨幣價值
-           const incomingVal = cf.amount * cf.exchangeRate; // Target Currency
-           
-           // 如果目標帳戶是 USD，我們再轉回 TWD (使用歷史匯率如果有的話，但轉帳通常是當下)
-           // 簡化處理：轉入一律使用當前匯率或是紀錄上的匯率
+           const incomingVal = cf.amount * cf.exchangeRate; 
            netInvestedTWD += (isUSD ? incomingVal * exchangeRate : incomingVal);
         } else {
-           // 同幣別轉帳，或無匯率資訊
            netInvestedTWD += amountFlowTWD;
         }
       }
@@ -438,19 +413,35 @@ export const calculateGenericXIRR = (flows: { amount: number, date: number }[]):
   // Sort
   flows.sort((a, b) => a.date - b.date);
   
+  // Need at least one negative and one positive flow for real XIRR
   if (flows.length < 2) return 0;
   
-  // Filter out tiny amounts to avoid numeric issues
   const validFlows = flows.filter(f => Math.abs(f.amount) > 0.0001);
   if (validFlows.length < 2) return 0;
 
-  // If all transactions are on same day, cannot calculate efficiently
-  // Treat as immediate return: (Final - Initial) / Initial
+  // Simple Annualized ROI Fallback function
+  const calculateSimpleAnnualizedROI = () => {
+     let totalInvested = 0;
+     let totalReturned = 0; // Or current value
+     let minTime = validFlows[0].date;
+     let maxTime = validFlows[validFlows.length-1].date;
+     
+     validFlows.forEach(f => {
+         if (f.amount < 0) totalInvested += Math.abs(f.amount);
+         else totalReturned += f.amount;
+     });
+     
+     if (totalInvested === 0) return 0;
+     const absoluteROI = (totalReturned - totalInvested) / totalInvested;
+     const years = Math.max((maxTime - minTime) / (365 * 24 * 60 * 60 * 1000), 0.1); // Min 0.1 year to avoid infinity
+     
+     // CAGR formula: (End/Start)^(1/n) - 1
+     // Here: (1 + ROI)^(1/n) - 1
+     return (Math.pow(1 + absoluteROI, 1 / years) - 1) * 100;
+  };
+
   if (validFlows[validFlows.length-1].date === validFlows[0].date) {
-      const totalFlow = validFlows.reduce((sum, f) => sum + f.amount, 0);
-      // If total flow is positive, it means profit, but XIRR over 0 days is infinity.
-      // We return 0 to avoid display error.
-      return 0;
+      return 0; // Same day flows
   }
 
   const minDate = validFlows[0].date;
@@ -462,6 +453,7 @@ export const calculateGenericXIRR = (flows: { amount: number, date: number }[]):
   // Newton-Raphson iteration
   let rate = 0.1; // Initial guess 10%
   const maxIter = 50;
+  let converged = false;
 
   for(let i=0; i<maxIter; i++) {
      let f = 0;
@@ -474,22 +466,31 @@ export const calculateGenericXIRR = (flows: { amount: number, date: number }[]):
         df -= (flow.years * flow.amount) / (factor * (1+rate));
      }
      
-     if(Math.abs(f) < 1e-5) break; // Converged
-     if(Math.abs(df) < 1e-9) break; // Avoid div by zero
+     if(Math.abs(f) < 1e-5) {
+         converged = true;
+         break;
+     }
+     if(Math.abs(df) < 1e-9) break;
      
      const newRate = rate - f/df;
-     
-     if(isNaN(newRate) || !isFinite(newRate)) return 0;
-     
+     if(isNaN(newRate) || !isFinite(newRate)) {
+         rate = 0; // Failed
+         break;
+     }
      if(Math.abs(newRate - rate) < 1e-5) {
         rate = newRate;
+        converged = true;
         break;
      }
      rate = newRate;
   }
   
-  if (isNaN(rate) || !isFinite(rate)) return 0;
-  return rate * 100;
+  if (converged && isFinite(rate) && rate > -0.99) {
+      return rate * 100;
+  } else {
+      // Fallback to simple calculation if Newton fails (common for unusual cash flow patterns)
+      return calculateSimpleAnnualizedROI();
+  }
 }
 
 /**
@@ -503,15 +504,12 @@ export const calculateXIRR = (
 ): number => {
   const xirrInputs: { amount: number, date: number }[] = [];
 
-  // 1. 整理過去的現金流
   cashFlows.forEach(cf => {
-    // 只計算外部資金進出 (Deposit/Withdraw)
     if (cf.type !== CashFlowType.DEPOSIT && cf.type !== CashFlowType.WITHDRAW) return;
 
     const account = accounts.find(a => a.id === cf.accountId);
     if (!account) return;
 
-    // 計算台幣金額
     let amountTWD = 0;
     if (cf.amountTWD && cf.amountTWD > 0) {
        amountTWD = cf.amountTWD;
@@ -528,7 +526,6 @@ export const calculateXIRR = (
        }
     }
 
-    // XIRR 符號規則：Deposit (投資) -> 負值, Withdraw (回收) -> 正值
     const sign = cf.type === CashFlowType.DEPOSIT ? -1 : 1;
     
     xirrInputs.push({
@@ -537,7 +534,6 @@ export const calculateXIRR = (
     });
   });
 
-  // 2. 加入目前總資產 (視為今日全部贖回 -> 正值)
   xirrInputs.push({
     amount: currentTotalAssetsTWD,
     date: new Date().getTime()
