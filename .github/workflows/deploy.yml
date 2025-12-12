@@ -2,8 +2,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]  # 當推送到 main 分支時觸發
-  workflow_dispatch:    # 允許手動點擊按鈕觸發
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,12 +28,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        # 修改這裡：使用 npm install 代替 npm ci，因為沒有 package-lock.json
+        run: npm install
 
       - name: Build
         run: npm run build
         env:
-          # 這裡非常重要！將 GitHub Secret 注入到打包環境中
           API_KEY: ${{ secrets.API_KEY }}
 
       - name: Upload artifact
