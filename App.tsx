@@ -952,13 +952,14 @@ const App: React.FC = () => {
         
         if (idA.type === idB.type) {
           if (idA.type === 'number' || idA.type === 'mixed') {
-            return idA.value - idB.value;
+            return (idA.value as number) - (idB.value as number);
           }
-          return idA.value.localeCompare(idB.value);
+          return (idA.value as string).localeCompare(idB.value as string);
         }
         
-        const typeOrder = { 'number': 1, 'mixed': 2, 'string': 3 };
-        return typeOrder[idA.type] - typeOrder[idB.type];
+        // Fix: Add explicit index signature to typeOrder to avoid TS7053
+        const typeOrder: Record<string, number> = { 'number': 1, 'mixed': 2, 'string': 3 };
+        return (typeOrder[idA.type] || 0) - (typeOrder[idB.type] || 0);
       }).map(record => ({
         ...record,
         balance: accountBalanceMap.get(record.id) // 恢復正確的餘額
