@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     // 設定 base 為相對路徑 './'，確保在 GitHub Pages 子路徑能運作
     base: './',
+    build: {
+      target: 'esnext'
+    },
     define: {
       // 這裡將編譯時的 process.env.API_KEY 替換為實際的環境變數值
       'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
