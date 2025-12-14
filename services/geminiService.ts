@@ -109,18 +109,13 @@ export const fetchCurrentPrices = async (tickers: string[]): Promise<{ prices: R
     });
 
     const text = response.text || "{}";
-    
-    // Clean up markdown if present (```json ... ```)
     const jsonStr = text.replace(/```json|```/g, '').trim();
-    
     const result = JSON.parse(jsonStr);
     
-    // Normalize prices to PriceData format
     const prices: Record<string, PriceData> = {};
     if (result.prices) {
       Object.entries(result.prices).forEach(([key, val]: [string, any]) => {
         if (typeof val === 'number') {
-          // Fallback if AI returns simple number
           prices[key] = { price: val, change: 0, changePercent: 0 };
         } else {
           prices[key] = {
@@ -140,6 +135,57 @@ export const fetchCurrentPrices = async (tickers: string[]): Promise<{ prices: R
   } catch (error) {
     console.error("Price Fetch Error:", error);
     throw new Error("無法取得股價，請檢查 API Key 或稍後再試。");
+  }
+};
+
+// 新增：查詢歷史年底股價
+export const fetchHistoricalYearEndData = async (
+  year: number, 
+  tickers: string[]
+): Promise<{ prices: Record<string, number>, exchangeRate: number }> => {
+  try {
+    const ai = getAiClient();
+    const queryList = tickers.join(', ');
+    const dateQuery = `last trading day of December ${year}`;
+    
+    const prompt = `
+      Task:
+      1. Find the closing stock price for these tickers on the ${dateQuery}: ${queryList}.
+      2. Find the USD to TWD exchange rate on ${dateQuery}.
+      
+      Rules:
+      1. For Taiwan stocks (TPE:XXXX), price in TWD.
+      2. For US stocks, price in USD.
+      3. Use Google Search to find historical data.
+      4. Return ONLY JSON. Keys: "prices" (object ticker->number), "exchangeRate" (number).
+      5. If exact date data missing, use the closest available date in that December.
+      
+      Example JSON:
+      {
+        "prices": { "AAPL": 42.5, "TPE:2330": 220 },
+        "exchangeRate": 29.5
+      }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    const text = response.text || "{}";
+    const jsonStr = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(jsonStr);
+
+    return {
+      prices: result.prices || {},
+      exchangeRate: Number(result.exchangeRate) || 30
+    };
+  } catch (error) {
+    console.error(`Historical Fetch Error ${year}:`, error);
+    return { prices: {}, exchangeRate: 30 };
   }
 };
 
