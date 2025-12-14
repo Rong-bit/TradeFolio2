@@ -15,6 +15,7 @@ const BatchCashFlowModal: React.FC<Props> = ({ accounts, onImport, onClose }) =>
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [accountMapping, setAccountMapping] = useState<Record<string, string>>({});
   const [detectedAccountNames, setDetectedAccountNames] = useState<string[]>([]);
+  const [failCount, setFailCount] = useState(0);
 
   // Helper to parse currency string "NT$30,000" -> 30000
   const parseNumber = (str: string) => {
@@ -38,6 +39,7 @@ const BatchCashFlowModal: React.FC<Props> = ({ accounts, onImport, onClose }) =>
     const lines = inputText.split('\n');
     const rows: any[] = [];
     const foundAccounts = new Set<string>();
+    let currentFailures = 0;
 
     lines.forEach(line => {
       if (!line.trim()) return;
@@ -128,8 +130,12 @@ const BatchCashFlowModal: React.FC<Props> = ({ accounts, onImport, onClose }) =>
           fee: valFee > 0 ? valFee : undefined
         });
         foundAccounts.add(accountName.trim());
+      } else {
+        currentFailures++;
       }
     });
+
+    setFailCount(currentFailures);
 
     if (rows.length > 0) {
       setDetectedAccountNames(Array.from(foundAccounts));
@@ -145,7 +151,7 @@ const BatchCashFlowModal: React.FC<Props> = ({ accounts, onImport, onClose }) =>
       setParsedRows(rows);
       setStep(2);
     } else {
-      alert('無法解析資料，請確認格式是否為 Tab 分隔 (直接從 Excel 複製)。');
+      alert(`無法解析資料。\n成功: 0 筆\n失敗: ${currentFailures} 筆\n請確認格式是否為 Tab 分隔 (直接從 Excel 複製)。`);
     }
   };
 
@@ -227,7 +233,19 @@ const BatchCashFlowModal: React.FC<Props> = ({ accounts, onImport, onClose }) =>
 
               {/* Preview Table */}
               <div>
-                <h3 className="font-bold text-slate-800 mb-3 text-sm">2. 資料預覽 ({parsedRows.length} 筆)</h3>
+                <h3 className="font-bold text-slate-800 mb-3 text-sm flex items-center">
+                  <span>
+                    2. 資料預覽 
+                    <span className="ml-2 font-normal text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">
+                      成功: <span className="text-green-600 font-bold">{parsedRows.length}</span>
+                    </span>
+                    {failCount > 0 && (
+                        <span className="ml-2 font-normal text-xs bg-red-50 px-2 py-0.5 rounded text-red-600 border border-red-100">
+                            未成功: <strong>{failCount}</strong> 筆
+                        </span>
+                    )}
+                  </span>
+                </h3>
                 <div className="border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
                   <table className="min-w-full text-sm text-left">
                     <thead className="bg-slate-100 sticky top-0">
@@ -289,3 +307,4 @@ const BatchCashFlowModal: React.FC<Props> = ({ accounts, onImport, onClose }) =>
 };
 
 export default BatchCashFlowModal;
+
