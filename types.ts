@@ -97,6 +97,7 @@ export interface PortfolioSummary {
 export interface ChartDataPoint {
   year: string;
   cost: number; // Purple: Cumulative Invested Cost (Principal)
+  profit: number; // New: Cumulative Profit/Loss (Assets - Cost)
   totalAssets: number; // Green: Simulated Historical Value
   estTotalAssets: number; // Blue: Projected/Target curve
   assetCostRatio: number; // Red: Ratio (plotted on separate axis usually, or normalized)
@@ -128,3 +129,4 @@ export interface AccountPerformance {
   profitTWD: number;
   roi: number;
 }
+
