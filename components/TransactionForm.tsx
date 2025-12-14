@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Market, Transaction, TransactionType, Account } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -25,17 +26,48 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onClose }) => {
     e.preventDefault();
     if (!formData.accountId) return alert("請先建立並選擇證券帳戶");
 
+    const price = parseFloat(formData.price);
+    const quantity = parseFloat(formData.quantity);
+    const fees = parseFloat(formData.fees) || 0;
+    
+    // 計算總金額邏輯
+    let finalAmount = 0;
+    
+    if (formData.type === TransactionType.BUY || formData.type === TransactionType.SELL) {
+        let baseAmount = price * quantity;
+        
+        // 台股特殊邏輯：無條件捨去
+        if (formData.market === Market.TW) {
+            baseAmount = Math.floor(baseAmount);
+        }
+        
+        // 加上/減去 手續費
+        if (formData.type === TransactionType.BUY) {
+            finalAmount = baseAmount + fees;
+        } else {
+            // 賣出時通常是 總金額 - 手續費 - 稅，這裡僅處理手續費欄位
+            finalAmount = baseAmount - fees;
+        }
+    } else if (formData.type === TransactionType.CASH_DIVIDEND) {
+        // 現金股息通常直接輸入總額於 Price 欄位，Quantity 設為 1
+        finalAmount = (price * quantity) - fees;
+    } else {
+        // 其他類別如股息再投入，這裡暫時使用基本乘積
+        finalAmount = price * quantity;
+    }
+
     const newTx: Transaction = {
       id: uuidv4(),
       date: formData.date,
       ticker: formData.ticker.toUpperCase(),
       market: formData.market,
       type: formData.type,
-      price: parseFloat(formData.price),
-      quantity: parseFloat(formData.quantity),
-      fees: parseFloat(formData.fees),
+      price: price,
+      quantity: quantity,
+      fees: fees,
       accountId: formData.accountId,
-      note: formData.note
+      note: formData.note,
+      amount: finalAmount // 儲存計算後的總金額
     };
     onAdd(newTx);
     onClose();
