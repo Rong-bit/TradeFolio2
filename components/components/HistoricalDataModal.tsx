@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Transaction, CashFlow, Account, HistoricalData, Market } from '../types';
 import { getPortfolioStateAtDate } from '../utils/calculations';
 import { fetchHistoricalYearEndData } from '../services/geminiService';
@@ -88,7 +87,7 @@ const HistoricalDataModal: React.FC<Props> = ({
 
       // 3. Check if exchange rate needs update
       // Rule: Allow update if it's missing (0/undefined) OR it is exactly 30 (default).
-      // If it is any other number (e.g. 32.5), assume user set it and do not overwrite.
+      // If it is any other number (e.g. 31.5), assume user set it and do not overwrite.
       const currentRate = currentYearData.exchangeRate;
       const rateNeedsUpdate = !currentRate || currentRate === 0 || currentRate === 30;
 
@@ -118,12 +117,12 @@ const HistoricalDataModal: React.FC<Props> = ({
               const prevData = prev[selectedYear] || { prices: {}, exchangeRate: 0 };
               
               // Only update exchange rate if it was missing (0) or default (30)
-              const currentRate = prevData.exchangeRate;
-              const shouldUpdateRate = !currentRate || currentRate === 0 || currentRate === 30;
+              const curRate = prevData.exchangeRate;
+              const shouldUpdateRate = !curRate || curRate === 0 || curRate === 30;
               
               const newRate = shouldUpdateRate 
-                  ? (result.exchangeRate || 30) 
-                  : currentRate;
+                  ? (result.exchangeRate || 30) // Use fetched rate, or fallback to 30
+                  : curRate; // Keep existing manual rate
 
               return {
                   ...prev,
@@ -139,6 +138,7 @@ const HistoricalDataModal: React.FC<Props> = ({
           });
       } catch (e) {
           alert('AI 更新失敗，請稍後再試');
+          console.error(e);
       } finally {
           setLoading(false);
       }
@@ -268,4 +268,3 @@ const HistoricalDataModal: React.FC<Props> = ({
 };
 
 export default HistoricalDataModal;
-
