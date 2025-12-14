@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo } from 'react';
-import { Transaction, CashFlow, Account, HistoricalData, Market } from '../types';
-import { getPortfolioStateAtDate } from '../utils/calculations';
+import { Transaction, CashFlow, Account, HistoricalData, Market, Currency } from '../types';
+import { getPortfolioStateAtDate, formatCurrency } from '../utils/calculations';
 import { fetchHistoricalYearEndData } from '../services/geminiService';
 
 interface Props {
@@ -44,6 +45,45 @@ const HistoricalDataModal: React.FC<Props> = ({
           return { market, ticker };
       });
   }, [selectedYear, transactions, cashFlows, accounts]);
+
+  // Calculate Total Assets dynamically based on local inputs
+  const calculatedTotalAssets = useMemo(() => {
+    const yearEndDate = new Date(`${selectedYear}-12-31`);
+    const { holdings, cashBalances } = getPortfolioStateAtDate(yearEndDate, transactions, cashFlows, accounts);
+    
+    const currentYearData = localData[selectedYear] || { prices: {}, exchangeRate: 30 };
+    const currentPrices = currentYearData.prices || {};
+    const currentRate = currentYearData.exchangeRate || 30;
+
+    let stockValueTWD = 0;
+    Object.entries(holdings).forEach(([key, qty]) => {
+        if (qty > 0.000001) {
+            const [market, ticker] = key.split('-');
+            const displayTicker = market === Market.TW && !ticker.includes('TPE:') ? `TPE:${ticker}` : ticker;
+            
+            // Try to find price with display ticker (TPE:XXX) or raw ticker
+            const priceKey = market === Market.TW ? displayTicker : ticker;
+            const price = currentPrices[priceKey] || currentPrices[ticker] || 0;
+            
+            if (market === Market.US) {
+                stockValueTWD += qty * price * currentRate;
+            } else {
+                stockValueTWD += qty * price;
+            }
+        }
+    });
+
+    let cashValueTWD = 0;
+    Object.entries(cashBalances).forEach(([accId, bal]) => {
+        const acc = accounts.find(a => a.id === accId);
+        if (acc) {
+            if (acc.currency === Currency.USD) cashValueTWD += bal * currentRate;
+            else cashValueTWD += bal;
+        }
+    });
+
+    return stockValueTWD + cashValueTWD;
+  }, [selectedYear, localData, transactions, cashFlows, accounts]);
 
   // Handle data updates
   const handlePriceChange = (ticker: string, value: string) => {
@@ -186,6 +226,22 @@ const HistoricalDataModal: React.FC<Props> = ({
                    </button>
                </div>
            </div>
+
+           {/* Total Assets Summary */}
+           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r shadow-sm">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <p className="text-xs text-blue-500 font-bold uppercase tracking-wider mb-1">該年度總資產 (Total Assets)</p>
+                        <p className="text-2xl font-bold text-blue-800 font-mono">
+                            {formatCurrency(calculatedTotalAssets, 'TWD')}
+                        </p>
+                    </div>
+                    <div className="text-right text-xs text-blue-600 space-y-1">
+                         <p>總資產 = 股票市值 + 現金餘額</p>
+                         <p className="opacity-80">*基於下方設定的匯率: {currentYearData.exchangeRate}</p>
+                    </div>
+                </div>
+            </div>
 
            <div className="bg-white border rounded-lg overflow-hidden">
                <div className="p-4 bg-slate-100 border-b flex justify-between items-center">
