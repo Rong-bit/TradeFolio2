@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChartDataPoint, PortfolioSummary, Holding, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlow, Account, CashFlowType, Currency } from '../types';
 import { formatCurrency } from '../utils/calculations';
@@ -224,19 +223,22 @@ const Dashboard: React.FC<Props> = ({
                       padding={{ left: 20, right: 20 }}
                     />
                     <YAxis yAxisId="left" stroke="#64748b" fontSize={12} tickFormatter={(val) => `${val / 1000}k`} />
-                    <YAxis yAxisId="right" orientation="right" stroke="#ef4444" fontSize={12} tickFormatter={(val) => `${(val * 100).toFixed(0)}%`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                      formatter={(value: number, name: string) => [
-                        name === '資產/成本比' ? `${(value * 100).toFixed(1)}%` : formatCurrency(value, 'TWD'),
-                        name
-                      ]}
+                      formatter={(value: number, name: string) => {
+                        return formatCurrency(value, 'TWD');
+                      }}
                     />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="cost" name="投資成本" fill="#8b5cf6" barSize={20} radius={[4, 4, 0, 0]} />
+                    {/* Cost Bar */}
+                    <Bar yAxisId="left" dataKey="cost" name="投資成本" stackId="a" fill="#8b5cf6" barSize={30} />
+                    
+                    {/* Profit Bar - Stacked on Cost, Single Color */}
+                    <Bar yAxisId="left" dataKey="profit" name="累積損益" stackId="a" fill="#10b981" barSize={30} />
+
+                    {/* Lines */}
                     <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name="預估總資產 (8%)" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                     <Line yAxisId="left" type="monotone" dataKey="totalAssets" name="總資產" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
-                    <Line yAxisId="right" type="monotone" dataKey="assetCostRatio" name="資產/成本比" stroke="#ef4444" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
