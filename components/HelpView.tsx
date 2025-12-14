@@ -42,6 +42,28 @@ const HelpView: React.FC<Props> = ({
     setPendingImportFile(null);
   };
 
+  // Helper to mask email for privacy
+  const maskEmail = (email: string) => {
+    // 如果是當前登入者，可以選擇顯示完整或一樣遮蔽，這裡選擇一樣遮蔽保持一致性，但標記 (You)
+    try {
+      const atIndex = email.indexOf('@');
+      if (atIndex === -1) return email;
+      
+      const domain = email.substring(atIndex);
+      const name = email.substring(0, atIndex);
+      
+      // 處理短帳號
+      if (name.length <= 2) {
+        return name[0] + '****' + domain;
+      }
+      
+      // 保留前3碼
+      return name.substring(0, 3) + '****' + domain;
+    } catch (e) {
+      return email;
+    }
+  };
+
   const content = `
 # TradeFolio 使用說明書
 
@@ -146,7 +168,7 @@ A: 所有資料儲存於您瀏覽器的 LocalStorage。為了避免資料遺失�
         </h3>
         <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
           <p className="text-sm text-slate-600 mb-4">
-            以下為系統預設可免密碼登入的 Email 名單 (由程式碼設定檔控制)。
+            以下為系統預設可免密碼登入的 Email 名單 (已隱碼保護)。
           </p>
           
           <div className="overflow-hidden border border-slate-200 rounded-lg">
@@ -160,8 +182,9 @@ A: 所有資料儲存於您瀏覽器的 LocalStorage。為了避免資料遺失�
               <tbody className="divide-y divide-slate-200 bg-white">
                 {authorizedUsers.map((user) => (
                     <tr key={user}>
-                      <td className="px-4 py-2 text-slate-800 font-medium">
-                        {user}
+                      <td className="px-4 py-2 text-slate-800 font-medium font-mono">
+                        {/* 顯示隱碼後的 Email */}
+                        {maskEmail(user)}
                         {user === currentUser && <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">You</span>}
                       </td>
                       <td className="px-4 py-2 text-slate-600">
@@ -232,3 +255,4 @@ A: 所有資料儲存於您瀏覽器的 LocalStorage。為了避免資料遺失�
 };
 
 export default HelpView;
+
