@@ -86,20 +86,22 @@ const HistoricalDataModal: React.FC<Props> = ({
           return !val || val === 0;
       });
 
-      // 3. Check if exchange rate needs update
-      // Rule: Allow update if it's missing (0/undefined) OR it is exactly 30 (default).
-      // If it is any other number (e.g. 32.5), assume user set it and do not overwrite.
-      const rateNeedsUpdate = !currentYearData.exchangeRate || currentYearData.exchangeRate === 0 || currentYearData.exchangeRate === 30;
+      // 3. Check if exchange rate is missing (0 or undefined)
+      // Note: If user manually set it to 30 (default), we treat it as "set" and won't overwrite.
+      // If user wants AI to fetch rate, they should clear it to 0.
+      const rateIsMissing = !currentYearData.exchangeRate || currentYearData.exchangeRate === 0;
 
-      if (missingTickers.length === 0 && !rateNeedsUpdate) {
-          alert('所有持股與匯率皆已有數據，無須 AI 更新。\n若需重新抓取，請先將數值歸零或設為 30。');
+      if (missingTickers.length === 0 && !rateIsMissing) {
+          alert('所有持股與匯率皆已有數據，無須 AI 更新。\n若需重新抓取，請先將數值歸零。');
           return;
       }
 
       setLoading(true);
       try {
-          // If no tickers are missing but rate needs update, we still need to call API.
-          // We'll query one ticker to trigger the prompt logic if list is empty.
+          // If no tickers are missing but rate is missing, we still need to call API. 
+          // We'll just ask for one ticker to trigger the prompt logic if list is empty, 
+          // but logically we shouldn't hit empty list unless rate is missing.
+          // Let's pass missing tickers. If empty, pass the first active ticker just to get the rate (and ignore price result).
           let queryTickers: string[] = [];
           if (missingTickers.length > 0) {
               queryTickers = missingTickers.map(t => 
@@ -116,13 +118,10 @@ const HistoricalDataModal: React.FC<Props> = ({
           setLocalData(prev => {
               const prevData = prev[selectedYear] || { prices: {}, exchangeRate: 0 };
               
-              // Only update exchange rate if it was missing (0) or default (30)
-              const currentRate = prevData.exchangeRate;
-              const shouldUpdateRate = !currentRate || currentRate === 0 || currentRate === 30;
-              
-              const newRate = shouldUpdateRate 
-                  ? (result.exchangeRate || 30) 
-                  : currentRate;
+              // Only update exchange rate if it was missing (0)
+              const newRate = (prevData.exchangeRate && prevData.exchangeRate > 0)
+                  ? prevData.exchangeRate 
+                  : (result.exchangeRate || 30);
 
               return {
                   ...prev,
@@ -252,7 +251,7 @@ const HistoricalDataModal: React.FC<Props> = ({
                💡 說明：
                <ul className="list-disc pl-5 mt-1 space-y-1">
                    <li>AI 僅會自動補齊<strong className="text-slate-800">數值為 0</strong> 的缺漏資料，已存在的數據不會被覆蓋。</li>
-                   <li>若匯率為預設值 (30)，AI 會嘗試更新；若您已手動設定其他匯率，則不會被覆蓋。</li>
+                   <li>若您想重新抓取某檔股票，請手動將其價格歸零後再按 AI 更新。</li>
                </ul>
            </div>
         </div>
