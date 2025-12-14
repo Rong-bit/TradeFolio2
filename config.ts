@@ -8,7 +8,9 @@ export const SYSTEM_ACCESS_CODE = 'ccvs0511';
 // 在此處新增使用者的 Email，部署後這些使用者即可在任何裝置登入，無需輸入密碼
 export const GLOBAL_AUTHORIZED_USERS = [
   // 您可以在此加入其他使用者的 Email
-   'hcj382000@gmail.com',
+   'yen651216@gmail.com',
+   's2020059@gmail.com',
    'chenyu1679@gmail.com',
    'yuzhen422@gmail.com',
+   'hje30315@gmail.com',
 ];
