@@ -355,6 +355,7 @@ export const calculateAccountPerformance = (
   accounts: Account[],
   holdings: Holding[],
   cashFlows: CashFlow[],
+  transactions: Transaction[],
   exchangeRate: number
 ): AccountPerformance[] => {
   return accounts.map(acc => {
@@ -369,6 +370,7 @@ export const calculateAccountPerformance = (
 
     let netInvestedTWD = 0;
     
+    // 1. Process Cash Flows (Deposits / Withdrawals)
     cashFlows.forEach(cf => {
       let amountFlowTWD = 0;
       if (cf.amountTWD && cf.amountTWD > 0) {
@@ -399,6 +401,30 @@ export const calculateAccountPerformance = (
            netInvestedTWD += amountFlowTWD;
         }
       }
+    });
+
+    // 2. Process Stock Transfers (TRANSFER_IN / TRANSFER_OUT)
+    // When stock moves out, we reduce the "Net Invested" (Principal) of this account to reflect the capital exit.
+    // When stock moves in, we increase the "Net Invested" (Principal) of this account.
+    transactions.forEach(tx => {
+       if (tx.accountId !== acc.id) return;
+       
+       if (tx.type === TransactionType.TRANSFER_IN || tx.type === TransactionType.TRANSFER_OUT) {
+          const val = tx.amount !== undefined ? tx.amount : (tx.price * tx.quantity);
+          let valTWD = 0;
+          
+          if (tx.market === Market.US) {
+              valTWD = val * exchangeRate;
+          } else {
+              valTWD = val;
+          }
+
+          if (tx.type === TransactionType.TRANSFER_IN) {
+              netInvestedTWD += valTWD;
+          } else {
+              netInvestedTWD -= valTWD;
+          }
+       }
     });
 
     const profitTWD = totalAssetsTWD - netInvestedTWD;
