@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Transaction, Holding, PortfolioSummary, ChartDataPoint, Market, Account, CashFlow, TransactionType, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlowType, Currency } from './types';
 import { calculateHoldings, calculateAccountBalances, generateAdvancedChartData, calculateAssetAllocation, calculateAnnualPerformance, calculateAccountPerformance, calculateXIRR } from './utils/calculations';
@@ -611,7 +610,7 @@ const App: React.FC = () => {
   const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate), [transactions, cashFlows, accounts, summary, exchangeRate]);
   const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate), [holdings, summary, exchangeRate]);
   const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
-  const accountPerformance = useMemo(() => calculateAccountPerformance(accountsWithBalance, holdings, cashFlows, exchangeRate), [accountsWithBalance, holdings, cashFlows, exchangeRate]);
+  const accountPerformance = useMemo(() => calculateAccountPerformance(accountsWithBalance, holdings, cashFlows, transactions, exchangeRate), [accountsWithBalance, holdings, cashFlows, transactions, exchangeRate]);
 
   // --- Render ---
   if (!isAuthenticated) {
@@ -672,7 +671,7 @@ const App: React.FC = () => {
                { id: 'history', label: '交易紀錄' },
                ...(!isGuest ? [{ id: 'rebalance', label: '再平衡' }] : []),
                { id: 'accounts', label: '證券戶' },
-               { id: 'help', label: '說明 & 備份' }
+               { id: 'help', label: '說明' }
              ].map(item => (
                <button key={item.id} onClick={() => setView(item.id as View)} className={`px-4 py-3 text-sm font-medium border-b-2 ${view === item.id ? 'border-accent text-white' : 'border-transparent text-slate-400'}`}>{item.label}</button>
              ))}
@@ -834,6 +833,7 @@ const App: React.FC = () => {
            </div>
          </div>
       )}
+      
       {/* 新增：單筆交易刪除確認視窗 */}
       {isTransactionDeleteConfirmOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -847,6 +847,7 @@ const App: React.FC = () => {
            </div>
          </div>
       )}
+
       {alertDialog.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
@@ -861,4 +862,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
