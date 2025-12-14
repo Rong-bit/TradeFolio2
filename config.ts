@@ -2,7 +2,7 @@
 // --- 系統設定檔 ---
 
 export const ADMIN_EMAIL = 'hjr640511@gmail.com';
-export const SYSTEM_ACCESS_CODE = '888888'; 
+export const SYSTEM_ACCESS_CODE = 'ccvs0511'; 
 
 // --- 全域授權名單 ---
 // 在此處新增使用者的 Email，部署後這些使用者即可在任何裝置登入，無需輸入密碼
