@@ -139,4 +139,3 @@ export interface HistoricalData {
     exchangeRate: number; // USD to TWD on Dec 31
   };
 }
-

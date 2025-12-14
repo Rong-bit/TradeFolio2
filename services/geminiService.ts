@@ -188,4 +188,3 @@ export const fetchHistoricalYearEndData = async (
     return { prices: {}, exchangeRate: 30 };
   }
 };
-
