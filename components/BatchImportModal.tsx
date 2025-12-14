@@ -107,6 +107,7 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
         let feesVal = 0;
         let amountVal = 0;
         let market = Market.US; // Default
+        let noteVal = 'Batch Import';
 
         if (isSchwabCSV) {
             // --- Logic for Schwab CSV ---
@@ -183,6 +184,20 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
             // Map Chinese / English Types
             if (typeStr.includes('買') || typeStr.toLowerCase() === 'buy') type = TransactionType.BUY;
             else if (typeStr.includes('賣') || typeStr.toLowerCase() === 'sell') type = TransactionType.SELL;
+            
+            // --- New Logic for Transfer (嘉信/Schwab 格式) ---
+            else if (typeStr.includes('轉移') || typeStr.toLowerCase().includes('transfer') || typeStr.includes('journal')) {
+                // 邏輯：股數為負 -> 轉出 (TRANSFER_OUT)；股數為正 -> 轉入 (TRANSFER_IN)
+                if (rawQty < 0) {
+                    type = TransactionType.TRANSFER_OUT;
+                    noteVal = 'Batch Import - 轉出';
+                } else {
+                    type = TransactionType.TRANSFER_IN;
+                    noteVal = 'Batch Import - 轉入';
+                }
+            }
+            // ---------------------------------------------
+            
             else if (typeStr.includes('股息') || typeStr.includes('配息') || typeStr.toLowerCase().includes('div')) {
                 if (quantityVal > 0) {
                     type = TransactionType.DIVIDEND;
@@ -229,7 +244,7 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
           fees: feesVal,
           amount: finalAmount, // 使用提供的金額或計算值
           accountId: selectedAccountId,
-          note: 'Batch Import'
+          note: noteVal
         });
       });
 
@@ -342,13 +357,13 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
             {activeTab === 'paste' ? (
               <div className="space-y-3">
                 <label className="block text-sm text-slate-600">
-                  請將 Excel 或表格資料複製貼上於此 (支援格式: 日期 | 買/賣/股息 | 代號 | 價格 | 數量 | 手續費 | 總金額)
+                  請將 Excel 或表格資料複製貼上於此 (支援格式: 日期 | 買/賣/股息/轉移 | 代號 | 價格 | 數量 | 手續費 | 總金額)
                   <br />
-                  <span className="text-xs text-slate-500">💡 如果提供總金額欄位，將直接使用該金額；否則自動計算 (價格×數量+手續費)</span>
+                  <span className="text-xs text-slate-500">💡 「轉移」類別：若數量為負視為轉出，正則視為轉入。</span>
                 </label>
                 <textarea 
                   className="w-full h-40 border border-slate-300 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-accent outline-none"
-                  placeholder={`2022/3/30	買	VT	103.23	1.00	0.00\n2022/6/27	股息	VT	87.42	1.41	0.00`}
+                  placeholder={`2022/3/30	買	VT	103.23	1.00	0.00\n2025/2/11	轉移	VT	93.41	-167.73	0.00`}
                   value={inputText}
                   onChange={handleTextChange}
                 />
@@ -470,4 +485,4 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
 };
 
 export default BatchImportModal;
-    
+
