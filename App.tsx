@@ -148,6 +148,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // 1. 清除認證狀態
     setIsAuthenticated(false);
     setIsGuest(false);
     setCurrentUser('');
@@ -156,31 +157,45 @@ const App: React.FC = () => {
     localStorage.removeItem('tf_is_auth');
     localStorage.removeItem('tf_last_user');
     localStorage.removeItem('tf_is_guest');
+
+    // 2. 徹底重置所有資料狀態，防止殘留到下一個使用者
     setTransactions([]);
     setAccounts([]);
     setCashFlows([]);
+    setCurrentPrices({}); // 修正：務必重置
+    setPriceDetails({}); // 修正：務必重置
+    setExchangeRate(31.5); // 修正：重置為預設值
+    setRebalanceTargets({}); // 修正：務必重置
   };
 
-  // --- Persistence ---
+  // --- Persistence: LOAD DATA ---
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     const getKey = (key: string) => `tf_${currentUser}_${key}`;
-    const load = (key: string) => JSON.parse(localStorage.getItem(getKey(key)) || '[]');
     
-    setTransactions(load('transactions'));
-    setAccounts(load('accounts'));
-    setCashFlows(load('cashFlows'));
+    // Helper: 若找不到資料，回傳預設值 (defaultVal)
+    const load = (key: string, defaultVal: any) => {
+        const item = localStorage.getItem(getKey(key));
+        return item ? JSON.parse(item) : defaultVal;
+    };
     
-    const prices = localStorage.getItem(getKey('prices'));
-    if (prices) setCurrentPrices(JSON.parse(prices));
-    const pDetails = localStorage.getItem(getKey('priceDetails'));
-    if (pDetails) setPriceDetails(JSON.parse(pDetails));
+    // 修正：即使 LocalStorage 沒資料，也要強制 SetState 為空，覆蓋記憶體中的舊資料
+    setTransactions(load('transactions', []));
+    setAccounts(load('accounts', []));
+    setCashFlows(load('cashFlows', []));
+    
+    // 修正：這幾個狀態之前缺少強制重置邏輯
+    setCurrentPrices(load('prices', {}));
+    setPriceDetails(load('priceDetails', {}));
+    
     const rate = localStorage.getItem(getKey('exchangeRate'));
-    if (rate) setExchangeRate(parseFloat(rate));
-    const targets = localStorage.getItem(getKey('rebalanceTargets'));
-    if (targets) setRebalanceTargets(JSON.parse(targets));
+    setExchangeRate(rate ? parseFloat(rate) : 31.5);
+    
+    setRebalanceTargets(load('rebalanceTargets', {}));
+
   }, [isAuthenticated, currentUser]);
 
+  // --- Persistence: SAVE DATA ---
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     const getKey = (key: string) => `tf_${currentUser}_${key}`;
@@ -833,3 +848,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
