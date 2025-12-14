@@ -87,7 +87,7 @@ export const calculateHoldings = (
   });
   
   return Array.from(map.values())
-    .filter(h => h.quantity > 0)
+    .filter(h => h.quantity > 0.000001)
     .map(h => {
       const priceKey = `${h.market}-${h.ticker}`;
       const currentPrice = currentPrices[priceKey] || h.avgCost;
@@ -503,4 +503,3 @@ export const calculateXIRR = (
 
   return calculateGenericXIRR(xirrFlows);
 };
-
