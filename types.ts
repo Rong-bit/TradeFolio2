@@ -101,6 +101,7 @@ export interface ChartDataPoint {
   totalAssets: number; // Green: Simulated Historical Value
   estTotalAssets: number; // Blue: Projected/Target curve
   assetCostRatio: number; // Red: Ratio (plotted on separate axis usually, or normalized)
+  isRealData?: boolean; // New: Indicates if this point uses real historical prices
 }
 
 export interface AssetAllocationItem {
@@ -117,6 +118,7 @@ export interface AnnualPerformanceItem {
   endAssets: number;
   profit: number;
   roi: number;
+  isRealData?: boolean;
 }
 
 export interface AccountPerformance {
@@ -128,5 +130,13 @@ export interface AccountPerformance {
   cashBalanceTWD: number;
   profitTWD: number;
   roi: number;
+}
+
+// New Interface for Historical Data Storage
+export interface HistoricalData {
+  [year: string]: {
+    prices: Record<string, number>; // Ticker -> Price on Dec 31
+    exchangeRate: number; // USD to TWD on Dec 31
+  };
 }
 
