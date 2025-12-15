@@ -67,6 +67,9 @@ const HelpView: React.FC<Props> = ({
 ## 1. 系統簡介
 TradeFolio 是一個支援台股與美股的資產管理工具，協助投資人追蹤資產變化、計算報酬率並管理資金流向。
 
+> **隱私與安全聲明**：
+> 本系統採用離線優先架構，**所有交易資料皆儲存於您的個人電腦或手機瀏覽器中**，不會上傳至任何伺服器。**系統不涉及收集個人資料**，請安心使用。
+
 ## 2. 快速開始
 1. **建立帳戶**: 前往「證券戶管理」新增您的銀行或證券帳戶。
 2. **匯入資金**: 前往「資金管理」，選擇「匯入資金」將薪資或存款記錄到系統中。
@@ -93,8 +96,8 @@ A: 系統採用資金加權報酬率概念，考慮資金進出的時間點進�
 Q: 匯率如何設定？
 A: 可在右上角設定全域 USD/TWD 匯率，或在轉帳時指定當下匯率。
 
-Q: 資料儲存在哪裡？
-A: 所有資料儲存於您瀏覽器的 LocalStorage。為了避免資料遺失，建議定期使用下方的備份功能。
+Q: 資料儲存與隱私？
+A: 如同前述，**資料完全儲存在您個人的裝置（電腦或手機）上**，不涉及個資問題。為了避免裝置損壞或瀏覽器快取被清除導致資料遺失，**強烈建議定期使用下方的「備份資料」功能**自行保存 JSON 檔案。
   `;
 
   const handlePrint = () => {
@@ -126,6 +129,7 @@ A: 所有資料儲存於您瀏覽器的 LocalStorage。為了避免資料遺失�
                     將您的交易紀錄、帳戶設定與股價資訊匯出為 JSON 檔案，建議定期備份以免資料遺失。
                 </p>
                 <button 
+                  type="button"
                   onClick={onExport}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition shadow flex items-center justify-center gap-2"
                 >
@@ -276,3 +280,4 @@ A: 所有資料儲存於您瀏覽器的 LocalStorage。為了避免資料遺失�
 };
 
 export default HelpView;
+
