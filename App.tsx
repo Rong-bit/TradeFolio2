@@ -269,16 +269,45 @@ const App: React.FC = () => {
   };
 
   const handleExportData = () => {
-    const data = { version: "2.0", user: currentUser, timestamp: new Date().toISOString(), transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, rebalanceTargets, historicalData };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `tradefolio_${currentUser}_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const exportData = { 
+        version: "2.0", 
+        user: currentUser, 
+        timestamp: new Date().toISOString(), 
+        transactions, 
+        accounts, 
+        cashFlows, 
+        currentPrices, 
+        priceDetails, 
+        exchangeRate, 
+        rebalanceTargets, 
+        historicalData 
+      };
+
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Sanitize filename
+      const safeUser = (currentUser || 'guest').replace(/[^a-zA-Z0-9@._-]/g, '_');
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `tradefolio_${safeUser}_${dateStr}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Delay cleanup to ensure browser captures the click
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+    } catch (err) {
+      console.error("Export failed:", err);
+      showAlert(`備份失敗：${err instanceof Error ? err.message : String(err)}`, "錯誤", "error");
+    }
   };
 
   const handleImportData = (file: File) => {
