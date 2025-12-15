@@ -122,6 +122,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
               <th className="px-4 py-3 text-right">數量</th>
               <th className="px-4 py-3 text-right">現價 (Updated)</th>
               <th className="px-4 py-3 w-32 text-left">比重 (Weight)</th>
+              <th className="px-4 py-3 text-right">總成本 (Cost)</th>
               <th className="px-4 py-3 text-right">市值 (Val)</th>
               <th className="px-4 py-3 text-right">損益 (P/L)</th>
               <th className="px-4 py-3 text-right">年化 (ROI)</th>
@@ -132,7 +133,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
           <tbody className="divide-y divide-slate-50 bg-white">
             {mergedHoldings.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-6 py-12 text-center text-slate-400">
+                <td colSpan={11} className="px-6 py-12 text-center text-slate-400">
                   尚無持倉資料，請新增交易。
                 </td>
               </tr>
@@ -189,12 +190,17 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
                       </div>
                     </td>
 
-                    {/* 6. Market Value */}
+                    {/* 6. Total Cost (New) */}
+                    <td className="px-4 py-3 text-right font-medium text-slate-500">
+                      {formatCurrency(h.totalCost, currency)}
+                    </td>
+
+                    {/* 7. Market Value */}
                     <td className="px-4 py-3 text-right font-medium text-slate-800">
                       {formatCurrency(h.currentValue, currency)}
                     </td>
 
-                    {/* 7. P/L */}
+                    {/* 8. P/L */}
                     <td className={`px-4 py-3 text-right font-bold ${plColor}`}>
                       <div className="flex flex-col items-end leading-tight">
                         <span>{formatCurrency(h.unrealizedPL, currency)}</span>
@@ -202,12 +208,12 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
                       </div>
                     </td>
 
-                    {/* 8. Annualized Return */}
+                    {/* 9. Annualized Return */}
                     <td className={`px-4 py-3 text-right font-bold ${roiColor}`}>
                       {h.annualizedReturn && h.annualizedReturn !== 0 ? `${h.annualizedReturn.toFixed(1)}%` : '-'}
                     </td>
 
-                    {/* 9. Daily Change */}
+                    {/* 10. Daily Change */}
                     <td className={`px-4 py-3 text-right text-xs font-bold ${dailyChangeColor}`}>
                       {h.dailyChange !== undefined && h.dailyChange !== 0 ? (
                          <div className="flex flex-col items-end">
@@ -217,7 +223,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
                       ) : '-'}
                     </td>
 
-                    {/* 10. Avg Cost */}
+                    {/* 11. Avg Cost */}
                     <td className="px-4 py-3 text-right text-slate-500 text-xs">
                        {formatCurrency(h.avgCost, currency)}
                     </td>
@@ -233,3 +239,4 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
 };
 
 export default HoldingsTable;
+
