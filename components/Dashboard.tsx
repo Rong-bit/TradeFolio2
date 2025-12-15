@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChartDataPoint, PortfolioSummary, Holding, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlow, Account, CashFlowType, Currency } from '../types';
 import { formatCurrency } from '../utils/calculations';
@@ -271,62 +272,64 @@ const Dashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Allocation Pie Chart - Shown to everyone */}
-      <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-        <h3 className="font-bold text-slate-800 text-lg mb-4">資產配置 (Allocation)</h3>
-        <div 
-          className="w-full flex justify-center overflow-x-auto" 
-        >
-          <div style={{ 
-            width: '500px', 
-            height: '500px', 
-            minWidth: '500px',
-            minHeight: '500px'
-          }}>
-            {isMounted && assetAllocation.length > 0 ? (
-               <ResponsiveContainer 
-                 width={500} 
-                 height={500} 
-                 minWidth={500} 
-                 minHeight={500}
-                 aspect={undefined}
-               >
-                 <PieChart>
-                    <Pie
-                      data={assetAllocation as any[]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={150}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {assetAllocation.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                       formatter={(value: number) => formatCurrency(value, 'TWD')}
-                    />
-                    <Legend 
-                       layout="vertical" 
-                       verticalAlign="middle" 
-                       align="right"
-                       formatter={(value, entry: any) => {
-                         const item = assetAllocation.find(a => a.name === value);
-                         return <span className="text-xs text-slate-600 ml-1">{value} ({item?.ratio.toFixed(1)}%)</span>;
-                       }}
-                    />
-                 </PieChart>
-               </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-400">
-                {!isMounted ? '圖表載入中...' : '無持倉'}
-              </div>
-            )}
+      {/* Allocation Pie Chart - Only shown if NOT guest */}
+      {!isGuest && (
+        <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
+          <h3 className="font-bold text-slate-800 text-lg mb-4">資產配置 (Allocation)</h3>
+          <div 
+            className="w-full flex justify-center overflow-x-auto" 
+          >
+            <div style={{ 
+              width: '500px', 
+              height: '500px', 
+              minWidth: '500px',
+              minHeight: '500px'
+            }}>
+              {isMounted && assetAllocation.length > 0 ? (
+                 <ResponsiveContainer 
+                   width={500} 
+                   height={500} 
+                   minWidth={500} 
+                   minHeight={500}
+                   aspect={undefined}
+                 >
+                   <PieChart>
+                      <Pie
+                        data={assetAllocation as any[]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={150}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {assetAllocation.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                         formatter={(value: number) => formatCurrency(value, 'TWD')}
+                      />
+                      <Legend 
+                         layout="vertical" 
+                         verticalAlign="middle" 
+                         align="right"
+                         formatter={(value, entry: any) => {
+                           const item = assetAllocation.find(a => a.name === value);
+                           return <span className="text-xs text-slate-600 ml-1">{value} ({item?.ratio.toFixed(1)}%)</span>;
+                         }}
+                      />
+                   </PieChart>
+                 </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-400">
+                  {!isMounted ? '圖表載入中...' : '無持倉'}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       {/* Annual Performance Table (Below Charts) - Only shown if NOT guest */}
       {!isGuest && annualPerformance.length > 0 && (

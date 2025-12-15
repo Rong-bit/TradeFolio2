@@ -13,6 +13,7 @@ import BatchImportModal from './components/BatchImportModal';
 import HistoricalDataModal from './components/HistoricalDataModal';
 import { fetchCurrentPrices } from './services/geminiService';
 import { ADMIN_EMAIL, SYSTEM_ACCESS_CODE, GLOBAL_AUTHORIZED_USERS } from './config';
+import { v4 as uuidv4 } from 'uuid';
 
 type View = 'dashboard' | 'history' | 'funds' | 'accounts' | 'rebalance' | 'help';
 
@@ -54,14 +55,13 @@ const App: React.FC = () => {
   const [priceDetails, setPriceDetails] = useState<Record<string, { change: number, changePercent: number }>>({});
   const [exchangeRate, setExchangeRate] = useState<number>(31.5);
   const [rebalanceTargets, setRebalanceTargets] = useState<Record<string, number>>({});
-  const [historicalData, setHistoricalData] = useState<HistoricalData>({}); // New state
+  const [historicalData, setHistoricalData] = useState<HistoricalData>({}); 
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isMigrationConfirmOpen, setIsMigrationConfirmOpen] = useState(false);
   const [isTransactionDeleteConfirmOpen, setIsTransactionDeleteConfirmOpen] = useState(false);
-  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false); // New Modal State
+  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [alertDialog, setAlertDialog] = useState<{isOpen: boolean, title: string, message: string, type: 'info' | 'success' | 'error'}>({
     isOpen: false, title: '', message: '', type: 'info'
@@ -75,7 +75,6 @@ const App: React.FC = () => {
   const [filterTicker, setFilterTicker] = useState<string>('');
   const [filterDateFrom, setFilterDateFrom] = useState<string>('');
   const [filterDateTo, setFilterDateTo] = useState<string>('');
-  const [includeCashFlow, setIncludeCashFlow] = useState<boolean>(true);
 
   // --- HelpView Confirm Override ---
   useEffect(() => {
@@ -96,7 +95,7 @@ const App: React.FC = () => {
     
     if (isAuth === 'true' && lastUser) {
       if (guestStatus === 'true') {
-        setCurrentUser('Guest');
+        setCurrentUser(lastUser === 'Guest' ? 'Guest' : lastUser);
         setIsGuest(true);
         setIsAuthenticated(true);
       } else {
@@ -114,7 +113,7 @@ const App: React.FC = () => {
     
     if (!email) return showAlert("請輸入 Email 信箱", "登入錯誤", "error");
 
-    // 1. 管理員登入 (需要密碼)
+    // 1. Admin Login
     if (email === ADMIN_EMAIL) {
       if (password === SYSTEM_ACCESS_CODE) {
         loginSuccess(email, false);
@@ -125,20 +124,40 @@ const App: React.FC = () => {
       }
     }
 
-    // 2. 全域授權名單登入 (不需要密碼)
-    // 只要 Email 存在於 GLOBAL_AUTHORIZED_USERS 列表中，即可直接登入
+    // 2. Authorized Login
     if (GLOBAL_AUTHORIZED_USERS.includes(email)) {
       loginSuccess(email, false);
-      // 如果使用者有輸入密碼，可以忽略，或顯示提示
       return;
     }
 
-    showAlert("此 Email 未獲授權。請使用「訪客試用」登入，或聯繫管理員將您的 Email 加入設定檔。", "權限不足", "error");
+    // 3. Unauthorized
+    showAlert("此 Email 未獲授權。請使用下方「非會員登入 (註冊)」按鈕，即可先以受限模式登入並通知管理員。", "權限不足", "error");
   };
 
-  const handleGuestLogin = () => {
-    loginSuccess('Guest', true);
-    showAlert("已進入訪客模式。部分進階功能 (圖表、再平衡) 將受限。", "訪客登入", "info");
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = loginEmail.trim();
+    if (!email) return showAlert("請先輸入您的 Email 才能進行非會員登入", "錯誤", "error");
+
+    if (allAuthorizedUsers.includes(email)) {
+        loginSuccess(email, false);
+        showAlert("您的 Email 已在授權名單中，已直接為您登入。", "提示", "success");
+        return;
+    }
+
+    // 1. 先執行登入，確保 UI 立即有反應 (解決無反應問題)
+    loginSuccess(email, true);
+    
+    // 2. 顯示提示
+    showAlert("已為您登入「非會員模式」。\n\n您尚未註冊，若需開通會員模式，請按'申請開通'發送申請信通知管理員開通權限。", "登入成功", "info");
+
+    // 3. 自動開啟 Mailto 已移除，改由用戶手動點擊申請
+  };
+
+  const handleContactAdmin = () => {
+    const subject = encodeURIComponent("TradeFolio 購買/權限開通申請");
+    const body = encodeURIComponent(`Hi 管理員,\n\n我的帳號是: ${currentUser}\n\n我目前是訪客身份，希望申請/購買完整權限。\n\n請協助處理，謝謝。`);
+    window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
   };
 
   const loginSuccess = (user: string, isGuestUser: boolean) => {
@@ -151,7 +170,6 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // 1. 清除認證狀態
     setIsAuthenticated(false);
     setIsGuest(false);
     setCurrentUser('');
@@ -160,35 +178,29 @@ const App: React.FC = () => {
     localStorage.removeItem('tf_is_auth');
     localStorage.removeItem('tf_last_user');
     localStorage.removeItem('tf_is_guest');
-
-    // 2. 徹底重置所有資料狀態，防止殘留到下一個使用者
+    
     setTransactions([]);
     setAccounts([]);
     setCashFlows([]);
-    setCurrentPrices({}); // 修正：務必重置
-    setPriceDetails({}); // 修正：務必重置
-    setExchangeRate(31.5); // 修正：重置為預設值
-    setRebalanceTargets({}); // 修正：務必重置
-    setHistoricalData({}); // Reset history
+    setCurrentPrices({});
+    setPriceDetails({});
+    setExchangeRate(31.5);
+    setRebalanceTargets({});
+    setHistoricalData({});
   };
 
   // --- Persistence: LOAD DATA ---
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     const getKey = (key: string) => `tf_${currentUser}_${key}`;
-    
-    // Helper: 若找不到資料，回傳預設值 (defaultVal)
     const load = (key: string, defaultVal: any) => {
         const item = localStorage.getItem(getKey(key));
         return item ? JSON.parse(item) : defaultVal;
     };
     
-    // 修正：即使 LocalStorage 沒資料，也要強制 SetState 為空，覆蓋記憶體中的舊資料
     setTransactions(load('transactions', []));
     setAccounts(load('accounts', []));
     setCashFlows(load('cashFlows', []));
-    
-    // 修正：這幾個狀態之前缺少強制重置邏輯
     setCurrentPrices(load('prices', {}));
     setPriceDetails(load('priceDetails', {}));
     
@@ -214,14 +226,11 @@ const App: React.FC = () => {
     localStorage.setItem(getKey('historicalData'), JSON.stringify(historicalData));
   }, [transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, rebalanceTargets, historicalData, isAuthenticated, currentUser]);
 
-  // --- Alert & Modals ---
-  const handleMigrateLegacyData = () => setIsMigrationConfirmOpen(true);
   const showAlert = (message: string, title: string = '提示', type: 'info' | 'success' | 'error' = 'info') => {
     setAlertDialog({ isOpen: true, title, message, type });
   };
   const closeAlert = () => setAlertDialog(prev => ({ ...prev, isOpen: false }));
 
-  // --- Handlers ---
   const addTransaction = (tx: Transaction) => {
     setTransactions(prev => [...prev, tx]);
     const key = `${tx.market}-${tx.ticker}`;
@@ -273,8 +282,6 @@ const App: React.FC = () => {
 
   const updatePrice = (key: string, price: number) => setCurrentPrices(prev => ({ ...prev, [key]: price }));
   const updateRebalanceTargets = (newTargets: Record<string, number>) => setRebalanceTargets(newTargets);
-
-  // --- Historical Data Update Handler ---
   const handleOpenHistoricalModal = () => setIsHistoricalModalOpen(true);
   
   const handleSaveHistoricalData = (newData: HistoricalData) => {
@@ -321,7 +328,7 @@ const App: React.FC = () => {
     const holdingKeys = holdings.map(h => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
     const queryList: string[] = Array.from(new Set(holdingKeys.map(h => {
        let t = h.ticker;
-       if (h.market === Market.TW && !t.includes('TPE:') && !/^\d{4}$/.test(t)) t = `TPE:${t}`;
+       if (h.market === Market.TW && !t.includes('TPE:') && !t.includes('TW') && !/^\d{4}$/.test(t)) t = `TPE:${t}`;
        if (h.market === Market.TW && /^\d{4}$/.test(t)) t = `TPE:${t}`;
        return t;
     })));
@@ -334,11 +341,8 @@ const App: React.FC = () => {
       const newDetails: Record<string, { change: number, changePercent: number }> = {};
       
       holdingKeys.forEach(h => {
-          // Normalize matching logic
           let match = result.prices[h.ticker] || result.prices[`TPE:${h.ticker}`];
-          
           if (!match) {
-             // Case-insensitive search
              const foundKey = Object.keys(result.prices).find(k => 
                 k.toLowerCase() === h.ticker.toLowerCase() || 
                 k.toLowerCase() === `tpe:${h.ticker}`.toLowerCase() ||
@@ -346,12 +350,10 @@ const App: React.FC = () => {
              );
              if (foundKey) match = result.prices[foundKey];
           }
-
           if (match) {
              const price = match.price;
              const change = match.change || 0;
              const changePercent = match.changePercent || 0;
-             
              newPrices[h.key] = price;
              newDetails[h.key] = { change, changePercent };
           }
@@ -359,532 +361,530 @@ const App: React.FC = () => {
       
       setCurrentPrices(prev => ({ ...prev, ...newPrices }));
       setPriceDetails(prev => ({ ...prev, ...newDetails }));
-
-      if (result.exchangeRate) setExchangeRate(result.exchangeRate);
-    } catch (e) { console.error(e); throw e; }
+      showAlert(`成功更新 ${Object.keys(newPrices).length} 筆股價`, "更新完成", "success");
+    } catch (error) {
+      console.error(error);
+      showAlert("自動更新失敗", "錯誤", "error");
+    }
   };
 
-  // --- Helper: Transaction Priority for Calculation vs Display ---
-  // Returns a priority value. Smaller number = Happens Earlier in the day (for calculation).
-  const getTransactionPriority = (r: any) => {
-    // Calculation Order (Time flows ->):
-    // 1. Deposits / Transfer In (First, so money is available)
-    // 2. Sell / Dividends / Interest (Income)
-    // 3. Buy (Spending)
-    // 4. Withdraw / Transfer Out (Last, after all activities)
-    
-    if (r.subType === 'DEPOSIT' || r.subType === 'TRANSFER_IN') return 1;
-    if (r.subType === 'SELL' || r.subType === 'CASH_DIVIDEND' || r.subType === 'INTEREST' || r.subType === 'DIVIDEND') return 2;
-    if (r.subType === 'BUY') return 3;
-    if (r.subType === 'WITHDRAW' || r.subType === 'TRANSFER' || r.subType === 'TRANSFER_OUT') return 4;
-    return 5;
-  };
+  // --- Calculations ---
+  const holdings = useMemo(() => calculateHoldings(transactions, currentPrices, priceDetails), [transactions, currentPrices, priceDetails]);
+  const computedAccounts = useMemo(() => calculateAccountBalances(accounts, cashFlows, transactions), [accounts, cashFlows, transactions]);
 
-  // --- Core Calculation for Records with Balance ---
-  const combinedRecords = useMemo(() => {
-    // 1. Transactions to Records
-    const txRecords = transactions.map(tx => {
-      let amount = 0;
-      let cashImpact = 0;
-      const fee = tx.fees || 0;
-
-      // 優先使用已存在的 amount (Net) 欄位，避免重複計算手續費
-      if (tx.amount !== undefined) {
-         amount = tx.amount;
-         
-         if (tx.type === TransactionType.BUY) cashImpact = -amount;
-         else if (tx.type === TransactionType.SELL) cashImpact = amount;
-         else if (tx.type === TransactionType.CASH_DIVIDEND) cashImpact = amount;
-         else if (tx.type === TransactionType.TRANSFER_OUT || tx.type === TransactionType.TRANSFER_IN) cashImpact = -fee; // Transfer amount usually doesn't affect cash except fee
-         else cashImpact = 0;
-
-      } else {
-         // 若無 amount 則自行計算
-         if (tx.type === TransactionType.BUY) {
-            amount = (tx.price * tx.quantity) + fee;
-            cashImpact = -amount;
-         } else if (tx.type === TransactionType.SELL) {
-            amount = (tx.price * tx.quantity) - fee;
-            cashImpact = amount;
-         } else if (tx.type === TransactionType.CASH_DIVIDEND) {
-            amount = (tx.price * tx.quantity) - fee;
-            cashImpact = amount;
-         } else if (tx.type === TransactionType.TRANSFER_OUT || tx.type === TransactionType.TRANSFER_IN) {
-            amount = fee; 
-            cashImpact = -fee;
-         } else {
-            // Dividend reinvest - no cash impact
-            amount = (tx.price * tx.quantity); 
-            cashImpact = 0;
-         }
-      }
-
-      return {
-        id: tx.id, date: tx.date, accountId: tx.accountId, type: 'TRANSACTION', subType: tx.type,
-        ticker: tx.ticker, market: tx.market, price: tx.price, quantity: tx.quantity, 
-        amount, cashImpact, description: `${tx.market}-${tx.ticker}`, originalRecord: tx
-      };
-    });
-
-    // 2. CashFlows to Records
-    const cfRecords: any[] = [];
+  const summary = useMemo<PortfolioSummary>(() => {
+    let netInvestedTWD = 0;
     cashFlows.forEach(cf => {
-      let cashImpact = 0;
-      if (cf.type === CashFlowType.DEPOSIT || cf.type === CashFlowType.INTEREST) cashImpact = cf.amount;
-      else if (cf.type === CashFlowType.WITHDRAW || cf.type === CashFlowType.TRANSFER) cashImpact = -cf.amount;
-
-      cfRecords.push({
-        id: cf.id, date: cf.date, accountId: cf.accountId, type: 'CASHFLOW', subType: cf.type,
-        ticker: '', market: '', price: 0, quantity: 0, 
-        amount: cf.amount, cashImpact, description: cf.note || cf.type, originalRecord: cf,
-        exchangeRate: cf.exchangeRate
-      });
-
-      if (cf.type === 'TRANSFER' && cf.targetAccountId) {
-        const targetAmount = cf.exchangeRate ? cf.amount * cf.exchangeRate : cf.amount;
-        cfRecords.push({
-          id: `${cf.id}-target`, date: cf.date, accountId: cf.targetAccountId, type: 'CASHFLOW', subType: 'TRANSFER_IN',
-          ticker: '', market: '', price: 0, quantity: 0,
-          amount: targetAmount, cashImpact: targetAmount, description: `轉入自 ${accounts.find(a => a.id === cf.accountId)?.name || '未知'}`,
-          originalRecord: cf, isTargetRecord: true
-        });
-      }
-    });
-
-    // 3. Sort Old -> New to calculate Running Balance (Ascending)
-    const allRecords = [...txRecords, ...cfRecords].sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      // If same date, use Priority Ascending (Deposit -> Sell -> Buy -> Withdraw)
-      return getTransactionPriority(a) - getTransactionPriority(b);
-    });
-
-    // 4. Calculate Balance
-    const balances: Record<string, number> = {};
-    return allRecords.map(r => {
-      if (!balances[r.accountId]) balances[r.accountId] = 0;
-      balances[r.accountId] += r.cashImpact;
-      return { ...r, balance: balances[r.accountId] };
-    });
-  }, [transactions, cashFlows, accounts]);
-
-  // 5. Filter & Reverse for Display (New -> Old)
-  const filteredRecords = useMemo(() => {
-    return combinedRecords.filter(r => {
-      if (filterAccount && r.accountId !== filterAccount) return false;
-      if (!includeCashFlow && r.type === 'CASHFLOW') return false;
-      if (filterTicker && r.type === 'TRANSACTION' && !r.ticker.includes(filterTicker.toUpperCase())) return false;
-      if (filterDateFrom && new Date(r.date) < new Date(filterDateFrom)) return false;
-      if (filterDateTo && new Date(r.date) > new Date(filterDateTo)) return false;
-      return true;
-    }).sort((a, b) => {
-       const dateA = new Date(a.date).getTime();
-       const dateB = new Date(b.date).getTime();
-       // Descending Order (Newest First)
-       if (dateA !== dateB) return dateB - dateA; 
-       
-       // CRITICAL FIX: If same date, use Priority DESCENDING for display.
-       // This ensures the list reads from bottom (start of day) to top (end of day).
-       // E.g. Top: Withdraw (Last Event) | Bottom: Deposit (First Event)
-       return getTransactionPriority(b) - getTransactionPriority(a);
-    });
-  }, [combinedRecords, filterAccount, filterTicker, filterDateFrom, filterDateTo, includeCashFlow]);
-
-  // Calculations
-  const accountsWithBalance = useMemo(() => calculateAccountBalances(accounts, cashFlows, transactions), [accounts, cashFlows, transactions]);
-  const baseHoldings = useMemo(() => calculateHoldings(transactions, currentPrices, priceDetails), [transactions, currentPrices, priceDetails]);
-  const totalAssetsTWD = useMemo(() => {
-    let s = 0; baseHoldings.forEach(h => s += (h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue));
-    let c = 0; accountsWithBalance.forEach(a => c += (a.balance * (a.currency === 'USD' ? exchangeRate : 1)));
-    return s + c;
-  }, [baseHoldings, accountsWithBalance, exchangeRate]);
-  const holdings = useMemo(() => baseHoldings.map(h => ({ ...h, weight: totalAssetsTWD > 0 ? ((h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue) / totalAssetsTWD) * 100 : 0 })), [baseHoldings, totalAssetsTWD, exchangeRate]);
-  
-  const summary = useMemo(() => {
-    let tv = 0; holdings.forEach(h => tv += (h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue));
-    let cb = 0; accountsWithBalance.forEach(a => cb += (a.balance * (a.currency === 'USD' ? exchangeRate : 1)));
-    
-    // 1. Calculate Net Invested TWD (ni)
-    const ni = cashFlows.reduce((acc, cf) => {
-      const a = accounts.find(ac => ac.id === cf.accountId);
-      if (!a) return acc;
-      
-      let amountTWD = 0;
-      if (cf.amountTWD && cf.amountTWD > 0) {
-        amountTWD = cf.amountTWD;
-      } else {
-        const isUSD = a.currency === 'USD';
-        // Check for historical exchange rate on the cash flow record
-        const rate = isUSD ? (cf.exchangeRate && cf.exchangeRate > 0 ? cf.exchangeRate : exchangeRate) : 1;
-        amountTWD = cf.amount * rate;
-      }
-
-      if (cf.type === CashFlowType.DEPOSIT) return acc + amountTWD;
-      if (cf.type === CashFlowType.WITHDRAW) return acc - amountTWD;
-      return acc;
-    }, 0);
-
-    // 2. Calculate Weighted Average Exchange Rate for USD
-    let poolUSD = 0;
-    let poolCostTWD = 0;
-    
-    // Sort by date for accurate running average
-    const sortedFlows = [...cashFlows].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
-    sortedFlows.forEach(cf => {
-        const acc = accounts.find(a => a.id === cf.accountId);
-        if (!acc) return;
-        
-        // Deposit into USD Account
-        if (acc.currency === Currency.USD && cf.type === CashFlowType.DEPOSIT) {
-             const usd = cf.amount;
-             let cost = 0;
-             if (cf.amountTWD && cf.amountTWD > 0) {
-                 cost = cf.amountTWD;
-             } else {
-                 const rate = (cf.exchangeRate && cf.exchangeRate > 0) ? cf.exchangeRate : exchangeRate;
-                 cost = usd * rate;
-             }
-             poolUSD += usd;
-             poolCostTWD += cost;
-        }
-        // Withdraw from USD Account
-        else if (acc.currency === Currency.USD && cf.type === CashFlowType.WITHDRAW) {
-             const usd = cf.amount;
-             if (poolUSD > 0.001) {
-                 const avg = poolCostTWD / poolUSD;
-                 poolCostTWD -= (usd * avg);
-                 poolUSD -= usd;
-             }
-        }
-        // Transfer
-        else if (cf.type === CashFlowType.TRANSFER && cf.targetAccountId) {
-             const targetAcc = accounts.find(a => a.id === cf.targetAccountId);
-             // TWD -> USD
-             if (acc.currency !== Currency.USD && targetAcc?.currency === Currency.USD) {
-                 const cost = cf.amount; // Source (TWD)
-                 let usd = 0;
-                 if (cf.exchangeRate && cf.exchangeRate > 0) {
-                     usd = cost / cf.exchangeRate;
-                 } else {
-                     usd = cost / exchangeRate;
-                 }
-                 poolUSD += usd;
-                 poolCostTWD += cost;
-             }
-             // USD -> TWD
-             else if (acc.currency === Currency.USD && targetAcc?.currency !== Currency.USD) {
-                 const usd = cf.amount; // Source (USD)
-                 if (poolUSD > 0.001) {
-                     const avg = poolCostTWD / poolUSD;
-                     poolCostTWD -= (usd * avg);
-                     poolUSD -= usd;
-                 }
-             }
-        }
-    });
-
-    if (poolUSD < 0) poolUSD = 0;
-    if (poolCostTWD < 0) poolCostTWD = 0;
-    const calculatedAvgRate = poolUSD > 0 ? poolCostTWD / poolUSD : 0;
-
-    // 3. Dividends & XIRR
-    let accCashDivTWD = 0;
-    let accStockDivTWD = 0;
-    
-    transactions.forEach(tx => {
-       const acc = accounts.find(a => a.id === tx.accountId);
-       if (!acc) return;
-       const isUSD = acc.currency === Currency.USD;
-       const rate = isUSD ? exchangeRate : 1;
-       
-       // Calculate value in TWD
-       // Use tx.amount if available, else calc price * quantity
-       // For Dividend type, amount is usually total value
-       const val = tx.amount !== undefined ? tx.amount : (tx.price * tx.quantity);
-       const valTWD = val * rate;
-
-       if (tx.type === TransactionType.CASH_DIVIDEND) {
-           accCashDivTWD += valTWD;
-       } else if (tx.type === TransactionType.DIVIDEND) {
-           accStockDivTWD += valTWD;
+       const account = accounts.find(a => a.id === cf.accountId);
+       if(cf.type === CashFlowType.DEPOSIT) {
+           const rate = (cf.exchangeRate || (account?.currency === Currency.USD ? exchangeRate : 1));
+           netInvestedTWD += (cf.amountTWD || cf.amount * rate);
+       } else if (cf.type === CashFlowType.WITHDRAW) {
+           const rate = (cf.exchangeRate || (account?.currency === Currency.USD ? exchangeRate : 1));
+           netInvestedTWD -= (cf.amountTWD || cf.amount * rate);
        }
     });
 
-    const ta = tv + cb;
-    const cagr = calculateXIRR(cashFlows, accounts, ta, exchangeRate);
+    const stockValueTWD = holdings.reduce((sum, h) => sum + (h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue), 0);
+    const cashValueTWD = computedAccounts.reduce((sum, a) => sum + (a.currency === Currency.USD ? a.balance * exchangeRate : a.balance), 0);
+    const totalValueTWD = stockValueTWD;
+    const totalAssets = totalValueTWD + cashValueTWD;
+    const totalPLTWD = totalAssets - netInvestedTWD;
+    const totalPLPercent = netInvestedTWD > 0 ? (totalPLTWD / netInvestedTWD) * 100 : 0;
+    const annualizedReturn = calculateXIRR(cashFlows, accounts, totalAssets, exchangeRate);
+    
+    const accumulatedCashDividendsTWD = transactions.filter(t => t.type === TransactionType.CASH_DIVIDEND).reduce((sum, t) => {
+        const amt = t.amount || (t.price * t.quantity);
+        return sum + (t.market === Market.US ? amt * exchangeRate : amt);
+    }, 0);
 
     return {
-      totalCostTWD: ni, totalValueTWD: tv, totalPLTWD: ta - ni, totalPLPercent: ni > 0 ? ((ta - ni)/ni)*100 : 0,
-      cashBalanceTWD: cb, netInvestedTWD: ni, annualizedReturn: cagr, exchangeRateUsdToTwd: exchangeRate,
-      accumulatedCashDividendsTWD: accCashDivTWD, accumulatedStockDividendsTWD: accStockDivTWD, 
-      avgExchangeRate: calculatedAvgRate
+        totalCostTWD: 0,
+        totalValueTWD,
+        totalPLTWD,
+        totalPLPercent,
+        cashBalanceTWD: cashValueTWD,
+        netInvestedTWD,
+        annualizedReturn,
+        exchangeRateUsdToTwd: exchangeRate,
+        accumulatedCashDividendsTWD,
+        accumulatedStockDividendsTWD: 0,
+        avgExchangeRate: 0
     };
-  }, [holdings, accountsWithBalance, cashFlows, exchangeRate, accounts, transactions]);
+  }, [holdings, computedAccounts, cashFlows, exchangeRate, accounts, transactions]);
 
-  // Updated: Pass historicalData to calculations
   const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData), [transactions, cashFlows, accounts, summary, exchangeRate, historicalData]);
-  
   const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate), [holdings, summary, exchangeRate]);
   const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
-  const accountPerformance = useMemo(() => calculateAccountPerformance(accountsWithBalance, holdings, cashFlows, transactions, exchangeRate), [accountsWithBalance, holdings, cashFlows, transactions, exchangeRate]);
+  const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate]);
 
-  // --- Render ---
+  // --- Filtering ---
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const matchAccount = filterAccount ? t.accountId === filterAccount : true;
+      const matchTicker = filterTicker ? t.ticker.includes(filterTicker.toUpperCase()) : true;
+      const matchDateFrom = filterDateFrom ? t.date >= filterDateFrom : true;
+      const matchDateTo = filterDateTo ? t.date <= filterDateTo : true;
+      return matchAccount && matchTicker && matchDateFrom && matchDateTo;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, filterAccount, filterTicker, filterDateFrom, filterDateTo]);
+
+  // --- View Logic (Guest vs Member) ---
+  const availableViews: View[] = isGuest 
+    ? ['dashboard', 'history', 'funds', 'accounts', 'help']
+    : ['dashboard', 'history', 'funds', 'accounts', 'rebalance', 'help'];
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
-           <div className="flex justify-center mb-6">
-             <div className="w-12 h-12 bg-gradient-to-tr from-accent to-purple-500 rounded-lg flex items-center justify-center text-white text-2xl font-bold">T</div>
-           </div>
-           <h1 className="text-2xl font-bold text-center mb-2 text-slate-800">TradeFolio 登入</h1>
-           <div className="space-y-4">
-             <div>
-               <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-               <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="w-full border p-3 rounded" required />
-             </div>
-             <div>
-               <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-               <input 
-                 type="password" 
-                 value={loginPassword} 
-                 onChange={e => setLoginPassword(e.target.value)} 
-                 className="w-full border p-3 rounded" 
-                 placeholder="授權使用者無需輸入"
-               />
-             </div>
-           </div>
-           <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded font-bold mt-6">登入</button>
-           <button type="button" onClick={handleGuestLogin} className="w-full bg-white border mt-4 py-3 rounded text-slate-700 font-bold">訪客試用</button>
-        </form>
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+          <div className="p-8">
+            <div className="text-center mb-8">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                T
+              </div>
+              <h1 className="mt-4 text-2xl font-bold text-slate-800">TradeFolio 登入</h1>
+              <p className="mt-2 text-slate-500 text-sm">台美股資產管理系統</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Email</label>
+                <input 
+                  type="email" 
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="mt-1 w-full border border-slate-300 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="name@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Password</label>
+                <input 
+                  type="password" 
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="mt-1 w-full border border-slate-300 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="授權使用者無需輸入"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+              >
+                登入
+              </button>
+            </form>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-slate-500">或是</span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3">
+                 <button 
+                   onClick={handleRegister}
+                   className="w-full flex justify-center py-3 px-4 border border-indigo-200 rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                 >
+                   非會員登入 (註冊)
+                 </button>
+              </div>
+              <p className="mt-4 text-xs text-center text-slate-400">
+                  非會員登入將使用瀏覽器暫存功能，清除快取可能會遺失資料。
+                  <br/>
+                  註冊將發送 Email 通知管理員。
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {alertDialog.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+              <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+                <h3 className={`text-lg font-bold mb-2 ${alertDialog.type === 'error' ? 'text-red-600' : alertDialog.type === 'success' ? 'text-green-600' : 'text-slate-800'}`}>
+                  {alertDialog.title}
+                </h3>
+                <p className="text-slate-600 mb-6 whitespace-pre-line">{alertDialog.message}</p>
+                <button onClick={closeAlert} className="bg-slate-900 text-white px-6 py-2 rounded hover:bg-slate-800">
+                  確定
+                </button>
+              </div>
+            </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-tr from-accent to-purple-500 rounded-lg flex items-center justify-center font-bold">T</div>
-            <div>
-              <h1 className="text-lg font-bold tracking-wider leading-none">TradeFolio</h1>
-              <span className="text-[10px] text-slate-400">{isGuest ? '非會員' : currentUser}</span>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Top Header Navigation */}
+      <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo & Brand */}
+            <div className="flex items-center gap-3 shrink-0">
+               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
+                  T
+               </div>
+               <div className="hidden md:block">
+                  <h1 className="font-bold text-lg leading-none bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">TradeFolio</h1>
+                  <p className="text-[10px] text-slate-400 leading-none mt-0.5">台美股資產管理</p>
+               </div>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-1">
+               {availableViews.map((tab) => (
+                 <button
+                   key={tab}
+                   onClick={() => setView(tab as View)}
+                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                     view === tab 
+                       ? 'bg-indigo-600 text-white shadow' 
+                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                   }`}
+                 >
+                   {tab === 'dashboard' && '儀表板'}
+                   {tab === 'history' && '交易紀錄'}
+                   {tab === 'funds' && '資金管理'}
+                   {tab === 'accounts' && '證券戶'}
+                   {tab === 'rebalance' && '再平衡'}
+                   {tab === 'help' && '系統管理'}
+                 </button>
+               ))}
+            </nav>
+
+            {/* Right Controls */}
+            <div className="flex items-center gap-3">
+               {/* Guest Upgrade Button */}
+               {isGuest && (
+                 <button
+                   onClick={handleContactAdmin}
+                   className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold rounded-full transition shadow-lg shadow-amber-500/20"
+                 >
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                   </svg>
+                   <span>申請開通</span>
+                 </button>
+               )}
+
+               {/* Exchange Rate Input */}
+               <div className="hidden sm:flex items-center bg-slate-800 rounded-md px-2 py-1 border border-slate-700">
+                  <span className="text-xs text-slate-400 mr-2">USD</span>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={exchangeRate}
+                    onChange={(e) => setExchangeRate(parseFloat(e.target.value))}
+                    className="w-14 bg-transparent text-sm text-white font-mono focus:outline-none text-right"
+                  />
+               </div>
+               
+               {/* User Profile */}
+               <div className="flex items-center gap-2 pl-2 border-l border-slate-700">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold ring-2 ring-slate-800 shadow-sm" title={currentUser}>
+                     {currentUser.substring(0, 2).toUpperCase()}
+                  </div>
+                  
+                  {/* Logout Button */}
+                  <button 
+                    onClick={handleLogout} 
+                    className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+                    title="登出"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-             <div className="hidden sm:flex items-center gap-2 text-xs bg-slate-800 py-1 px-3 rounded-full border border-slate-700">
-                <span className="text-slate-400">USD</span>
-                <input type="number" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value)||30)} className="w-12 bg-transparent text-right text-white" />
+
+          {/* Mobile Navigation (Horizontal Scroll) */}
+          <div className="md:hidden border-t border-slate-800 py-2 overflow-x-auto no-scrollbar">
+             <div className="flex space-x-2 px-1">
+                {availableViews.map((tab) => (
+                 <button
+                   key={tab}
+                   onClick={() => setView(tab as View)}
+                   className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                     view === tab 
+                       ? 'bg-indigo-600 text-white' 
+                       : 'bg-slate-800 text-slate-300'
+                   }`}
+                 >
+                   {tab === 'dashboard' && '儀表板'}
+                   {tab === 'history' && '交易紀錄'}
+                   {tab === 'funds' && '資金'}
+                   {tab === 'accounts' && '證券戶'}
+                   {tab === 'rebalance' && '再平衡'}
+                   {tab === 'help' && '系統'}
+                 </button>
+              ))}
              </div>
-             <button onClick={handleLogout} className="text-xs bg-slate-800 px-3 py-1.5 rounded border border-slate-700">登出</button>
           </div>
-        </div>
-        <div className="bg-slate-800 border-t border-slate-700">
-           <nav className="max-w-7xl mx-auto px-4 flex overflow-x-auto no-scrollbar">
-             {[
-               { id: 'dashboard', label: '儀表板' },
-               { id: 'funds', label: '資金管理' },
-               { id: 'history', label: '交易紀錄' },
-               ...(!isGuest ? [{ id: 'rebalance', label: '再平衡' }] : []),
-               { id: 'accounts', label: '證券戶' },
-               { id: 'help', label: '說明' }
-             ].map(item => (
-               <button key={item.id} onClick={() => setView(item.id as View)} className={`px-4 py-3 text-sm font-medium border-b-2 ${view === item.id ? 'border-accent text-white' : 'border-transparent text-slate-400'}`}>{item.label}</button>
-             ))}
-           </nav>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 py-6 w-full animate-fade-in">
-        {view === 'dashboard' && (
-          <>
-             <div className="flex justify-end mb-4"><button onClick={() => setIsFormOpen(true)} className="bg-accent text-white px-4 py-2 rounded shadow">+ 記一筆</button></div>
-             <Dashboard 
-               summary={summary} chartData={chartData} holdings={holdings} assetAllocation={assetAllocation}
-               annualPerformance={annualPerformance} accountPerformance={accountPerformance} cashFlows={cashFlows}
-               accounts={accountsWithBalance} onUpdatePrice={updatePrice} onAutoUpdate={handleAutoUpdatePrices} isGuest={isGuest}
-               onUpdateHistorical={handleOpenHistoricalModal} // Open Modal
-             />
-          </>
-        )}
-        {view === 'funds' && <FundManager accounts={accountsWithBalance} cashFlows={cashFlows} onAdd={addCashFlow} onBatchAdd={addBatchCashFlows} onDelete={removeCashFlow} />}
-        {view === 'accounts' && <AccountManager accounts={accountsWithBalance} onAdd={addAccount} onDelete={removeAccount} />}
-        {view === 'rebalance' && !isGuest && <RebalanceView summary={summary} holdings={holdings} exchangeRate={exchangeRate} targets={rebalanceTargets} onUpdateTargets={updateRebalanceTargets} />}
-        {view === 'help' && <HelpView 
-             onExport={handleExportData} 
-             onImport={handleImportData} 
-             onMigrateLegacy={handleMigrateLegacyData} 
-             authorizedUsers={allAuthorizedUsers} 
-             currentUser={currentUser} 
-        />}
-        
-        {view === 'history' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-2">
-              <h2 className="text-xl font-bold text-slate-800">歷史記錄 (History)</h2>
-              <div className="flex gap-2">
-                <button onClick={handleClearAllTransactions} className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700">全部刪除</button>
-                <button onClick={() => setIsImportOpen(true)} className="bg-emerald-600 text-white px-3 py-1.5 rounded text-sm hover:bg-emerald-700">匯入</button>
-                <button onClick={() => setIsFormOpen(true)} className="bg-slate-900 text-white px-3 py-1.5 rounded text-sm hover:bg-slate-800">新增</button>
-              </div>
-            </div>
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
+         {/* Page Title */}
+         <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-3 flex justify-between items-center">
+                <span>
+                  {view === 'dashboard' && '投資組合儀表板 (Dashboard)'}
+                  {view === 'history' && '交易紀錄明細 (Transactions)'}
+                  {view === 'funds' && '資金存取與管理 (Funds)'}
+                  {view === 'accounts' && '證券帳戶管理 (Accounts)'}
+                  {view === 'rebalance' && '投資組合再平衡 (Rebalance)'}
+                  {view === 'help' && '系統管理與備份 (System)'}
+                </span>
+                {/* Mobile specific Guest Button */}
+                {isGuest && (
+                   <button
+                     onClick={handleContactAdmin}
+                     className="sm:hidden px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow"
+                   >
+                     申請開通
+                   </button>
+                )}
+            </h2>
+         </div>
 
-            {/* Filter Panel */}
-            <div className="bg-white p-5 rounded-lg shadow border border-slate-200">
-               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                 <div>
-                   <label className="text-xs font-bold text-slate-500 block mb-1">帳戶 (Account)</label>
-                   <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} className="w-full border rounded p-2 text-sm">
-                     <option value="">全部帳戶</option>
-                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                   </select>
-                 </div>
-                 <div>
-                   <label className="text-xs font-bold text-slate-500 block mb-1">代號 (Ticker)</label>
-                   <input type="text" value={filterTicker} onChange={e => setFilterTicker(e.target.value)} placeholder="e.g. AAPL" className="w-full border rounded p-2 text-sm" />
-                 </div>
-                 <div>
-                   <label className="text-xs font-bold text-slate-500 block mb-1">起始日期 (From)</label>
-                   <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="w-full border rounded p-2 text-sm" />
-                 </div>
-                 <div>
-                   <label className="text-xs font-bold text-slate-500 block mb-1">結束日期 (To)</label>
-                   <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="w-full border rounded p-2 text-sm" />
-                 </div>
-               </div>
-               <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                 <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
-                    <input type="checkbox" checked={includeCashFlow} onChange={e => setIncludeCashFlow(e.target.checked)} className="rounded text-blue-600" />
-                    包含現金流紀錄 (Cash Flow)
-                 </label>
-                 <span className="text-xs text-slate-400">顯示 {filteredRecords.length} 筆</span>
-               </div>
-            </div>
+         {/* View Content */}
+         <div className="animate-fade-in">
+            {view === 'dashboard' && (
+               <Dashboard 
+                 summary={summary}
+                 holdings={holdings}
+                 chartData={chartData}
+                 assetAllocation={assetAllocation}
+                 annualPerformance={annualPerformance}
+                 accountPerformance={accountPerformance}
+                 cashFlows={cashFlows}
+                 accounts={accounts}
+                 onUpdatePrice={updatePrice}
+                 onAutoUpdate={handleAutoUpdatePrices}
+                 isGuest={isGuest}
+                 onUpdateHistorical={handleOpenHistoricalModal}
+               />
+            )}
 
-            {/* Table */}
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
-               <table className="min-w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-500 uppercase">
-                    <tr>
-                      <th className="px-4 py-3">日期</th>
-                      <th className="px-4 py-3">帳戶</th>
-                      <th className="px-4 py-3">標的/說明</th>
-                      <th className="px-4 py-3">類別</th>
-                      <th className="px-4 py-3 text-right">單價</th>
-                      <th className="px-4 py-3 text-right">數量</th>
-                      <th className="px-4 py-3 text-right">金額</th>
-                      <th className="px-4 py-3 text-right">餘額 (Balance)</th>
-                      <th className="px-4 py-3 text-right">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredRecords.length === 0 ? (
-                      <tr><td colSpan={9} className="text-center py-8 text-slate-400">無符合條件的紀錄</td></tr>
-                    ) : (
-                      filteredRecords.map(r => {
-                        const acc = accounts.find(a => a.id === r.accountId);
-                        const isIncome = r.cashImpact > 0;
-                        const isExpense = r.cashImpact < 0;
-                        
-                        let badgeClass = "bg-gray-100 text-gray-700";
-                        if (r.subType === 'BUY' || r.subType === 'WITHDRAW') badgeClass = "bg-red-50 text-red-700 border border-red-100";
-                        else if (r.subType === 'SELL' || r.subType === 'DEPOSIT' || r.subType === 'DIVIDEND' || r.subType === 'CASH_DIVIDEND') badgeClass = "bg-green-50 text-green-700 border border-green-100";
-                        else if (r.subType === 'TRANSFER' || r.subType === 'TRANSFER_IN') badgeClass = "bg-blue-50 text-blue-700 border border-blue-100";
+            {view === 'history' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
+                  <h3 className="text-lg font-bold text-slate-700">操作選項</h3>
+                  <div className="flex gap-2">
+                     <button onClick={handleClearAllTransactions} className="bg-red-50 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-100 border border-red-200">
+                        清空所有交易
+                     </button>
+                     <button onClick={() => setIsImportOpen(true)} className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded text-sm hover:bg-indigo-100 border border-indigo-200">
+                        批次匯入
+                     </button>
+                     <button onClick={() => setIsFormOpen(true)} className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 shadow-lg shadow-slate-900/20">
+                        + 記一筆
+                     </button>
+                  </div>
+                </div>
+                
+                {/* Filters */}
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end">
+                   <div>
+                     <label className="block text-xs font-bold text-slate-500 mb-1">帳戶</label>
+                     <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm w-32">
+                        <option value="">全部</option>
+                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                     </select>
+                   </div>
+                   <div>
+                     <label className="block text-xs font-bold text-slate-500 mb-1">代號</label>
+                     <input type="text" value={filterTicker} onChange={e => setFilterTicker(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm w-24 uppercase" placeholder="AAPL" />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-bold text-slate-500 mb-1">起始日</label>
+                     <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm" />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-bold text-slate-500 mb-1">結束日</label>
+                     <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm" />
+                   </div>
+                   {(filterAccount || filterTicker || filterDateFrom || filterDateTo) && (
+                      <button onClick={() => { setFilterAccount(''); setFilterTicker(''); setFilterDateFrom(''); setFilterDateTo(''); }} className="text-xs text-slate-500 underline pb-2">
+                        清除篩選
+                      </button>
+                   )}
+                </div>
 
-                        return (
-                          <tr key={`${r.type}-${r.id}`} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 whitespace-nowrap text-slate-600">{r.date}</td>
-                            <td className="px-4 py-3 text-xs text-slate-500">{acc?.name}</td>
-                            <td className="px-4 py-3 font-medium text-slate-700">
-                               {r.type === 'TRANSACTION' ? (
-                                 <>{r.market === 'US' ? '🇺🇸' : '🇹🇼'} {r.ticker}</>
-                               ) : (
-                                 <span className="text-slate-600">{r.description}</span>
-                               )}
-                            </td>
-                            <td className="px-4 py-3">
-                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
-                                 {r.subType}
+                <div className="bg-white rounded-lg shadow overflow-x-auto">
+                   <table className="min-w-full text-sm text-left">
+                     <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
+                       <tr>
+                         <th className="px-4 py-3">日期</th>
+                         <th className="px-4 py-3">市場</th>
+                         <th className="px-4 py-3">動作</th>
+                         <th className="px-4 py-3">代號</th>
+                         <th className="px-4 py-3 text-right">價格</th>
+                         <th className="px-4 py-3 text-right">數量</th>
+                         <th className="px-4 py-3 text-right">總金額</th>
+                         <th className="px-4 py-3">帳戶</th>
+                         <th className="px-4 py-3">備註</th>
+                         <th className="px-4 py-3">操作</th>
+                       </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-100">
+                       {filteredTransactions.map(tx => {
+                         const accountName = accounts.find(a => a.id === tx.accountId)?.name || 'Unknown';
+                         const currency = tx.market === Market.TW ? 'NT$' : '$';
+                         const isBuy = tx.type === TransactionType.BUY || tx.type === TransactionType.TRANSFER_IN || tx.type === TransactionType.DIVIDEND;
+                         const totalAmt = tx.amount || (tx.price * tx.quantity + (isBuy ? tx.fees : -tx.fees));
+                         
+                         return (
+                           <tr key={tx.id} className="hover:bg-slate-50">
+                             <td className="px-4 py-3 whitespace-nowrap text-slate-600">{tx.date}</td>
+                             <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tx.market === Market.US ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{tx.market}</span></td>
+                             <td className="px-4 py-3">
+                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold 
+                                 ${tx.type === TransactionType.BUY ? 'bg-red-100 text-red-700' : 
+                                   tx.type === TransactionType.SELL ? 'bg-green-100 text-green-700' : 
+                                   tx.type === TransactionType.CASH_DIVIDEND ? 'bg-yellow-100 text-yellow-700' :
+                                   'bg-slate-100 text-slate-700'}`}>
+                                 {tx.type}
                                </span>
-                            </td>
-                            <td className="px-4 py-3 text-right text-slate-500 text-xs">
-                              {r.type === 'TRANSACTION' ? r.price.toFixed(2) : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-slate-500 text-xs">
-                              {r.type === 'TRANSACTION' ? r.quantity : '-'}
-                            </td>
-                            <td className={`px-4 py-3 text-right font-bold ${isIncome ? 'text-green-600' : isExpense ? 'text-red-600' : 'text-slate-400'}`}>
-                               {r.amount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
-                            </td>
-                            <td className="px-4 py-3 text-right font-mono text-slate-700 bg-slate-50/50">
-                               {(r as any).balance.toLocaleString()}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {!(r as any).isTargetRecord && (
-                                <button onClick={() => r.type === 'TRANSACTION' ? removeTransaction(r.id) : removeCashFlow(r.id)} className="text-red-400 hover:text-red-600 text-xs">刪除</button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-               </table>
-            </div>
-          </div>
-        )}
+                             </td>
+                             <td className="px-4 py-3 font-bold text-slate-700">{tx.ticker}</td>
+                             <td className="px-4 py-3 text-right font-mono text-slate-600">{tx.price.toFixed(2)}</td>
+                             <td className="px-4 py-3 text-right font-mono text-slate-600">{tx.quantity.toLocaleString()}</td>
+                             <td className="px-4 py-3 text-right font-bold font-mono text-slate-700">{currency}{totalAmt.toLocaleString()}</td>
+                             <td className="px-4 py-3 text-slate-500 text-xs">{accountName}</td>
+                             <td className="px-4 py-3 text-slate-400 text-xs max-w-[150px] truncate" title={tx.note}>{tx.note}</td>
+                             <td className="px-4 py-3">
+                               <button onClick={() => removeTransaction(tx.id)} className="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-100 rounded hover:bg-red-50">刪除</button>
+                             </td>
+                           </tr>
+                         );
+                       })}
+                     </tbody>
+                   </table>
+                   {filteredTransactions.length === 0 && (
+                     <div className="p-8 text-center text-slate-400">
+                        沒有符合條件的交易紀錄。
+                     </div>
+                   )}
+                </div>
+              </div>
+            )}
+
+            {view === 'accounts' && (
+              <AccountManager 
+                accounts={accounts} 
+                onAdd={addAccount}
+                onDelete={removeAccount}
+              />
+            )}
+
+            {view === 'funds' && (
+              <FundManager 
+                accounts={accounts}
+                cashFlows={cashFlows}
+                onAdd={addCashFlow}
+                onBatchAdd={addBatchCashFlows}
+                onDelete={removeCashFlow}
+                currentExchangeRate={exchangeRate}
+              />
+            )}
+
+            {view === 'rebalance' && !isGuest && (
+               <RebalanceView 
+                 summary={summary}
+                 holdings={holdings}
+                 exchangeRate={exchangeRate}
+                 targets={rebalanceTargets}
+                 onUpdateTargets={updateRebalanceTargets}
+               />
+            )}
+
+            {view === 'help' && (
+               <HelpView 
+                 onExport={handleExportData} 
+                 onImport={handleImportData}
+                 authorizedUsers={GLOBAL_AUTHORIZED_USERS}
+                 currentUser={currentUser}
+               />
+            )}
+         </div>
       </main>
 
       {/* Modals */}
-      {isFormOpen && <TransactionForm accounts={accounts} onAdd={addTransaction} onClose={() => setIsFormOpen(false)} />}
-      {isImportOpen && <BatchImportModal accounts={accounts} onImport={addBatchTransactions} onClose={() => setIsImportOpen(false)} />}
-      
-      {isHistoricalModalOpen && (
-        <HistoricalDataModal 
-          transactions={transactions} 
-          cashFlows={cashFlows}
-          accounts={accounts}
-          historicalData={historicalData} 
-          onSave={handleSaveHistoricalData} 
-          onClose={() => setIsHistoricalModalOpen(false)} 
+      {isFormOpen && (
+        <TransactionForm 
+          accounts={accounts} 
+          onAdd={addTransaction} 
+          onClose={() => setIsFormOpen(false)} 
         />
       )}
-
+      {isImportOpen && (
+        <BatchImportModal 
+          accounts={accounts} 
+          onImport={addBatchTransactions} 
+          onClose={() => setIsImportOpen(false)} 
+        />
+      )}
+      {isHistoricalModalOpen && (
+        <HistoricalDataModal
+          transactions={transactions}
+          cashFlows={cashFlows}
+          accounts={accounts}
+          historicalData={historicalData}
+          onSave={handleSaveHistoricalData}
+          onClose={() => setIsHistoricalModalOpen(false)}
+        />
+      )}
       {isDeleteConfirmOpen && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm">
-             <h3 className="font-bold text-lg mb-2">確認刪除所有紀錄？</h3>
-             <p className="text-slate-600 text-sm mb-4">此動作無法復原。</p>
-             <div className="flex justify-end gap-2">
-               <button onClick={cancelDeleteAllTransactions} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">取消</button>
-               <button onClick={confirmDeleteAllTransactions} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">確認刪除</button>
-             </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+           <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
+              <h3 className="text-lg font-bold text-red-600 mb-2">確認清空所有交易？</h3>
+              <p className="text-slate-600 mb-6">此操作無法復原，請確認您已備份資料。</p>
+              <div className="flex justify-end gap-3">
+                 <button onClick={cancelDeleteAllTransactions} className="px-4 py-2 rounded border hover:bg-slate-50">取消</button>
+                 <button onClick={confirmDeleteAllTransactions} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">確認清空</button>
+              </div>
            </div>
-         </div>
+        </div>
       )}
-      
-      {/* 新增：單筆交易刪除確認視窗 */}
       {isTransactionDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm">
-             <h3 className="font-bold text-lg mb-2">確認刪除此筆交易？</h3>
-             <p className="text-slate-600 text-sm mb-4">此動作無法復原。</p>
-             <div className="flex justify-end gap-2">
-               <button onClick={() => setIsTransactionDeleteConfirmOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">取消</button>
-               <button onClick={confirmRemoveTransaction} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">確認刪除</button>
-             </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+           <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
+              <h3 className="text-lg font-bold text-slate-800 mb-2">刪除交易</h3>
+              <p className="text-slate-600 mb-6">確定要刪除這筆交易紀錄嗎？</p>
+              <div className="flex justify-end gap-3">
+                 <button onClick={() => setIsTransactionDeleteConfirmOpen(false)} className="px-4 py-2 rounded border hover:bg-slate-50">取消</button>
+                 <button onClick={confirmRemoveTransaction} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">刪除</button>
+              </div>
            </div>
-         </div>
+        </div>
       )}
 
+      {/* Global Alert Dialog */}
       {alertDialog.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
-             <h3 className="font-bold text-lg mb-2">{alertDialog.title}</h3>
-             <p className="text-slate-600 mb-4">{alertDialog.message}</p>
-             <button onClick={closeAlert} className="px-6 py-2 bg-slate-900 text-white rounded hover:bg-slate-800">確定</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+            <h3 className={`text-lg font-bold mb-2 ${alertDialog.type === 'error' ? 'text-red-600' : alertDialog.type === 'success' ? 'text-green-600' : 'text-slate-800'}`}>
+              {alertDialog.title}
+            </h3>
+            <p className="text-slate-600 mb-6 whitespace-pre-line">{alertDialog.message}</p>
+            <button onClick={closeAlert} className="bg-slate-900 text-white px-6 py-2 rounded hover:bg-slate-800">
+              確定
+            </button>
           </div>
         </div>
       )}
