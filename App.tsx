@@ -132,12 +132,12 @@ const App: React.FC = () => {
       return;
     }
 
-    showAlert("此 Email 未獲授權。請使用「訪客試用」登入，或聯繫管理員將您的 Email 加入設定檔。", "權限不足", "error");
+    showAlert("此 Email 未獲授權。請使用「非會員試用」登入，或聯繫管理員將您的 Email 加入設定檔。", "權限不足", "error");
   };
 
   const handleGuestLogin = () => {
     loginSuccess('Guest', true);
-    showAlert("已進入訪客模式。部分進階功能 (圖表、再平衡) 將受限。", "訪客登入", "info");
+    showAlert("已進入非會員模式。部分進階功能 (圖表、再平衡) 將受限。", "非會員登入", "info");
   };
 
   const loginSuccess = (user: string, isGuestUser: boolean) => {
@@ -655,7 +655,7 @@ const App: React.FC = () => {
              </div>
            </div>
            <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded font-bold mt-6">登入</button>
-           <button type="button" onClick={handleGuestLogin} className="w-full bg-white border mt-4 py-3 rounded text-slate-700 font-bold">訪客試用</button>
+           <button type="button" onClick={handleGuestLogin} className="w-full bg-white border mt-4 py-3 rounded text-slate-700 font-bold">非會員試用</button>
         </form>
       </div>
     );
