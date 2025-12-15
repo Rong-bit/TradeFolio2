@@ -33,8 +33,6 @@ window.alert = function(message?: string): void {
 };
 
 const App: React.FC = () => {
-  const allAuthorizedUsers = useMemo(() => [ADMIN_EMAIL, ...GLOBAL_AUTHORIZED_USERS], []);
-
   useEffect(() => {
     globalSetDebugLogs = setDebugLogs;
     setDebugLogs([...globalDebugLogs]);
@@ -130,28 +128,9 @@ const App: React.FC = () => {
       return;
     }
 
-    // 3. Unauthorized
-    showAlert("此 Email 未獲授權。請使用下方「非會員登入 (註冊)」按鈕，即可先以受限模式登入並通知管理員。", "權限不足", "error");
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = loginEmail.trim();
-    if (!email) return showAlert("請先輸入您的 Email 才能進行非會員登入", "錯誤", "error");
-
-    if (allAuthorizedUsers.includes(email)) {
-        loginSuccess(email, false);
-        showAlert("您的 Email 已在授權名單中，已直接為您登入。", "提示", "success");
-        return;
-    }
-
-    // 1. 先執行登入，確保 UI 立即有反應 (解決無反應問題)
+    // 3. Unauthorized - Guest Login
     loginSuccess(email, true);
-    
-    // 2. 顯示提示
     showAlert("已為您登入「非會員模式」。\n\n您尚未註冊，若需開通會員模式，請按'申請開通'發送申請信通知管理員開通權限。", "登入成功", "info");
-
-    // 3. 自動開啟 Mailto 已移除，改由用戶手動點擊申請
   };
 
   const handleContactAdmin = () => {
@@ -479,29 +458,12 @@ const App: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500">或是</span>
-                </div>
+            <div className="mt-8">
+              <div className="p-4 bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-lg text-center">
+                  <p className="text-sm font-bold text-indigo-800">
+                      資料都在個人電腦與手機，系統不涉及個資問題，記得定時備份。
+                  </p>
               </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3">
-                 <button 
-                   onClick={handleRegister}
-                   className="w-full flex justify-center py-3 px-4 border border-indigo-200 rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                 >
-                   非會員登入 (註冊)
-                 </button>
-              </div>
-              <p className="mt-4 text-xs text-center text-slate-400">
-                  非會員登入將使用瀏覽器暫存功能，清除快取可能會遺失資料。
-                  <br/>
-                  註冊將發送 Email 通知管理員。
-              </p>
             </div>
           </div>
         </div>
@@ -893,3 +855,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
