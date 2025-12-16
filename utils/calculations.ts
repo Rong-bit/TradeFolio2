@@ -72,7 +72,13 @@ export const calculateHoldings = (
      } else if (tx.type === TransactionType.SELL || tx.type === TransactionType.TRANSFER_OUT) {
        if (h.quantity > 0) {
          const ratio = tx.quantity / h.quantity;
-         const costOfSold = h.totalCost * ratio;
+         let costOfSold = h.totalCost * ratio;
+         
+         // 修正邏輯：若是台股，將扣除的成本進行四捨五入取整，確保剩餘總成本為整數
+         if (tx.market === Market.TW) {
+            costOfSold = Math.round(costOfSold);
+         }
+
          h.totalCost -= costOfSold;
          h.quantity -= tx.quantity;
          
@@ -99,7 +105,13 @@ export const calculateHoldings = (
     .map(h => {
       const priceKey = `${h.market}-${h.ticker}`;
       const currentPrice = currentPrices[priceKey] || h.avgCost;
-      const currentValue = currentPrice * h.quantity;
+      
+      // 策略更新：若是台股，市值(CurrentValue)四捨五入取整；美股則保留運算精確度
+      let currentValue = currentPrice * h.quantity;
+      if (h.market === Market.TW) {
+        currentValue = Math.round(currentValue);
+      }
+
       const unrealizedPL = currentValue - h.totalCost;
       const unrealizedPLPercent = h.totalCost > 0 ? (unrealizedPL / h.totalCost) * 100 : 0;
       
@@ -339,7 +351,8 @@ export const generateAdvancedChartData = (
                   if (market === Market.US) {
                       stockValueTWD += qty * price * histRate;
                   } else {
-                      stockValueTWD += qty * price;
+                      // TWD: Round the value
+                      stockValueTWD += Math.round(qty * price);
                   }
               }
           });
@@ -393,11 +406,16 @@ export const formatCurrency = (val: number, currency: string) => {
       }).format(val);
     }
 
+    // Hybrid Strategy:
+    // USD: 2 decimals
+    // TWD: 0 decimals
+    const isUSD = currency === 'USD';
+
     return new Intl.NumberFormat('zh-TW', {
       style: 'currency',
       currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: isUSD ? 2 : 0,
+      maximumFractionDigits: isUSD ? 2 : 0,
     }).format(val);
   } catch (error) {
     return val.toLocaleString();
