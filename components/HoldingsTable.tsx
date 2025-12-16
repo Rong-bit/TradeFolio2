@@ -225,7 +225,12 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
 
                     {/* 11. Avg Cost */}
                     <td className="px-4 py-3 text-right text-slate-500 text-xs">
-                       {formatCurrency(h.avgCost, currency)}
+                       {new Intl.NumberFormat('zh-TW', { 
+                          style: 'currency', 
+                          currency: currency, 
+                          minimumFractionDigits: 2, 
+                          maximumFractionDigits: 2 
+                       }).format(h.avgCost)}
                     </td>
                   </tr>
                 );
