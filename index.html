@@ -7,6 +7,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- 禁止 iOS/Android 自動將數字辨識為電話號碼 -->
+    <meta name="format-detection" content="telephone=no" />
     <!-- 修改為相對路徑，確保在子目錄下能讀取 -->
     <link rel="manifest" href="./manifest.json" />
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3314/3314353.png">
@@ -42,11 +44,9 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-slate-50 text-slate-900 antialiased">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>
