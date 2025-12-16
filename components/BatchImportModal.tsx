@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Account, Market, Transaction, TransactionType } from '../types';
@@ -237,11 +236,16 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
         let finalAmount = 0;
         // 檢查是否提供了金額欄位（不為0且有效）
         if (amountVal !== 0 && !isNaN(amountVal)) {
-          // 如果提供了金額欄位，使用其絕對值（因為買入時可能是負數）
+          // 如果提供了金額欄位，使用其絕對值
           finalAmount = Math.abs(amountVal);
         } else {
-          // 如果沒有提供金額欄位，則計算：價格 × 數量 + 手續費
-          finalAmount = priceVal * quantityVal + feesVal;
+          // 如果沒有提供金額欄位，則計算
+          let baseVal = priceVal * quantityVal;
+          // 台股邏輯：無條件捨去
+          if (market === Market.TW) {
+              baseVal = Math.floor(baseVal);
+          }
+          finalAmount = baseVal + feesVal;
         }
         
         transactions.push({
