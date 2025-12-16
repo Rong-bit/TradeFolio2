@@ -831,7 +831,7 @@ const App: React.FC = () => {
 
             {view === 'accounts' && (
               <AccountManager 
-                accounts={accounts} 
+                accounts={computedAccounts} 
                 onAdd={addAccount}
                 onDelete={removeAccount}
               />
