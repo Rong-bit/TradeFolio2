@@ -127,7 +127,10 @@ const Dashboard: React.FC<Props> = ({
           <p className="text-2xl font-bold text-slate-800 mt-2">
             {formatCurrency(summary.totalValueTWD + summary.cashBalanceTWD, 'TWD')}
           </p>
-          <p className="text-xs text-slate-400 mt-1">含現金: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
+          <div className="flex justify-between items-end mt-1">
+             <p className="text-xs text-slate-400">含現金: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
+             <p className="text-[10px] text-slate-300">匯率: {summary.exchangeRateUsdToTwd}</p>
+          </div>
         </div>
         <div className={`bg-white p-6 rounded-xl shadow border-l-4 ${summary.totalPLTWD >= 0 ? 'border-success' : 'border-danger'}`}>
           <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">總損益 (Total P/L)</h4>
@@ -540,3 +543,4 @@ const Dashboard: React.FC<Props> = ({
 };
 
 export default Dashboard;
+
