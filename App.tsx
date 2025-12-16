@@ -258,6 +258,11 @@ const App: React.FC = () => {
     setCashFlows(prev => prev.filter(c => c.id !== id));
     showAlert(`現金流紀錄已刪除`, "刪除成功", "success");
   };
+  
+  const handleClearAllCashFlows = () => {
+     setCashFlows([]);
+     showAlert("✅ 成功清空所有資金紀錄！", "刪除成功", "success");
+  };
 
   const updatePrice = (key: string, price: number) => setCurrentPrices(prev => ({ ...prev, [key]: price }));
   const updateRebalanceTargets = (newTargets: Record<string, number>) => setRebalanceTargets(newTargets);
@@ -844,6 +849,7 @@ const App: React.FC = () => {
                 onAdd={addCashFlow}
                 onBatchAdd={addBatchCashFlows}
                 onDelete={removeCashFlow}
+                onClearAll={handleClearAllCashFlows}
                 currentExchangeRate={exchangeRate}
               />
             )}
