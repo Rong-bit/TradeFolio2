@@ -73,6 +73,7 @@ const App: React.FC = () => {
   const [filterTicker, setFilterTicker] = useState<string>('');
   const [filterDateFrom, setFilterDateFrom] = useState<string>('');
   const [filterDateTo, setFilterDateTo] = useState<string>('');
+  const [includeCashFlow, setIncludeCashFlow] = useState<boolean>(true);
 
   // --- HelpView Confirm Override ---
   useEffect(() => {
@@ -479,16 +480,225 @@ const App: React.FC = () => {
   const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
   const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate]);
 
-  // --- Filtering ---
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const matchAccount = filterAccount ? t.accountId === filterAccount : true;
-      const matchTicker = filterTicker ? t.ticker.includes(filterTicker.toUpperCase()) : true;
-      const matchDateFrom = filterDateFrom ? t.date >= filterDateFrom : true;
-      const matchDateTo = filterDateTo ? t.date <= filterDateTo : true;
-      return matchAccount && matchTicker && matchDateFrom && matchDateTo;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, filterAccount, filterTicker, filterDateFrom, filterDateTo]);
+  // --- Filtering & Balance Calculation Logic (Merged) ---
+  const combinedRecords = useMemo(() => {
+    // 1. Transform Transactions
+    const transactionRecords = transactions.map(tx => {
+      let calculatedAmount = 0;
+      if ((tx as any).amount !== undefined && (tx as any).amount !== null) {
+        calculatedAmount = (tx as any).amount;
+      } else {
+        if (tx.type === TransactionType.BUY || tx.type === TransactionType.TRANSFER_OUT) {
+          calculatedAmount = tx.price * tx.quantity + (tx.fees || 0);
+        } else if (tx.type === TransactionType.SELL) {
+          calculatedAmount = tx.price * tx.quantity - (tx.fees || 0);
+        } else {
+          calculatedAmount = tx.price * tx.quantity;
+        }
+      }
+      return {
+        id: tx.id,
+        date: tx.date,
+        accountId: tx.accountId,
+        type: 'TRANSACTION' as const,
+        subType: tx.type,
+        ticker: tx.ticker,
+        market: tx.market,
+        price: tx.price,
+        quantity: tx.quantity,
+        amount: calculatedAmount,
+        fees: tx.fees || 0,
+        description: `${tx.market}-${tx.ticker}`,
+        originalRecord: tx
+      };
+    });
+
+    // 2. Transform Cash Flows
+    const cashFlowRecords: any[] = [];
+    cashFlows.forEach(cf => {
+      cashFlowRecords.push({
+        id: cf.id,
+        date: cf.date,
+        accountId: cf.accountId,
+        type: 'CASHFLOW' as const,
+        subType: cf.type,
+        ticker: '',
+        market: '',
+        price: 0,
+        quantity: 0,
+        amount: cf.amount,
+        fees: 0,
+        description: cf.note || cf.type,
+        originalRecord: cf,
+        targetAccountId: cf.targetAccountId,
+        exchangeRate: cf.exchangeRate,
+        isSourceRecord: true
+      });
+      
+      if (cf.type === 'TRANSFER' && cf.targetAccountId) {
+        const targetAmount = cf.exchangeRate ? cf.amount * cf.exchangeRate : cf.amount;
+        cashFlowRecords.push({
+          id: `${cf.id}-target`,
+          date: cf.date,
+          accountId: cf.targetAccountId,
+          type: 'CASHFLOW' as const,
+          subType: 'TRANSFER_IN' as const,
+          ticker: '',
+          market: '',
+          price: 0,
+          quantity: 0,
+          amount: targetAmount,
+          fees: 0,
+          description: `轉入自 ${accounts.find(a => a.id === cf.accountId)?.name || '未知帳戶'}`,
+          originalRecord: cf,
+          sourceAccountId: cf.accountId,
+          exchangeRate: cf.exchangeRate,
+          isTargetRecord: true
+        });
+      }
+    });
+
+    // 3. Sorting Function for Display (Date Descending)
+    const displayOrderRecords = [...transactionRecords, ...cashFlowRecords].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      
+      const getDisplayTypeOrder = (record: any) => {
+        if (record.type === 'CASHFLOW') {
+          if (record.subType === 'WITHDRAW') return 1;
+          if (record.subType === 'TRANSFER') return 1;
+          if (record.subType === 'INTEREST') return 3;
+          if (record.subType === 'DEPOSIT') return 5;
+          if (record.subType === 'TRANSFER_IN') return 5;
+        }
+        if (record.type === 'TRANSACTION') {
+          if (record.subType === 'BUY') return 2;
+          if (record.subType === 'CASH_DIVIDEND' || record.subType === 'DIVIDEND') return 3;
+          if (record.subType === 'INTEREST') return 3;
+          if (record.subType === 'SELL') return 4;
+        }
+        return 6;
+      };
+      
+      const orderA = getDisplayTypeOrder(a);
+      const orderB = getDisplayTypeOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      
+      const getNumericId = (id: string) => {
+        const match = id.match(/\d+/);
+        return match ? parseInt(match[0]) : 0;
+      };
+      return getNumericId(a.id.toString()) - getNumericId(b.id.toString());
+    });
+
+    // 4. Calculate Balance Changes
+    const calculateBalanceChange = (record: any) => {
+      let balanceChange = 0;
+      if (record.type === 'TRANSACTION') {
+        const tx = record.originalRecord as Transaction;
+        const recordAmount = record.amount;
+        if (tx.type === TransactionType.BUY) balanceChange = -recordAmount;
+        else if (tx.type === TransactionType.SELL) balanceChange = recordAmount;
+        else if (tx.type === TransactionType.CASH_DIVIDEND) balanceChange = recordAmount;
+        else if (tx.type === TransactionType.DIVIDEND) balanceChange = 0;
+        else if (tx.type === TransactionType.TRANSFER_IN) balanceChange = -record.fees; // Only fees affect cash for stock transfer
+        else if (tx.type === TransactionType.TRANSFER_OUT) balanceChange = -record.fees; // Only fees affect cash for stock transfer
+      } else if (record.type === 'CASHFLOW') {
+        if (record.subType === 'DEPOSIT') balanceChange = record.amount;
+        else if (record.subType === 'WITHDRAW') balanceChange = -record.amount;
+        else if (record.subType === 'TRANSFER') balanceChange = -record.amount;
+        else if (record.subType === 'TRANSFER_IN') balanceChange = record.amount;
+        else if (record.subType === 'INTEREST') balanceChange = record.amount;
+      }
+      return balanceChange;
+    };
+    
+    // 5. Calculate Running Balances (Time Ascending)
+    const timeOrderRecords = [...displayOrderRecords].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      
+      const getCalculationTypeOrder = (record: any) => {
+        if (record.type === 'CASHFLOW') {
+          if (record.subType === 'DEPOSIT') return 1;
+          if (record.subType === 'TRANSFER_IN') return 1;
+          if (record.subType === 'INTEREST') return 2;
+          if (record.subType === 'WITHDRAW') return 5;
+          if (record.subType === 'TRANSFER') return 5;
+        }
+        if (record.type === 'TRANSACTION') {
+          if (record.subType === 'CASH_DIVIDEND' || record.subType === 'DIVIDEND') return 2;
+          if (record.subType === 'INTEREST') return 2;
+          if (record.subType === 'SELL') return 3;
+          if (record.subType === 'BUY') return 4;
+        }
+        return 6;
+      };
+      const orderA = getCalculationTypeOrder(a);
+      const orderB = getCalculationTypeOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      
+      const getNumericId = (id: string) => {
+        const match = id.match(/\d+/);
+        return match ? parseInt(match[0]) : 0;
+      };
+      return getNumericId(b.id.toString()) - getNumericId(a.id.toString());
+    });
+    
+    const accountBalances: Record<string, number> = {};
+    const balanceMap = new Map<string, number>();
+    
+    timeOrderRecords.forEach(record => {
+      const accountId = record.accountId;
+      const balanceChange = calculateBalanceChange(record);
+      if (!(accountId in accountBalances)) accountBalances[accountId] = 0;
+      accountBalances[accountId] += balanceChange;
+      balanceMap.set(record.id, accountBalances[accountId]);
+    });
+    
+    // 6. Map balances back to display records
+    return displayOrderRecords.map(record => ({
+      ...record,
+      balance: balanceMap.get(record.id) || 0,
+      balanceChange: calculateBalanceChange(record)
+    }));
+
+  }, [transactions, cashFlows, accounts]); // Added accounts dependency
+
+  const filteredRecords = useMemo(() => {
+    // 使用 combinedRecords 的結果進行過濾，保留其已計算好的正確餘額與排序
+    return combinedRecords.filter(record => {
+      // 1. Account Filter
+      if (filterAccount && record.accountId !== filterAccount) return false;
+      
+      // 2. Cash Flow Filter
+      if (!includeCashFlow && record.type === 'CASHFLOW') return false;
+      
+      // 3. Ticker Filter
+      if (filterTicker && record.type === 'TRANSACTION') {
+        if (!record.ticker.toLowerCase().includes(filterTicker.toLowerCase())) return false;
+      }
+      
+      // 4. Date Filter
+      if (filterDateFrom || filterDateTo) {
+         const recordDate = new Date(record.date);
+         if (filterDateFrom && recordDate < new Date(filterDateFrom)) return false;
+         if (filterDateTo && recordDate > new Date(filterDateTo)) return false;
+      }
+      
+      return true;
+    });
+  }, [combinedRecords, filterAccount, filterTicker, filterDateFrom, filterDateTo, includeCashFlow]);
+
+  const clearFilters = () => {
+    setFilterAccount('');
+    setFilterTicker('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setIncludeCashFlow(true);
+  };
 
   // --- View Logic (Guest vs Member) ---
   const availableViews: View[] = isGuest 
@@ -693,7 +903,7 @@ const App: React.FC = () => {
             <h2 className="text-2xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-3 flex justify-between items-center">
                 <span>
                   {view === 'dashboard' && '投資組合儀表板 (Dashboard)'}
-                  {view === 'history' && '交易紀錄明細 (Transactions)'}
+                  {view === 'history' && '歷史記錄（交易 + 資金流動）'}
                   {view === 'funds' && '資金存取與管理 (Funds)'}
                   {view === 'accounts' && '證券帳戶管理 (Accounts)'}
                   {view === 'rebalance' && '投資組合再平衡 (Rebalance)'}
@@ -722,7 +932,7 @@ const App: React.FC = () => {
                  annualPerformance={annualPerformance}
                  accountPerformance={accountPerformance}
                  cashFlows={cashFlows}
-                 accounts={accounts}
+                 accounts={computedAccounts}
                  onUpdatePrice={updatePrice}
                  onAutoUpdate={handleAutoUpdatePrices}
                  isGuest={isGuest}
@@ -747,32 +957,140 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Filters */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end">
-                   <div>
-                     <label className="block text-xs font-bold text-slate-500 mb-1">帳戶</label>
-                     <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm w-32">
-                        <option value="">全部</option>
-                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                     </select>
-                   </div>
-                   <div>
-                     <label className="block text-xs font-bold text-slate-500 mb-1">代號</label>
-                     <input type="text" value={filterTicker} onChange={e => setFilterTicker(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm w-24 uppercase" placeholder="AAPL" />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-bold text-slate-500 mb-1">起始日</label>
-                     <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm" />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-bold text-slate-500 mb-1">結束日</label>
-                     <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm" />
-                   </div>
-                   {(filterAccount || filterTicker || filterDateFrom || filterDateTo) && (
-                      <button onClick={() => { setFilterAccount(''); setFilterTicker(''); setFilterDateFrom(''); setFilterDateTo(''); }} className="text-xs text-slate-500 underline pb-2">
-                        清除篩選
+                {/* 篩選器區域 */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-800">查詢/篩選</h3>
+                    <button 
+                      onClick={clearFilters}
+                      className="text-sm text-slate-500 hover:text-slate-700 underline"
+                    >
+                      清除所有篩選
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 帳戶篩選 */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        帳戶篩選 (Filter by Account)
+                      </label>
+                      <select
+                        value={filterAccount}
+                        onChange={(e) => setFilterAccount(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="">所有帳戶</option>
+                        {accounts.map(account => (
+                          <option key={account.id} value={account.id}>
+                            {account.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 股票代號篩選 */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        股票代號篩選 (以股票代號篩選)
+                      </label>
+                      <input
+                        type="text"
+                        value={filterTicker}
+                        onChange={(e) => setFilterTicker(e.target.value)}
+                        placeholder="例如: 0050, AAPL"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </div>
+
+                    {/* 開始日期 */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        開始日期 (依日期篩選)
+                      </label>
+                      <input
+                        type="date"
+                        value={filterDateFrom}
+                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </div>
+
+                    {/* 結束日期 */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        結束日期
+                      </label>
+                      <input
+                        type="date"
+                        value={filterDateTo}
+                        onChange={(e) => setFilterDateTo(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* 現金流勾選區域 */}
+                  <div className="pt-4 border-t border-slate-200">
+                    <div className="flex items-center space-x-3">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includeCashFlow}
+                          onChange={(e) => setIncludeCashFlow(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <span className="ml-2 text-sm font-medium text-slate-700">
+                          包含現金流記錄 (資金管理)
+                        </span>
+                      </label>
+                      <div className="text-xs text-slate-500">
+                        勾選後會顯示資金匯入、提取、轉帳等記錄，方便查看餘額變化
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 篩選結果統計 */}
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                    <div className="text-sm text-slate-600">
+                      顯示 <span className="font-semibold text-slate-800">{filteredRecords.length}</span> 筆記錄
+                      {filteredRecords.length !== combinedRecords.length && (
+                        <span className="text-slate-500">
+                          （共 {combinedRecords.length} 筆：{transactions.length} 筆交易{includeCashFlow ? ` + ${cashFlows.length} 筆現金流` : ''}）
+                        </span>
+                      )}
+                      {!includeCashFlow && cashFlows.length > 0 && (
+                        <span className="text-amber-600 ml-2">
+                          （已隱藏 {cashFlows.length} 筆現金流記錄）
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* 快速篩選按鈕 */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const thirtyDaysAgo = new Date();
+                          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                          setFilterDateFrom(thirtyDaysAgo.toISOString().split('T')[0]);
+                          setFilterDateTo(new Date().toISOString().split('T')[0]);
+                        }}
+                        className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition"
+                      >
+                        最近30天
                       </button>
-                   )}
+                      <button
+                        onClick={() => {
+                          const currentYear = new Date().getFullYear();
+                          setFilterDateFrom(`${currentYear}-01-01`);
+                          setFilterDateTo(`${currentYear}-12-31`);
+                        }}
+                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
+                      >
+                        今年
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-white rounded-lg shadow overflow-x-auto">
@@ -780,54 +1098,126 @@ const App: React.FC = () => {
                      <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
                        <tr>
                          <th className="px-4 py-3">日期</th>
-                         <th className="px-4 py-3">市場</th>
-                         <th className="px-4 py-3">動作</th>
-                         <th className="px-4 py-3">代號</th>
-                         <th className="px-4 py-3 text-right">價格</th>
-                         <th className="px-4 py-3 text-right">數量</th>
-                         <th className="px-4 py-3 text-right">總金額</th>
                          <th className="px-4 py-3">帳戶</th>
-                         <th className="px-4 py-3">備註</th>
-                         <th className="px-4 py-3">操作</th>
+                         <th className="px-4 py-3">標的/描述</th>
+                         <th className="px-4 py-3">類別</th>
+                         <th className="px-4 py-3 text-right">單價</th>
+                         <th className="px-4 py-3 text-right">數量</th>
+                         <th className="px-4 py-3 text-right">金額</th>
+                         <th className="px-4 py-3 text-right">餘額</th>
+                         <th className="px-4 py-3 text-right">操作</th>
                        </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-100">
-                       {filteredTransactions.map(tx => {
-                         const accountName = accounts.find(a => a.id === tx.accountId)?.name || 'Unknown';
-                         const currency = tx.market === Market.TW ? 'NT$' : '$';
-                         const isBuy = tx.type === TransactionType.BUY || tx.type === TransactionType.TRANSFER_IN || tx.type === TransactionType.DIVIDEND;
-                         const totalAmt = tx.amount || (tx.price * tx.quantity + (isBuy ? tx.fees : -tx.fees));
+                       {filteredRecords.map(record => {
+                         const accName = accounts.find(a => a.id === record.accountId)?.name;
                          
+                         // 根據記錄類型設定徽章顏色
+                         let badgeColor = 'bg-gray-100 text-gray-700';
+                         let displayType: string = record.subType;
+                         
+                         if (record.type === 'TRANSACTION') {
+                           if(record.subType === TransactionType.BUY) badgeColor = 'bg-red-100 text-red-700';
+                           else if(record.subType === TransactionType.SELL) badgeColor = 'bg-green-100 text-green-700';
+                           else if(record.subType === TransactionType.DIVIDEND || record.subType === TransactionType.CASH_DIVIDEND) badgeColor = 'bg-yellow-100 text-yellow-700';
+                           else if(record.subType === TransactionType.TRANSFER_IN) badgeColor = 'bg-blue-100 text-blue-700';
+                           else if(record.subType === TransactionType.TRANSFER_OUT) badgeColor = 'bg-orange-100 text-orange-700';
+                         } else if (record.type === 'CASHFLOW') {
+                           if(record.subType === 'DEPOSIT') {
+                             badgeColor = 'bg-emerald-100 text-emerald-700';
+                             displayType = '資金匯入';
+                           } else if(record.subType === 'WITHDRAW') {
+                             badgeColor = 'bg-red-100 text-red-700';
+                             displayType = '資金提取';
+                           } else if(record.subType === 'TRANSFER') {
+                             badgeColor = 'bg-purple-100 text-purple-700';
+                             displayType = '帳戶轉出';
+                           } else if(record.subType === 'TRANSFER_IN') {
+                             badgeColor = 'bg-blue-100 text-blue-700';
+                             displayType = '帳戶轉入';
+                           }
+                         }
+                         
+                         // 取得目標帳戶名稱（用於轉帳）
+                         let targetAccName = null;
+                         if (record.type === 'CASHFLOW') {
+                           if (record.subType === 'TRANSFER' && record.targetAccountId) {
+                             targetAccName = accounts.find(a => a.id === record.targetAccountId)?.name;
+                           } else if (record.subType === 'TRANSFER_IN' && (record as any).sourceAccountId) {
+                             targetAccName = accounts.find(a => a.id === (record as any).sourceAccountId)?.name;
+                           }
+                         }
+
                          return (
-                           <tr key={tx.id} className="hover:bg-slate-50">
-                             <td className="px-4 py-3 whitespace-nowrap text-slate-600">{tx.date}</td>
-                             <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tx.market === Market.US ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{tx.market}</span></td>
+                           <tr key={`${record.type}-${record.id}`} className="hover:bg-slate-50">
+                             <td className="px-4 py-3 whitespace-nowrap text-slate-600">{record.date}</td>
+                             <td className="px-4 py-3 text-slate-500 text-xs">{accName}</td>
+                             <td className="px-4 py-3 font-semibold text-slate-700">
+                                {record.type === 'TRANSACTION' ? (
+                                  <><span className="text-xs text-slate-400 mr-1">{record.market}</span>{record.ticker}</>
+                                ) : (
+                                  <span className="text-slate-600">
+                                    {record.description}
+                                    {targetAccName && record.subType === 'TRANSFER' && <span className="text-xs text-slate-400 ml-1">→ {targetAccName}</span>}
+                                    {targetAccName && record.subType === 'TRANSFER_IN' && <span className="text-xs text-slate-400 ml-1">← {targetAccName}</span>}
+                                  </span>
+                                )}
+                             </td>
                              <td className="px-4 py-3">
-                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold 
-                                 ${tx.type === TransactionType.BUY ? 'bg-red-100 text-red-700' : 
-                                   tx.type === TransactionType.SELL ? 'bg-green-100 text-green-700' : 
-                                   tx.type === TransactionType.CASH_DIVIDEND ? 'bg-yellow-100 text-yellow-700' :
-                                   'bg-slate-100 text-slate-700'}`}>
-                                 {tx.type}
+                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badgeColor}`}>
+                                 {displayType}
                                </span>
                              </td>
-                             <td className="px-4 py-3 font-bold text-slate-700">{tx.ticker}</td>
-                             <td className="px-4 py-3 text-right font-mono text-slate-600">{tx.price.toFixed(2)}</td>
-                             <td className="px-4 py-3 text-right font-mono text-slate-600">{tx.quantity.toLocaleString()}</td>
-                             <td className="px-4 py-3 text-right font-bold font-mono text-slate-700">{currency}{totalAmt.toLocaleString()}</td>
-                             <td className="px-4 py-3 text-slate-500 text-xs">{accountName}</td>
-                             <td className="px-4 py-3 text-slate-400 text-xs max-w-[150px] truncate" title={tx.note}>{tx.note}</td>
-                             <td className="px-4 py-3">
-                               <button onClick={() => removeTransaction(tx.id)} className="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-100 rounded hover:bg-red-50">刪除</button>
+                             <td className="px-4 py-3 text-right font-mono text-slate-600">
+                               {record.type === 'TRANSACTION' ? record.price.toFixed(2) : 
+                                record.type === 'CASHFLOW' && record.exchangeRate ? record.exchangeRate : '-'}
+                             </td>
+                             <td className="px-4 py-3 text-right font-mono text-slate-600">
+                               {record.type === 'TRANSACTION' ? record.quantity.toLocaleString() : '-'}
+                             </td>
+                             <td className="px-4 py-3 text-right font-bold font-mono text-slate-700">
+                               {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
+                             </td>
+                             <td className="px-4 py-3 text-right">
+                                <div className="flex flex-col items-end">
+                                  <span className={`font-medium ${
+                                    (record as any).balance >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {(record as any).balance?.toFixed(2) || '0.00'}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
+                                    {accounts.find(a => a.id === record.accountId)?.currency || 'TWD'}
+                                  </span>
+                                </div>
+                             </td>
+                             <td className="px-4 py-3 text-right">
+                                {!(record.type === 'CASHFLOW' && (record as any).isTargetRecord) && (
+                                  <button onClick={() => {
+                                    if (record.type === 'TRANSACTION') {
+                                      removeTransaction(record.id);
+                                    } else {
+                                      const originalId = (record as any).isSourceRecord ? record.id : record.id.replace('-target', '');
+                                      removeCashFlow(originalId);
+                                    }
+                                  }} className="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-100 rounded hover:bg-red-50">刪除</button>
+                                )}
                              </td>
                            </tr>
                          );
                        })}
                      </tbody>
                    </table>
-                   {filteredTransactions.length === 0 && (
+                   {filteredRecords.length === 0 && (
                      <div className="p-8 text-center text-slate-400">
-                        沒有符合條件的交易紀錄。
+                        {transactions.length === 0 ? (
+                           <div>
+                              <p className="text-lg font-medium text-slate-500 mb-2">尚無交易記錄</p>
+                           </div>
+                        ) : (
+                           <div>
+                              <p className="text-lg font-medium text-slate-500 mb-2">找不到符合條件的交易</p>
+                           </div>
+                        )}
                      </div>
                    )}
                 </div>
@@ -944,5 +1334,4 @@ const App: React.FC = () => {
 };
 
 export default App;
-
 
