@@ -154,6 +154,13 @@ const FundManager: React.FC<Props> = ({
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [cashFlows, filterAccount, filterType, filterDateFrom, filterDateTo]);
 
+  const clearFilters = () => {
+    setFilterAccount('');
+    setFilterType('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+  };
+
   return (
     <div className="space-y-6">
       
@@ -174,37 +181,113 @@ const FundManager: React.FC<Props> = ({
       </div>
 
       {/* 2. Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end">
-         <div>
-           <label className="block text-xs font-bold text-slate-500 mb-1">帳戶</label>
-           <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm w-32">
-              <option value="">全部</option>
-              {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-           </select>
-         </div>
-         <div>
-           <label className="block text-xs font-bold text-slate-500 mb-1">類別</label>
-           <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm w-24">
-              <option value="">全部</option>
-              <option value={CashFlowType.DEPOSIT}>匯入</option>
-              <option value={CashFlowType.WITHDRAW}>匯出</option>
-              <option value={CashFlowType.TRANSFER}>轉帳</option>
-              <option value={CashFlowType.INTEREST}>利息</option>
-           </select>
-         </div>
-         <div>
-           <label className="block text-xs font-bold text-slate-500 mb-1">起始日</label>
-           <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm" />
-         </div>
-         <div>
-           <label className="block text-xs font-bold text-slate-500 mb-1">結束日</label>
-           <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="border border-slate-300 rounded p-1.5 text-sm" />
-         </div>
-         {(filterAccount || filterType || filterDateFrom || filterDateTo) && (
-            <button onClick={() => { setFilterAccount(''); setFilterType(''); setFilterDateFrom(''); setFilterDateTo(''); }} className="text-xs text-slate-500 underline pb-2">
-              清除篩選
+      <div className="bg-white rounded-lg shadow p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-800">查詢/篩選</h3>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-slate-500 hover:text-slate-700 underline"
+            >
+              清除所有篩選
             </button>
-         )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+             {/* 帳戶篩選 */}
+             <div>
+               <label className="block text-sm font-medium text-slate-700 mb-2">
+                 帳戶篩選
+               </label>
+               <select 
+                  value={filterAccount} 
+                  onChange={e => setFilterAccount(e.target.value)} 
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+               >
+                  <option value="">所有帳戶</option>
+                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+               </select>
+             </div>
+
+             {/* 類別篩選 */}
+             <div>
+               <label className="block text-sm font-medium text-slate-700 mb-2">
+                 類別篩選
+               </label>
+               <select 
+                  value={filterType} 
+                  onChange={e => setFilterType(e.target.value)} 
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+               >
+                  <option value="">所有類別</option>
+                  <option value={CashFlowType.DEPOSIT}>匯入</option>
+                  <option value={CashFlowType.WITHDRAW}>匯出</option>
+                  <option value={CashFlowType.TRANSFER}>轉帳</option>
+                  <option value={CashFlowType.INTEREST}>利息</option>
+               </select>
+             </div>
+
+             {/* 起始日 */}
+             <div>
+               <label className="block text-sm font-medium text-slate-700 mb-2">
+                 起始日期
+               </label>
+               <input 
+                  type="date" 
+                  value={filterDateFrom} 
+                  onChange={e => setFilterDateFrom(e.target.value)} 
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" 
+               />
+             </div>
+
+             {/* 結束日 */}
+             <div>
+               <label className="block text-sm font-medium text-slate-700 mb-2">
+                 結束日期
+               </label>
+               <input 
+                  type="date" 
+                  value={filterDateTo} 
+                  onChange={e => setFilterDateTo(e.target.value)} 
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" 
+               />
+             </div>
+          </div>
+          
+          {/* 篩選結果統計與快速按鈕 */}
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <div className="text-sm text-slate-600">
+              顯示 <span className="font-semibold text-slate-800">{filteredFlows.length}</span> 筆記錄
+              {filteredFlows.length !== cashFlows.length && (
+                <span className="text-slate-500">
+                  （共 {cashFlows.length} 筆）
+                </span>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const thirtyDaysAgo = new Date();
+                  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                  setFilterDateFrom(thirtyDaysAgo.toISOString().split('T')[0]);
+                  setFilterDateTo(new Date().toISOString().split('T')[0]);
+                }}
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition"
+              >
+                最近30天
+              </button>
+              <button
+                onClick={() => {
+                  const currentYear = new Date().getFullYear();
+                  setFilterDateFrom(`${currentYear}-01-01`);
+                  setFilterDateTo(`${currentYear}-12-31`);
+                }}
+                className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
+              >
+                今年
+              </button>
+            </div>
+          </div>
       </div>
 
       {/* 3. List Table */}
