@@ -80,9 +80,11 @@ const HistoricalDataModal: React.FC<Props> = ({
 
       // 2. Filter out tickers that already have non-zero data
       const missingTickers = activeTickers.filter(t => {
-          const displayTicker = t.market === Market.TW && !t.ticker.includes('TPE:') ? `TPE:${t.ticker}` : t.ticker;
-          // Check if price exists and is non-zero
-          const val = currentYearData.prices[displayTicker] || currentYearData.prices[t.ticker];
+          // 移除 (BAK) 後綴以進行比對
+          const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
+          const displayTicker = t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker;
+          // Check if price exists and is non-zero (檢查多種可能的 key 格式)
+          const val = currentYearData.prices[displayTicker] || currentYearData.prices[cleanTicker] || currentYearData.prices[t.ticker];
           return !val || val === 0;
       });
 
@@ -103,14 +105,17 @@ const HistoricalDataModal: React.FC<Props> = ({
           let queryTickers: string[] = [];
           let queryMarkets: ('US' | 'TW')[] = [];
           if (missingTickers.length > 0) {
-              queryTickers = missingTickers.map(t => 
-                 t.market === Market.TW && !t.ticker.includes('TPE:') ? `TPE:${t.ticker}` : t.ticker
-              );
+              queryTickers = missingTickers.map(t => {
+                  // 移除 (BAK) 後綴
+                  const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
+                  return t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker;
+              });
               queryMarkets = missingTickers.map(t => t.market === Market.TW ? 'TW' as const : 'US' as const);
           } else if (activeTickers.length > 0) {
               // Fetch rate only case: query first ticker
               const t = activeTickers[0];
-              queryTickers = [t.market === Market.TW && !t.ticker.includes('TPE:') ? `TPE:${t.ticker}` : t.ticker];
+              const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
+              queryTickers = [t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker];
               queryMarkets = [t.market === Market.TW ? 'TW' as const : 'US' as const];
           }
           
