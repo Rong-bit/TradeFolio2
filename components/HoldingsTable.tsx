@@ -140,6 +140,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
             ) : (
               mergedHoldings.map((h) => {
                 const isProfit = h.unrealizedPL >= 0;
+                // UK 市場也用 USD（因為是用美金買的）
                 const currency = h.market === Market.TW ? 'TWD' : 'USD';
                 const plColor = isProfit ? 'text-emerald-600' : 'text-rose-600';
                 const roiColor = h.annualizedReturn >= 0 ? 'text-blue-600' : 'text-orange-600';
@@ -153,7 +154,11 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
                   <tr key={uniqueKey} className="hover:bg-slate-50 transition-colors group">
                     {/* 1. Market */}
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border ${h.market === Market.US ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border ${
+                        h.market === Market.US ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                        h.market === Market.UK ? 'bg-purple-50 text-purple-600 border-purple-100' : 
+                        'bg-green-50 text-green-600 border-green-100'
+                      }`}>
                         {h.market}
                       </span>
                     </td>
@@ -186,7 +191,11 @@ const HoldingsTable: React.FC<Props> = ({ holdings, onUpdatePrice, onAutoUpdate 
                         <span className="text-xs font-medium text-slate-600 text-right">{h.weight.toFixed(1)}%</span>
                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                           <div 
-                            className={`h-full rounded-full ${h.market === Market.US ? 'bg-blue-400' : 'bg-green-400'}`} 
+                            className={`h-full rounded-full ${
+                              h.market === Market.US ? 'bg-blue-400' : 
+                              h.market === Market.UK ? 'bg-purple-400' : 
+                              'bg-green-400'
+                            }`} 
                             style={{ width: `${Math.min(h.weight, 100)}%` }}
                           ></div>
                         </div>
