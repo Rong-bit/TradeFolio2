@@ -347,26 +347,32 @@ export const generateAdvancedChartData = (
           Object.entries(holdings).forEach(([key, qty]) => {
               if (qty > 0.000001) {
                   const [market, ticker] = key.split('-');
+                  // 移除 (BAK) 後綴（備份股票代號）
+                  const cleanTicker = ticker.replace(/\(BAK\)/gi, '').trim();
+                  
                   // 嘗試多種格式查找歷史價格
                   // 1. 直接使用 ticker（可能是 "TPE:2330" 或 "2330" 或 "AAPL"）
                   // 2. 如果是台股且沒有 TPE: 前綴，嘗試加上 TPE: 前綴
                   // 3. 如果是台股且有 TPE: 前綴，嘗試移除前綴
+                  // 4. 同時嘗試移除 (BAK) 後綴後的版本
                   let price = 0;
+                  
+                  // 先嘗試原始 ticker（可能包含 (BAK)）
                   if (histPrices[ticker]) {
                       price = histPrices[ticker];
                   } else if (market === Market.TW) {
                       // 台股：嘗試多種格式
-                      if (ticker.startsWith('TPE:')) {
-                          // 如果 ticker 是 "TPE:2330"，嘗試 "2330"
-                          const cleanTicker = ticker.replace(/^TPE:/i, '');
-                          price = histPrices[cleanTicker] || histPrices[`TPE:${cleanTicker}`] || 0;
+                      if (cleanTicker.startsWith('TPE:')) {
+                          // 如果 cleanTicker 是 "TPE:2412"，嘗試 "TPE:2412" 和 "2412"
+                          const withoutPrefix = cleanTicker.replace(/^TPE:/i, '');
+                          price = histPrices[cleanTicker] || histPrices[withoutPrefix] || histPrices[`TPE:${withoutPrefix}`] || 0;
                       } else {
-                          // 如果 ticker 是 "2330"，嘗試 "TPE:2330"
-                          price = histPrices[`TPE:${ticker}`] || histPrices[ticker] || 0;
+                          // 如果 cleanTicker 是 "2412"，嘗試 "TPE:2412" 和 "2412"
+                          price = histPrices[`TPE:${cleanTicker}`] || histPrices[cleanTicker] || 0;
                       }
                   } else {
-                      // 美股：直接查找
-                      price = histPrices[ticker] || 0;
+                      // 美股：先嘗試原始 ticker，再嘗試移除 (BAK) 後的版本
+                      price = histPrices[ticker] || histPrices[cleanTicker] || 0;
                   }
                   
                   // 檢查是否有缺失的價格
