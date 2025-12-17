@@ -90,7 +90,13 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
         // 如果使用 allorigins.win 的 get 方法，需要解析 JSON 並提取內容
         if (proxyUrl.includes('api.allorigins.win/get')) {
           try {
-            const jsonData = await response.json();
+            const text = await response.text();
+            // 檢查是否為有效的 JSON
+            if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
+              console.warn(`allorigins.win 返回非 JSON 響應: ${text.substring(0, 100)}...`);
+              continue;
+            }
+            const jsonData = JSON.parse(text);
             // allorigins.win 的 get 方法返回格式：{ contents: "...", status: {...} }
             if (jsonData.contents) {
               // 創建一個新的 Response 對象，包含解析後的內容
@@ -103,8 +109,8 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
               console.warn(`allorigins.win 返回的內容為空`);
               continue;
             }
-          } catch (parseError) {
-            console.warn(`解析 allorigins.win 響應失敗:`, parseError);
+          } catch (parseError: any) {
+            console.warn(`解析 allorigins.win 響應失敗: ${parseError.message}`);
             continue;
           }
         }
@@ -148,7 +154,20 @@ const fetchSingleStockPrice = async (symbol: string): Promise<PriceData | null> 
       return null;
     }
 
-    const data = await response.json();
+    // 安全地解析 JSON，處理可能的 HTML 錯誤頁面
+    let data;
+    try {
+      const text = await response.text();
+      // 檢查是否為有效的 JSON（以 { 或 [ 開頭）
+      if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
+        console.warn(`代理服務返回非 JSON 響應: ${symbol} - ${text.substring(0, 100)}...`);
+        return null;
+      }
+      data = JSON.parse(text);
+    } catch (parseError: any) {
+      console.warn(`解析 JSON 失敗: ${symbol} - ${parseError.message}`);
+      return null;
+    }
     
     if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
       console.warn(`無法取得 ${symbol} 的資料（Yahoo Finance 返回空結果）`);
@@ -214,7 +233,19 @@ const fetchExchangeRate = async (): Promise<number> => {
       return 31.5; // 預設匯率
     }
 
-    const data = await response.json();
+    // 安全地解析 JSON
+    let data;
+    try {
+      const text = await response.text();
+      if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
+        console.warn(`代理服務返回非 JSON 響應（匯率）: ${text.substring(0, 100)}...`);
+        return 31.5; // 預設匯率
+      }
+      data = JSON.parse(text);
+    } catch (parseError: any) {
+      console.warn(`解析匯率 JSON 失敗: ${parseError.message}`);
+      return 31.5; // 預設匯率
+    }
     
     if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
       return 31.5; // 預設匯率
@@ -259,7 +290,19 @@ const fetchHistoricalExchangeRate = async (year: number): Promise<number> => {
       return await fetchExchangeRate();
     }
 
-    const data = await response.json();
+    // 安全地解析 JSON
+    let data;
+    try {
+      const text = await response.text();
+      if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
+        console.warn(`代理服務返回非 JSON 響應（歷史匯率）: ${text.substring(0, 100)}...`);
+        return await fetchExchangeRate();
+      }
+      data = JSON.parse(text);
+    } catch (parseError: any) {
+      console.warn(`解析歷史匯率 JSON 失敗: ${parseError.message}`);
+      return await fetchExchangeRate();
+    }
     
     if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
       console.warn(`Yahoo Finance 返回空匯率數據，使用當前匯率作為備用`);
@@ -458,7 +501,21 @@ const fetchSingleHistoricalPrice = async (
       return null;
     }
 
-    const data = await response.json();
+    // 安全地解析 JSON，處理可能的 HTML 錯誤頁面
+    let data;
+    try {
+      const text = await response.text();
+      // 檢查是否為有效的 JSON（以 { 或 [ 開頭）
+      if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
+        console.warn(`代理服務返回非 JSON 響應: ${symbol} - ${text.substring(0, 100)}...`);
+        return null;
+      }
+      data = JSON.parse(text);
+    } catch (parseError: any) {
+      console.warn(`解析 JSON 失敗: ${symbol} - ${parseError.message}`);
+      return null;
+    }
+    
     if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
       console.warn(`Yahoo Finance 返回空數據: ${symbol}`);
       return null;
