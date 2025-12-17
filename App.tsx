@@ -67,6 +67,7 @@ const App: React.FC = () => {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [view, setView] = useState<View>('dashboard');
+  const [hasAutoUpdated, setHasAutoUpdated] = useState(false);
   
   // 篩選狀態
   const [filterAccount, setFilterAccount] = useState<string>('');
@@ -167,6 +168,7 @@ const App: React.FC = () => {
     setExchangeRate(31.5);
     setRebalanceTargets({});
     setHistoricalData({});
+    setHasAutoUpdated(false); // 重置自動更新狀態
   };
 
   // --- Persistence: LOAD DATA ---
@@ -338,8 +340,10 @@ const App: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleAutoUpdatePrices = async () => {
-    const holdingKeys = holdings.map(h => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
+  const handleAutoUpdatePrices = async (silent: boolean = false) => {
+    // 使用 baseHoldings 或從 transactions 提取唯一的 ticker
+    const holdingsToUse = baseHoldings.length > 0 ? baseHoldings : holdings;
+    const holdingKeys = holdingsToUse.map(h => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
     
     // 建立 ticker 到 market 的對應關係
     const tickerMarketMap = new Map<string, 'US' | 'TW'>();
@@ -390,12 +394,21 @@ const App: React.FC = () => {
         msg += `，並同步更新匯率為 ${result.exchangeRate}`;
       }
 
-      showAlert(msg, "更新完成", "success");
+      // 只有在非靜默模式下才顯示提示
+      if (!silent) {
+        showAlert(msg, "更新完成", "success");
+      }
     } catch (error) {
       console.error(error);
-      showAlert("自動更新失敗", "錯誤", "error");
+      if (!silent) {
+        showAlert("自動更新失敗", "錯誤", "error");
+      }
     }
   };
+
+  // --- Calculations ---
+  // 1. Calculate Base Holdings (Prices, Values, but Weight is 0)
+  const baseHoldings = useMemo(() => calculateHoldings(transactions, currentPrices, priceDetails), [transactions, currentPrices, priceDetails]);
 
   // --- Calculations ---
   // 1. Calculate Base Holdings (Prices, Values, but Weight is 0)
@@ -489,6 +502,19 @@ const App: React.FC = () => {
         };
     });
   }, [baseHoldings, summary, exchangeRate]);
+
+  // --- Auto Update Prices on Load ---
+  useEffect(() => {
+    // 當用戶已登入、有持倉、且尚未自動更新時，自動更新一次
+    if (isAuthenticated && baseHoldings.length > 0 && !hasAutoUpdated) {
+      // 延遲 1.5 秒後自動更新，確保數據已載入完成
+      const timer = setTimeout(() => {
+        handleAutoUpdatePrices(true); // silent mode，不顯示提示
+        setHasAutoUpdated(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, baseHoldings.length, hasAutoUpdated]);
 
   const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData), [transactions, cashFlows, accounts, summary, exchangeRate, historicalData]);
   const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate), [holdings, summary, exchangeRate]);
