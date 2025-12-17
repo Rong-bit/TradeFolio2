@@ -268,9 +268,17 @@ const HistoricalDataModal: React.FC<Props> = ({
                            <tr><td colSpan={3} className="p-8 text-center text-slate-400">該年份無持股</td></tr>
                        ) : (
                            activeTickers.map(t => {
-                               const displayTicker = t.market === Market.TW && !t.ticker.includes('TPE:') ? `TPE:${t.ticker}` : t.ticker;
-                               const priceKey = t.market === Market.TW ? displayTicker : t.ticker;
-                               const val = currentYearData.prices[priceKey] || currentYearData.prices[t.ticker] || 0;
+                               // 移除 (BAK) 後綴以進行比對（與過濾邏輯保持一致）
+                               const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
+                               const displayTicker = t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker;
+                               const priceKey = t.market === Market.TW ? displayTicker : cleanTicker;
+                               
+                               // 檢查多種可能的 key 格式
+                               const val1 = currentYearData.prices[priceKey];
+                               const val2 = currentYearData.prices[displayTicker];
+                               const val3 = currentYearData.prices[cleanTicker];
+                               const val4 = currentYearData.prices[t.ticker];
+                               const val = val1 !== undefined ? val1 : (val2 !== undefined ? val2 : (val3 !== undefined ? val3 : val4)) || 0;
                                const hasData = val > 0;
                                
                                return (
