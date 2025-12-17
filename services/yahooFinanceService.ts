@@ -7,11 +7,11 @@ export interface PriceData {
 
 /**
  * 將股票代號轉換為 Yahoo Finance 格式
- * @param ticker 原始股票代號（如 "TPE:2330" 或 "AAPL" 或 "DTLA"）
+ * @param ticker 原始股票代號（如 "TPE:2330" 或 "AAPL" 或 "DTLA" 或 "7203"）
  * @param market 市場類型
- * @returns Yahoo Finance 格式的代號（如 "2330.TW" 或 "AAPL" 或 "DTLA.L"）
+ * @returns Yahoo Finance 格式的代號（如 "2330.TW" 或 "AAPL" 或 "DTLA.L" 或 "7203.T"）
  */
-const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK'): string => {
+const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK' | 'JP'): string => {
   // 移除可能的 TPE: 前綴
   let cleanTicker = ticker.replace(/^TPE:/i, '').trim();
   
@@ -21,6 +21,9 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK'): stri
   // 移除可能的 .L 後綴（如果已經有）
   cleanTicker = cleanTicker.replace(/\.L$/i, '').trim();
   
+  // 移除可能的 .T 後綴（如果已經有）
+  cleanTicker = cleanTicker.replace(/\.T$/i, '').trim();
+  
   // 判斷市場類型
   if (market === 'TW' || /^\d{4}$/.test(cleanTicker)) {
     // 台股格式：數字代號 + .TW
@@ -28,6 +31,9 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK'): stri
   } else if (market === 'UK') {
     // 英國股票格式：代號 + .L (London)
     return `${cleanTicker}.L`;
+  } else if (market === 'JP') {
+    // 日本股票格式：代號 + .T (Tokyo)
+    return `${cleanTicker}.T`;
   } else if (market === 'US' || /^[A-Z]{1,5}$/.test(cleanTicker)) {
     // 美股格式：保持原樣
     return cleanTicker;
@@ -43,6 +49,11 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK'): stri
     return `${cleanTicker}.L`;
   }
   
+  // 如果包含 .T 或 TYO 標記，視為日本股票
+  if (ticker.toUpperCase().includes('.T') || ticker.toUpperCase().includes('TYO')) {
+    return `${cleanTicker}.T`;
+  }
+  
   // 預設視為美股
   return cleanTicker;
 };
@@ -56,11 +67,16 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://cors-anywhere.herokuapp.com/${url}`,
     // 直接嘗試（某些環境可能允許）
     url
   ];
 
-  for (const proxyUrl of proxies) {
+  const isDevelopment = (import.meta as any).env?.DEV ?? process.env.NODE_ENV === 'development';
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < proxies.length; i++) {
+    const proxyUrl = proxies[i];
     try {
       // 使用 AbortController 實現超時（兼容性更好）
       const controller = new AbortController();
@@ -77,15 +93,31 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
       clearTimeout(timeoutId);
 
       if (response.ok) {
+        // 成功時，只在開發模式下顯示使用的代理
+        if (isDevelopment && i > 0) {
+          console.log(`✓ 代理服務成功: ${proxyUrl.substring(0, 60)}...`);
+        }
         return response;
+      } else {
+        // 記錄非成功的響應
+        lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error: any) {
-      // 繼續嘗試下一個代理
+      // 記錄錯誤（但不顯示超時錯誤）
       if (error.name !== 'AbortError') {
-        console.warn(`代理服務失敗，嘗試下一個: ${proxyUrl.substring(0, 50)}...`);
+        lastError = error;
+        // 只在開發模式下顯示詳細的警告訊息
+        if (isDevelopment) {
+          console.debug(`代理服務 ${i + 1}/${proxies.length} 失敗，嘗試下一個...`);
+        }
       }
       continue;
     }
+  }
+
+  // 所有代理都失敗時，只在開發模式下顯示詳細錯誤
+  if (isDevelopment && lastError) {
+    console.error('所有代理服務均失敗:', lastError.message);
   }
 
   return null;
@@ -292,7 +324,7 @@ const fetchHistoricalExchangeRate = async (year: number): Promise<number> => {
  */
 export const fetchCurrentPrices = async (
   tickers: string[],
-  markets?: ('US' | 'TW' | 'UK')[]
+  markets?: ('US' | 'TW' | 'UK' | 'JP')[]
 ): Promise<{ prices: Record<string, PriceData>, exchangeRate: number }> => {
   try {
     // 轉換所有代號為 Yahoo Finance 格式
@@ -337,7 +369,7 @@ export const fetchCurrentPrices = async (
 export const fetchHistoricalYearEndData = async (
   year: number,
   tickers: string[],
-  markets?: ('US' | 'TW' | 'UK')[]
+  markets?: ('US' | 'TW' | 'UK' | 'JP')[]
 ): Promise<{ prices: Record<string, number>, exchangeRate: number }> => {
   try {
     const endDate = Math.floor(new Date(`${year}-12-31`).getTime() / 1000);
