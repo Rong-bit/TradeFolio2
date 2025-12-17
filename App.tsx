@@ -373,10 +373,6 @@ const App: React.FC = () => {
       const newDetails: Record<string, { change: number, changePercent: number }> = {};
       
       // 使用映射關係來匹配價格資料
-      console.log('🔍 開始匹配價格資料，查詢結果:', result.prices);
-      console.log('📋 查詢的 ticker 列表:', queryList);
-      console.log('🗺️ Ticker 映射關係:', Array.from(tickerToQueryTickerMap.entries()));
-      
       holdingKeys.forEach((h: { market: Market, ticker: string, key: string }) => {
           const queryTicker = tickerToQueryTickerMap.get(h.key) || h.ticker;
           
@@ -407,14 +403,8 @@ const App: React.FC = () => {
             const changePercent = match.changePercent !== undefined ? match.changePercent : 0;
             newPrices[h.key] = price;
             newDetails[h.key] = { change, changePercent };
-            console.log(`✅ 匹配成功: ${h.key} -> 價格: ${price}, 漲跌: ${change}, 漲跌幅: ${changePercent}%`);
-          } else {
-            console.warn(`⚠️ 無法匹配: ${h.key} (查詢 ticker: ${queryTicker}, 原始 ticker: ${h.ticker})`);
           }
       });
-      
-      console.log('💰 最終價格資料:', newPrices);
-      console.log('📊 最終漲跌資料:', newDetails);
       
       setCurrentPrices(prev => ({ ...prev, ...newPrices }));
       setPriceDetails(prev => ({ ...prev, ...newDetails }));
