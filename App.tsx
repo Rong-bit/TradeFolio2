@@ -61,6 +61,9 @@ const App: React.FC = () => {
   const [isTransactionDeleteConfirmOpen, setIsTransactionDeleteConfirmOpen] = useState(false);
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [isBatchMarketModalOpen, setIsBatchMarketModalOpen] = useState(false);
+  const [batchMarketTicker, setBatchMarketTicker] = useState<string>('');
+  const [batchMarketNewMarket, setBatchMarketNewMarket] = useState<Market>(Market.US);
   const [alertDialog, setAlertDialog] = useState<{isOpen: boolean, title: string, message: string, type: 'info' | 'success' | 'error'}>({
     isOpen: false, title: '', message: '', type: 'info'
   });
@@ -238,6 +241,49 @@ const App: React.FC = () => {
     }
     setIsTransactionDeleteConfirmOpen(false);
     setTransactionToDelete(null);
+  };
+  const batchUpdateMarket = () => {
+    if (!batchMarketTicker.trim()) {
+      showAlert("請輸入股票代號", "輸入錯誤", "error");
+      return;
+    }
+    const tickerUpper = batchMarketTicker.trim().toUpperCase();
+    const matchingTransactions = transactions.filter(t => t.ticker.toUpperCase() === tickerUpper);
+    
+    if (matchingTransactions.length === 0) {
+      showAlert(`找不到股票代號為 "${tickerUpper}" 的交易記錄`, "找不到記錄", "error");
+      return;
+    }
+    
+    // 檢查是否所有交易都已經是目標市場
+    const allSameMarket = matchingTransactions.every(t => t.market === batchMarketNewMarket);
+    if (allSameMarket) {
+      showAlert(`所有 "${tickerUpper}" 的交易記錄都已經是 ${batchMarketNewMarket} 市場`, "無需修改", "info");
+      setIsBatchMarketModalOpen(false);
+      setBatchMarketTicker('');
+      return;
+    }
+    
+    // 批量更新市場設置
+    setTransactions(prev => prev.map(t => {
+      if (t.ticker.toUpperCase() === tickerUpper && t.market !== batchMarketNewMarket) {
+        // 更新價格鍵值（因為價格鍵值包含市場）
+        const oldKey = `${t.market}-${t.ticker}`;
+        const newKey = `${batchMarketNewMarket}-${t.ticker}`;
+        const newPrices = { ...currentPrices };
+        if (currentPrices[oldKey]) {
+          newPrices[newKey] = currentPrices[oldKey];
+          delete newPrices[oldKey];
+          setCurrentPrices(newPrices);
+        }
+        return { ...t, market: batchMarketNewMarket };
+      }
+      return t;
+    }));
+    
+    showAlert(`已將 ${matchingTransactions.length} 筆 "${tickerUpper}" 的交易記錄市場設置改為 ${batchMarketNewMarket}`, "修改成功", "success");
+    setIsBatchMarketModalOpen(false);
+    setBatchMarketTicker('');
   };
   const handleClearAllTransactions = () => setIsDeleteConfirmOpen(true);
   const confirmDeleteAllTransactions = () => {
@@ -1139,7 +1185,7 @@ const App: React.FC = () => {
                     </div>
                     
                     {/* 快速篩選按鈕 */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => {
                           const thirtyDaysAgo = new Date();
@@ -1160,6 +1206,12 @@ const App: React.FC = () => {
                         className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
                       >
                         今年
+                      </button>
+                      <button
+                        onClick={() => setIsBatchMarketModalOpen(true)}
+                        className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition"
+                      >
+                        批量修改市場
                       </button>
                     </div>
                   </div>
@@ -1386,6 +1438,72 @@ const App: React.FC = () => {
            </div>
         </div>
       )}
+      {isBatchMarketModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">批量修改市場設置</h3>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    股票代號
+                  </label>
+                  <input
+                    type="text"
+                    value={batchMarketTicker}
+                    onChange={(e) => setBatchMarketTicker(e.target.value.toUpperCase())}
+                    placeholder="例如: VWRA"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">將修改所有此股票代號的交易記錄市場設置</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    新市場設置
+                  </label>
+                  <select
+                    value={batchMarketNewMarket}
+                    onChange={(e) => setBatchMarketNewMarket(e.target.value as Market)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                  >
+                    <option value={Market.US}>美股 (US)</option>
+                    <option value={Market.TW}>台股 (TW)</option>
+                    <option value={Market.UK}>英國股 (UK)</option>
+                  </select>
+                </div>
+                {batchMarketTicker && (
+                  <div className="bg-slate-50 p-3 rounded text-sm text-slate-600">
+                    {transactions.filter(t => t.ticker.toUpperCase() === batchMarketTicker.toUpperCase()).length > 0 ? (
+                      <span>
+                        找到 <span className="font-bold text-purple-600">
+                          {transactions.filter(t => t.ticker.toUpperCase() === batchMarketTicker.toUpperCase()).length}
+                        </span> 筆 "{batchMarketTicker.toUpperCase()}" 的交易記錄
+                      </span>
+                    ) : (
+                      <span className="text-amber-600">找不到此股票代號的交易記錄</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end gap-3">
+                 <button 
+                   onClick={() => {
+                     setIsBatchMarketModalOpen(false);
+                     setBatchMarketTicker('');
+                   }} 
+                   className="px-4 py-2 rounded border hover:bg-slate-50"
+                 >
+                   取消
+                 </button>
+                 <button 
+                   onClick={batchUpdateMarket} 
+                   className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                 >
+                   確認修改
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Global Alert Dialog */}
       {alertDialog.isOpen && (
@@ -1406,4 +1524,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
