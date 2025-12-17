@@ -83,9 +83,24 @@ const HistoricalDataModal: React.FC<Props> = ({
           // 移除 (BAK) 後綴以進行比對
           const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
           const displayTicker = t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker;
+          
           // Check if price exists and is non-zero (檢查多種可能的 key 格式)
-          const val = currentYearData.prices[displayTicker] || currentYearData.prices[cleanTicker] || currentYearData.prices[t.ticker];
-          return !val || val === 0;
+          // 注意：需要明確檢查 undefined，因為 0 也是有效值（表示需要更新）
+          const val1 = currentYearData.prices[displayTicker];
+          const val2 = currentYearData.prices[cleanTicker];
+          const val3 = currentYearData.prices[t.ticker];
+          const val = val1 !== undefined ? val1 : (val2 !== undefined ? val2 : val3);
+          
+          // 如果值為 undefined、null 或 0，則需要更新
+          const needsUpdate = val === undefined || val === null || val === 0;
+          
+          if (!needsUpdate) {
+              console.log(`已找到 ${t.ticker} 的價格: ${val} (key: ${displayTicker})`);
+          } else {
+              console.log(`需要更新 ${t.ticker}，當前值: ${val} (檢查的 keys: ${displayTicker}, ${cleanTicker}, ${t.ticker})`);
+          }
+          
+          return needsUpdate;
       });
 
       // 3. Check if exchange rate needs update
