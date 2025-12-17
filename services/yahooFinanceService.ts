@@ -227,8 +227,15 @@ export const fetchHistoricalYearEndData = async (
     const result: Record<string, number> = {};
     tickers.forEach((originalTicker, index) => {
       const price = historicalPrices[index];
-      if (price != null) {
+      if (price != null && price > 0) {
         result[originalTicker] = price;
+        // 同時支援不帶 TPE: 前綴的 key（用於向後兼容）
+        const cleanTicker = originalTicker.replace(/^TPE:/i, '');
+        if (cleanTicker !== originalTicker) {
+          result[cleanTicker] = price;
+        }
+      } else {
+        console.warn(`無法取得 ${originalTicker} (${yahooSymbols[index]}) 的歷史股價`);
       }
     });
 
@@ -244,4 +251,5 @@ export const fetchHistoricalYearEndData = async (
     return { prices: {}, exchangeRate: 31.5 };
   }
 };
+
 
