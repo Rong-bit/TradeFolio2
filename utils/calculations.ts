@@ -347,8 +347,27 @@ export const generateAdvancedChartData = (
           Object.entries(holdings).forEach(([key, qty]) => {
               if (qty > 0.000001) {
                   const [market, ticker] = key.split('-');
-                  // Try find ticker in historical prices. 
-                  let price = histPrices[ticker] || histPrices[`TPE:${ticker}`] || 0;
+                  // 嘗試多種格式查找歷史價格
+                  // 1. 直接使用 ticker（可能是 "TPE:2330" 或 "2330" 或 "AAPL"）
+                  // 2. 如果是台股且沒有 TPE: 前綴，嘗試加上 TPE: 前綴
+                  // 3. 如果是台股且有 TPE: 前綴，嘗試移除前綴
+                  let price = 0;
+                  if (histPrices[ticker]) {
+                      price = histPrices[ticker];
+                  } else if (market === Market.TW) {
+                      // 台股：嘗試多種格式
+                      if (ticker.startsWith('TPE:')) {
+                          // 如果 ticker 是 "TPE:2330"，嘗試 "2330"
+                          const cleanTicker = ticker.replace(/^TPE:/i, '');
+                          price = histPrices[cleanTicker] || histPrices[`TPE:${cleanTicker}`] || 0;
+                      } else {
+                          // 如果 ticker 是 "2330"，嘗試 "TPE:2330"
+                          price = histPrices[`TPE:${ticker}`] || histPrices[ticker] || 0;
+                      }
+                  } else {
+                      // 美股：直接查找
+                      price = histPrices[ticker] || 0;
+                  }
                   
                   // 檢查是否有缺失的價格
                   if (price === 0) {
@@ -375,9 +394,11 @@ export const generateAdvancedChartData = (
 
           totalAssets = stockValueTWD + cashValueTWD;
           
-          // 如果有缺失的價格導致計算不準確，回退到插值計算
-          if (hasMissingPrices && totalAssets < cost) {
-              // 使用插值計算作為備選方案
+          // 判斷是否為真實數據：
+          // 只要有歷史數據且沒有缺失價格，就標記為真實數據
+          // 即使 totalAssets < cost（市場下跌時可能發生），只要所有股票都有價格，仍然是真實數據
+          if (hasMissingPrices) {
+              // 有缺失價格，使用插值計算作為備選方案
               const totalYears = endYear - startYear + 1;
               const currentYearIndex = y - startYear + 1;
               const progress = currentYearIndex / totalYears;
@@ -385,6 +406,7 @@ export const generateAdvancedChartData = (
               totalAssets = cost + (totalProfit * progress);
               isRealData = false;
           } else {
+              // 所有股票都有價格，標記為真實數據
               isRealData = true;
           }
 
