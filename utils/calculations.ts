@@ -379,14 +379,21 @@ export const generateAdvancedChartData = (
        }
     }
     
-    const assetCostRatio = cost > 0 ? totalAssets / cost : 0;
+    // 計算 profit，確保 totalAssets = cost + profit 成立
     const profit = totalAssets - cost;
+    
+    // 處理浮點數精度問題：確保 totalAssets 與 cost + profit 完全一致
+    // 這樣折線圖才能正確對齊到疊加柱狀圖的頂部
+    // 使用原始 totalAssets 值，但確保它等於 cost + profit（理論上應該總是成立）
+    const adjustedTotalAssets = cost + profit;
+    
+    const assetCostRatio = cost > 0 ? adjustedTotalAssets / cost : 0;
 
     data.push({
       year: y.toString(),
       cost,
       profit,
-      totalAssets,
+      totalAssets: adjustedTotalAssets, // 使用調整後的 totalAssets 確保與疊加柱狀圖對齊
       estTotalAssets: accumulatedEstAssets,
       assetCostRatio,
       isRealData
