@@ -343,13 +343,13 @@ const App: React.FC = () => {
   const handleAutoUpdatePrices = async (silent: boolean = false) => {
     // 使用 baseHoldings 或從 transactions 提取唯一的 ticker
     const holdingsToUse = baseHoldings.length > 0 ? baseHoldings : holdings;
-    const holdingKeys = holdingsToUse.map(h => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
+    const holdingKeys = holdingsToUse.map((h: Holding) => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
     
     // 建立 ticker 到 market 的對應關係，同時建立原始 ticker 到查詢 ticker 的映射
     const tickerMarketMap = new Map<string, 'US' | 'TW'>();
     const tickerToQueryTickerMap = new Map<string, string>(); // 原始 ticker -> 查詢用的 ticker
     
-    holdingKeys.forEach(h => {
+    holdingKeys.forEach((h: { market: Market, ticker: string, key: string }) => {
       let queryTicker = h.ticker;
       if (h.market === Market.TW && !queryTicker.includes('TPE:') && !queryTicker.includes('TW') && !queryTicker.match(/^\d{4}$/)) {
         queryTicker = `TPE:${queryTicker}`;
@@ -377,7 +377,7 @@ const App: React.FC = () => {
       console.log('📋 查詢的 ticker 列表:', queryList);
       console.log('🗺️ Ticker 映射關係:', Array.from(tickerToQueryTickerMap.entries()));
       
-      holdingKeys.forEach(h => {
+      holdingKeys.forEach((h: { market: Market, ticker: string, key: string }) => {
           const queryTicker = tickerToQueryTickerMap.get(h.key) || h.ticker;
           
           // 優先使用查詢 ticker 匹配
