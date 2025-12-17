@@ -11,7 +11,7 @@ import RebalanceView from './components/RebalanceView';
 import HelpView from './components/HelpView';
 import BatchImportModal from './components/BatchImportModal';
 import HistoricalDataModal from './components/HistoricalDataModal';
-import { fetchCurrentPrices } from './services/geminiService';
+import { fetchCurrentPrices } from './services/yahooFinanceService';
 import { ADMIN_EMAIL, SYSTEM_ACCESS_CODE, GLOBAL_AUTHORIZED_USERS } from './config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -340,16 +340,23 @@ const App: React.FC = () => {
 
   const handleAutoUpdatePrices = async () => {
     const holdingKeys = holdings.map(h => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
-    const queryList: string[] = Array.from(new Set(holdingKeys.map(h => {
-       let t = h.ticker;
-       if (h.market === Market.TW && !t.includes('TPE:') && !t.includes('TW') && !t.match(/^\d{4}$/)) t = `TPE:${t}`;
-       if (h.market === Market.TW && t.match(/^\d{4}$/)) t = `TPE:${t}`;
-       return t;
-    })));
+    
+    // 建立 ticker 到 market 的對應關係
+    const tickerMarketMap = new Map<string, 'US' | 'TW'>();
+    holdingKeys.forEach(h => {
+      let t = h.ticker;
+      if (h.market === Market.TW && !t.includes('TPE:') && !t.includes('TW') && !t.match(/^\d{4}$/)) t = `TPE:${t}`;
+      if (h.market === Market.TW && t.match(/^\d{4}$/)) t = `TPE:${t}`;
+      tickerMarketMap.set(t, h.market === Market.TW ? 'TW' : 'US');
+    });
+    
+    const queryList: string[] = Array.from(tickerMarketMap.keys());
+    const marketsList = queryList.map(t => tickerMarketMap.get(t)!);
+    
     if (queryList.length === 0) return;
 
     try {
-      const result = await fetchCurrentPrices(queryList);
+      const result = await fetchCurrentPrices(queryList, marketsList);
       
       const newPrices: Record<string, number> = {};
       const newDetails: Record<string, { change: number, changePercent: number }> = {};
