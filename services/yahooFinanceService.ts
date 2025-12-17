@@ -15,6 +15,9 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW'): string => {
   // 移除可能的 TPE: 前綴
   let cleanTicker = ticker.replace(/^TPE:/i, '').trim();
   
+  // 移除 (BAK) 後綴（備份股票代號）
+  cleanTicker = cleanTicker.replace(/\(BAK\)/gi, '').trim();
+  
   // 判斷市場類型
   if (market === 'TW' || /^\d{4}$/.test(cleanTicker)) {
     // 台股格式：數字代號 + .TW
