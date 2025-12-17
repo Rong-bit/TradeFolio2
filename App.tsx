@@ -409,10 +409,6 @@ const App: React.FC = () => {
   // --- Calculations ---
   // 1. Calculate Base Holdings (Prices, Values, but Weight is 0)
   const baseHoldings = useMemo(() => calculateHoldings(transactions, currentPrices, priceDetails), [transactions, currentPrices, priceDetails]);
-
-  // --- Calculations ---
-  // 1. Calculate Base Holdings (Prices, Values, but Weight is 0)
-  const baseHoldings = useMemo(() => calculateHoldings(transactions, currentPrices, priceDetails), [transactions, currentPrices, priceDetails]);
   
   const computedAccounts = useMemo(() => calculateAccountBalances(accounts, cashFlows, transactions), [accounts, cashFlows, transactions]);
 
