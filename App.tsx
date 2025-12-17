@@ -33,6 +33,16 @@ window.alert = function(message?: string): void {
   console.warn('⚠️ ALERT() 被調用了！', message);
 };
 
+// 格式化數字，保留必要的小數位但不強制限制
+const formatNumber = (num: number): string => {
+  // 如果是整數，直接返回
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  // 否則返回原始值，讓瀏覽器自動處理顯示
+  return num.toString();
+};
+
 const App: React.FC = () => {
   useEffect(() => {
     globalSetDebugLogs = setDebugLogs;
@@ -1274,11 +1284,11 @@ const App: React.FC = () => {
                                </span>
                              </td>
                              <td className="px-4 py-3 text-right font-mono text-slate-600">
-                               {record.type === 'TRANSACTION' ? record.price.toFixed(2) : 
+                               {record.type === 'TRANSACTION' ? formatNumber(record.price) : 
                                 record.type === 'CASHFLOW' && record.exchangeRate ? record.exchangeRate : '-'}
                              </td>
                              <td className="px-4 py-3 text-right font-mono text-slate-600">
-                               {record.type === 'TRANSACTION' ? record.quantity.toLocaleString() : '-'}
+                               {record.type === 'TRANSACTION' ? formatNumber(record.quantity) : '-'}
                              </td>
                              <td className="px-4 py-3 text-right font-bold font-mono text-slate-700">
                                {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
