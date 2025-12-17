@@ -522,7 +522,7 @@ const App: React.FC = () => {
   // Step 4: Final Holdings with Weights
   const holdings = useMemo(() => {
     const totalAssets = summary.totalValueTWD + summary.cashBalanceTWD;
-    return baseHoldings.map(h => {
+    return baseHoldings.map((h: Holding) => {
         const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
         return {
             ...h,
