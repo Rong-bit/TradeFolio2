@@ -125,13 +125,23 @@ const HistoricalDataModal: React.FC<Props> = ({
                   const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
                   return t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker;
               });
-              queryMarkets = missingTickers.map(t => t.market === Market.TW ? 'TW' as const : 'US' as const);
+              queryMarkets = missingTickers.map(t => {
+                if (t.market === Market.TW) return 'TW' as const;
+                if (t.market === Market.UK) return 'UK' as const;
+                if (t.market === Market.JP) return 'JP' as const;
+                return 'US' as const;
+              });
           } else if (activeTickers.length > 0) {
               // Fetch rate only case: query first ticker
               const t = activeTickers[0];
               const cleanTicker = t.ticker.replace(/\(BAK\)/gi, '');
               queryTickers = [t.market === Market.TW && !cleanTicker.includes('TPE:') ? `TPE:${cleanTicker}` : cleanTicker];
-              queryMarkets = [t.market === Market.TW ? 'TW' as const : 'US' as const];
+              queryMarkets = [
+                t.market === Market.TW ? 'TW' as const : 
+                t.market === Market.UK ? 'UK' as const : 
+                t.market === Market.JP ? 'JP' as const : 
+                'US' as const
+              ];
           }
           
           const result = await fetchHistoricalYearEndData(selectedYear, queryTickers, queryMarkets);
@@ -284,7 +294,12 @@ const HistoricalDataModal: React.FC<Props> = ({
                                return (
                                    <tr key={t.ticker} className="hover:bg-slate-50">
                                        <td className="px-4 py-2">
-                                           <span className={`px-2 py-0.5 rounded text-xs ${t.market === Market.US ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                           <span className={`px-2 py-0.5 rounded text-xs ${
+                                             t.market === Market.US ? 'bg-blue-100 text-blue-700' : 
+                                             t.market === Market.UK ? 'bg-purple-100 text-purple-700' : 
+                                             t.market === Market.JP ? 'bg-red-100 text-red-700' : 
+                                             'bg-green-100 text-green-700'
+                                           }`}>
                                                {t.market}
                                            </span>
                                        </td>
@@ -329,4 +344,5 @@ const HistoricalDataModal: React.FC<Props> = ({
 };
 
 export default HistoricalDataModal;
+
 
