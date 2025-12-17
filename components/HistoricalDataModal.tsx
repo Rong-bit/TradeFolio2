@@ -116,6 +116,18 @@ const HistoricalDataModal: React.FC<Props> = ({
           
           const result = await fetchHistoricalYearEndData(selectedYear, queryTickers, queryMarkets);
           
+          // 檢查是否有成功取得數據
+          const successCount = Object.keys(result.prices).length;
+          if (successCount === 0 && missingTickers.length > 0) {
+              alert(`無法取得 ${missingTickers.length} 筆股票的歷史股價，請檢查網路連線或稍後再試。\n\n查詢的代號：${queryTickers.join(', ')}`);
+          } else if (successCount < missingTickers.length) {
+              const failedTickers = missingTickers.filter(t => {
+                  const displayTicker = t.market === Market.TW && !t.ticker.includes('TPE:') ? `TPE:${t.ticker}` : t.ticker;
+                  return !result.prices[displayTicker] && !result.prices[t.ticker];
+              });
+              console.warn('部分股票無法取得歷史股價：', failedTickers.map(t => t.ticker));
+          }
+          
           setLocalData(prev => {
               const prevData = prev[selectedYear] || { prices: {}, exchangeRate: 0 };
               
@@ -127,14 +139,24 @@ const HistoricalDataModal: React.FC<Props> = ({
                   ? (result.exchangeRate || 30) 
                   : currentRate;
 
+              // 合併價格數據，確保兩種格式的 key 都能正確對應
+              const mergedPrices = { ...prevData.prices };
+              Object.entries(result.prices).forEach(([key, price]) => {
+                  mergedPrices[key] = price;
+                  // 如果是 TPE: 格式，也同時儲存不帶前綴的版本
+                  if (key.startsWith('TPE:')) {
+                      mergedPrices[key.replace(/^TPE:/i, '')] = price;
+                  } else if (key.match(/^\d{4}$/)) {
+                      // 如果是純數字，也同時儲存 TPE: 前綴版本
+                      mergedPrices[`TPE:${key}`] = price;
+                  }
+              });
+
               return {
                   ...prev,
                   [selectedYear]: {
                       ...prevData,
-                      prices: {
-                          ...prevData.prices,
-                          ...result.prices // This merge is safe because we only queried missing tickers
-                      },
+                      prices: mergedPrices,
                       exchangeRate: newRate
                   }
               };
