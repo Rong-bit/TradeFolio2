@@ -120,6 +120,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onClose }) => {
                 <option value={Market.TW}>台股 (TW)</option>
                 <option value={Market.US}>美股 (US)</option>
                 <option value={Market.UK}>英國股 (UK)</option>
+                <option value={Market.JP}>日本股 (JP)</option>
               </select>
             </div>
             <div>
@@ -149,7 +150,12 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onClose }) => {
               </select>
             </div>
              <div>
-              <label className="block text-sm font-medium text-slate-700">價格 ({formData.market === Market.TW ? 'TWD' : formData.market === Market.UK ? 'USD' : 'USD'})</label>
+              <label className="block text-sm font-medium text-slate-700">價格 ({
+                formData.market === Market.TW ? 'TWD' : 
+                formData.market === Market.UK ? 'USD' : 
+                formData.market === Market.JP ? 'JPY' : 
+                'USD'
+              })</label>
               <input 
                 type="number" name="price" required step="0.01" min="0"
                 value={formData.price} onChange={handleChange}
@@ -210,4 +216,5 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onClose }) => {
 };
 
 export default TransactionForm;
+
 
