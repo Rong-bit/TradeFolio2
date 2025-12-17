@@ -60,9 +60,11 @@ const App: React.FC = () => {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isTransactionDeleteConfirmOpen, setIsTransactionDeleteConfirmOpen] = useState(false);
+  const [isCashFlowDeleteConfirmOpen, setIsCashFlowDeleteConfirmOpen] = useState(false);
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
   const [isBatchUpdateMarketOpen, setIsBatchUpdateMarketOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [cashFlowToDelete, setCashFlowToDelete] = useState<string | null>(null);
   const [alertDialog, setAlertDialog] = useState<{isOpen: boolean, title: string, message: string, type: 'info' | 'success' | 'error'}>({
     isOpen: false, title: '', message: '', type: 'info'
   });
@@ -270,8 +272,23 @@ const App: React.FC = () => {
   const addCashFlow = (cf: CashFlow) => setCashFlows(prev => [...prev, cf]);
   const addBatchCashFlows = (cfs: CashFlow[]) => setCashFlows(prev => [...prev, ...cfs]);
   const removeCashFlow = (id: string) => {
-    setCashFlows(prev => prev.filter(c => c.id !== id));
-    showAlert(`現金流紀錄已刪除`, "刪除成功", "success");
+    // 總是顯示確認對話框
+    setCashFlowToDelete(id);
+    setIsCashFlowDeleteConfirmOpen(true);
+  };
+  
+  const confirmRemoveCashFlow = () => {
+    if (cashFlowToDelete) {
+      setCashFlows(prev => prev.filter(c => c.id !== cashFlowToDelete));
+      showAlert(`現金流紀錄已刪除`, "刪除成功", "success");
+    }
+    setIsCashFlowDeleteConfirmOpen(false);
+    setCashFlowToDelete(null);
+  };
+  
+  const cancelRemoveCashFlow = () => {
+    setIsCashFlowDeleteConfirmOpen(false);
+    setCashFlowToDelete(null);
   };
   
   const handleClearAllCashFlows = () => {
@@ -1409,6 +1426,68 @@ const App: React.FC = () => {
            </div>
         </div>
       )}
+      {isCashFlowDeleteConfirmOpen && cashFlowToDelete && (() => {
+        const cashFlow = cashFlows.find(cf => cf.id === cashFlowToDelete);
+        if (!cashFlow) return null;
+        
+        const relatedAccountIds = [cashFlow.accountId];
+        if (cashFlow.targetAccountId) {
+          relatedAccountIds.push(cashFlow.targetAccountId);
+        }
+        
+        const relatedTransactions = transactions.filter(tx => 
+          relatedAccountIds.includes(tx.accountId)
+        );
+        
+        const account = accounts.find(a => a.id === cashFlow.accountId);
+        const accountName = account?.name || '未知帳戶';
+        const getTypeName = (type: CashFlowType) => {
+          switch (type) {
+            case CashFlowType.DEPOSIT: return '匯入';
+            case CashFlowType.WITHDRAW: return '匯出';
+            case CashFlowType.TRANSFER: return '轉帳';
+            case CashFlowType.INTEREST: return '利息';
+            default: return type;
+          }
+        };
+        
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md">
+              <h3 className="text-lg font-bold text-red-600 mb-2">確認刪除資金紀錄</h3>
+              <div className="mb-4">
+                <p className="text-slate-700 mb-2">
+                  <span className="font-semibold">帳戶：</span>{accountName}
+                </p>
+                <p className="text-slate-700 mb-2">
+                  <span className="font-semibold">日期：</span>{cashFlow.date}
+                </p>
+                <p className="text-slate-700 mb-2">
+                  <span className="font-semibold">類型：</span>{getTypeName(cashFlow.type)}
+                </p>
+                <p className="text-slate-700">
+                  <span className="font-semibold">金額：</span>
+                  {account?.currency === Currency.USD ? `$${cashFlow.amount.toLocaleString()}` : `NT$${cashFlow.amount.toLocaleString()}`}
+                </p>
+              </div>
+              {relatedTransactions.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-amber-800 font-semibold mb-1">⚠️ 注意</p>
+                  <p className="text-sm text-amber-700">
+                    此帳戶有 <span className="font-bold">{relatedTransactions.length}</span> 筆相關交易記錄。
+                    刪除此資金紀錄可能會影響帳戶餘額計算的準確性。
+                  </p>
+                </div>
+              )}
+              <p className="text-slate-600 mb-6">確定要刪除這筆資金紀錄嗎？此操作無法復原。</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={cancelRemoveCashFlow} className="px-4 py-2 rounded border hover:bg-slate-50">取消</button>
+                <button onClick={confirmRemoveCashFlow} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">確認刪除</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Global Alert Dialog */}
       {alertDialog.isOpen && (
