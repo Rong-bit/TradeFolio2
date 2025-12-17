@@ -37,6 +37,50 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW'): string => {
 };
 
 /**
+ * 使用 CORS 代理服務取得資料（帶備用方案）
+ */
+const fetchWithProxy = async (url: string): Promise<Response | null> => {
+  // 多個 CORS 代理服務作為備用
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    // 直接嘗試（某些環境可能允許）
+    url
+  ];
+
+  for (const proxyUrl of proxies) {
+    try {
+      // 使用 AbortController 實現超時（兼容性更好）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 秒超時
+
+      const response = await fetch(proxyUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return response;
+      }
+    } catch (error: any) {
+      // 繼續嘗試下一個代理
+      if (error.name !== 'AbortError') {
+        console.warn(`代理服務失敗，嘗試下一個: ${proxyUrl.substring(0, 50)}...`);
+      }
+      continue;
+    }
+  }
+
+  return null;
+};
+
+/**
  * 取得單一股票的即時價格資訊
  */
 const fetchSingleStockPrice = async (symbol: string): Promise<PriceData | null> => {
@@ -44,17 +88,11 @@ const fetchSingleStockPrice = async (symbol: string): Promise<PriceData | null> 
     // 使用 Yahoo Finance 的公開 API
     // 由於 CORS 限制，使用 CORS 代理服務
     const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
     
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
+    const response = await fetchWithProxy(baseUrl);
 
-    if (!response.ok) {
-      console.error(`Yahoo Finance API 錯誤: ${symbol} - ${response.status}`);
+    if (!response || !response.ok) {
+      console.error(`Yahoo Finance API 錯誤: ${symbol} - ${response?.status || '無法連接'}`);
       return null;
     }
 
@@ -92,16 +130,10 @@ const fetchExchangeRate = async (): Promise<number> => {
   try {
     // 使用 USDTWD=X 作為查詢符號
     const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&range=1d`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
     
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
+    const response = await fetchWithProxy(baseUrl);
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       console.error('無法取得匯率資訊');
       return 31.5; // 預設匯率
     }
@@ -190,10 +222,9 @@ export const fetchHistoricalYearEndData = async (
     const pricePromises = yahooSymbols.map(async (symbol, index) => {
       try {
         const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${startDate}&period2=${endDate}&interval=1d`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
         
-        const response = await fetch(proxyUrl);
-        if (!response.ok) return null;
+        const response = await fetchWithProxy(baseUrl);
+        if (!response || !response.ok) return null;
 
         const data = await response.json();
         if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
