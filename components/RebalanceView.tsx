@@ -43,7 +43,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
 
   const rebalanceRows = useMemo(() => {
     return holdings.map(h => {
-      const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
+      const valTwd = (h.market === Market.US || h.market === Market.UK || h.market === Market.JP) ? h.currentValue * exchangeRate : h.currentValue;
       const currentPct = totalPortfolioValue > 0 ? (valTwd / totalPortfolioValue) * 100 : 0;
       
       const key = `${h.accountId}-${h.ticker}`;
@@ -54,7 +54,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
       
       let diffShares = 0;
       if (h.currentPrice > 0) {
-        if (h.market === Market.US) {
+        if (h.market === Market.US || h.market === Market.UK || h.market === Market.JP) {
            diffShares = diffValTwd / exchangeRate / h.currentPrice;
         } else {
            diffShares = diffValTwd / h.currentPrice;
@@ -123,7 +123,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
                 return (
                   <tr key={uniqueKey} className="hover:bg-slate-50">
                     <td className="px-4 py-3 font-semibold text-slate-700">
-                      <span className={`text-xs px-1.5 py-0.5 rounded mr-2 ${row.market === Market.US ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                      <span className={`text-xs px-1.5 py-0.5 rounded mr-2 ${
+                        row.market === Market.US ? 'bg-blue-100 text-blue-800' : 
+                        row.market === Market.UK ? 'bg-purple-100 text-purple-800' : 
+                        row.market === Market.JP ? 'bg-red-100 text-red-800' : 
+                        'bg-green-100 text-green-800'
+                      }`}>
                         {row.market}
                       </span>
                       {row.ticker}
@@ -158,7 +163,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
                     </td>
                     <td className="px-4 py-3 text-right font-bold">
                       <span className={isBuy ? 'text-red-600' : 'text-green-600'}>
-                         {isBuy ? '買' : '賣'} {Math.abs(row.diffShares).toFixed(row.market === Market.US ? 2 : 0)}
+                         {isBuy ? '買' : '賣'} {Math.abs(row.diffShares).toFixed((row.market === Market.US || row.market === Market.UK || row.market === Market.JP) ? 2 : 0)}
                       </span>
                     </td>
                   </tr>
@@ -209,3 +214,4 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
 };
 
 export default RebalanceView;
+
