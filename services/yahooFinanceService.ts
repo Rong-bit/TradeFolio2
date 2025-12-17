@@ -216,24 +216,40 @@ export const fetchHistoricalYearEndData = async (
 
     const yahooSymbols = tickers.map((ticker, index) => {
       const market = markets?.[index];
-      return convertToYahooSymbol(ticker, market);
+      const converted = convertToYahooSymbol(ticker, market);
+      console.log(`歷史股價查詢：${ticker} (市場: ${market}) -> ${converted}`);
+      return converted;
     });
 
     const pricePromises = yahooSymbols.map(async (symbol, index) => {
       try {
         const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${startDate}&period2=${endDate}&interval=1d`;
+        console.log(`查詢 URL: ${baseUrl.substring(0, 100)}...`);
         
         const response = await fetchWithProxy(baseUrl);
-        if (!response || !response.ok) return null;
+        if (!response || !response.ok) {
+          console.warn(`HTTP 錯誤: ${symbol} - ${response?.status || '無回應'}`);
+          return null;
+        }
 
         const data = await response.json();
         if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+          console.warn(`Yahoo Finance 返回空數據: ${symbol}`);
           return null;
         }
 
         const result = data.chart.result[0];
+        
+        // 檢查是否有錯誤訊息
+        if (result.error) {
+          console.warn(`Yahoo Finance API 錯誤: ${symbol} -`, result.error);
+          return null;
+        }
+        
         const timestamps = result.timestamp || [];
         const closes = result.indicators?.quote?.[0]?.close || [];
+        
+        console.log(`取得 ${symbol} 數據：${timestamps.length} 個時間點，${closes.filter((c: any) => c != null).length} 個有效價格`);
 
         // 找到最接近年底的收盤價
         if (timestamps.length === 0 || closes.length === 0) {
