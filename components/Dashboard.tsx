@@ -129,7 +129,7 @@ const Dashboard: React.FC<Props> = ({
           </p>
           <div className="flex justify-between items-end mt-1">
              <p className="text-xs text-slate-400">含現金: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
-             <p className="text-[10px] text-slate-300">匯率: {summary.exchangeRateUsdToTwd}</p>
+    
           </div>
         </div>
         <div className={`bg-white p-6 rounded-xl shadow border-l-4 ${summary.totalPLTWD >= 0 ? 'border-success' : 'border-danger'}`}>
@@ -435,33 +435,35 @@ const Dashboard: React.FC<Props> = ({
         onAutoUpdate={onAutoUpdate}
       />
 
-       {/* AI Advisor Section */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 shadow-xl text-white">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Gemini AI 投資顧問
-            </h3>
-            <p className="text-slate-300 text-sm mt-1">分析您的投資組合配置、風險與潛在機會。</p>
+       {/* AI Advisor Section - Only shown if NOT guest */}
+      {!isGuest && (
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 shadow-xl text-white">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Gemini AI 投資顧問
+              </h3>
+              <p className="text-slate-300 text-sm mt-1">分析您的投資組合配置、風險與潛在機會。</p>
+            </div>
+            <button 
+              onClick={handleAskAi} 
+              disabled={loadingAi}
+              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold rounded-lg transition disabled:opacity-50 text-sm shadow-lg shadow-yellow-500/20"
+            >
+              {loadingAi ? '分析中...' : '開始分析'}
+            </button>
           </div>
-          <button 
-            onClick={handleAskAi} 
-            disabled={loadingAi}
-            className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold rounded-lg transition disabled:opacity-50 text-sm shadow-lg shadow-yellow-500/20"
-          >
-            {loadingAi ? '分析中...' : '開始分析'}
-          </button>
-        </div>
 
-        {aiAnalysis && (
-          <div className="bg-white/10 p-5 rounded-lg text-slate-100 text-sm leading-relaxed whitespace-pre-wrap border border-white/10 animate-fade-in">
-            {aiAnalysis}
-          </div>
-        )}
-      </div>
+          {aiAnalysis && (
+            <div className="bg-white/10 p-5 rounded-lg text-slate-100 text-sm leading-relaxed whitespace-pre-wrap border border-white/10 animate-fade-in">
+              {aiAnalysis}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cost Detail Modal */}
       {showCostDetailModal && (
@@ -543,4 +545,3 @@ const Dashboard: React.FC<Props> = ({
 };
 
 export default Dashboard;
-
