@@ -190,8 +190,14 @@ const fetchExchangeRate = async (): Promise<number> => {
  */
 const fetchHistoricalExchangeRate = async (year: number): Promise<number> => {
   try {
-    const endDate = Math.floor(new Date(`${year}-12-31`).getTime() / 1000);
-    const startDate = Math.floor(new Date(`${year}-12-01`).getTime() / 1000);
+    // 使用 UTC 時間來避免時區問題
+    // 查詢範圍：從 11 月 1 日到 12 月 31 日，確保能獲取到年底的數據
+    // Yahoo Finance API 使用 UTC 時間戳（秒）
+    const endDateUTC = Date.UTC(year, 11, 31, 23, 59, 59); // 12 月 31 日 23:59:59 UTC
+    const startDateUTC = Date.UTC(year, 10, 1, 0, 0, 0); // 11 月 1 日 00:00:00 UTC
+    
+    const endDate = Math.floor(endDateUTC / 1000);
+    const startDate = Math.floor(startDateUTC / 1000);
     
     // 使用 USDTWD=X 作為查詢符號
     const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?period1=${startDate}&period2=${endDate}&interval=1d`;
@@ -225,24 +231,43 @@ const fetchHistoricalExchangeRate = async (year: number): Promise<number> => {
     
     console.log(`取得歷史匯率數據：${timestamps.length} 個時間點，${closes.filter((c: any) => c != null).length} 個有效匯率`);
 
-    // 找到最接近年底的匯率
+    // 找到最接近年底（12 月 31 日）的匯率
     if (timestamps.length === 0 || closes.length === 0) {
       console.warn(`無有效的歷史匯率數據，使用當前匯率作為備用`);
       return await fetchExchangeRate();
     }
 
-    // 找到最後一個有效匯率
-    let lastRate = null;
-    for (let i = closes.length - 1; i >= 0; i--) {
+    // 目標時間戳：12 月 31 日 23:59:59 UTC
+    const targetTimestamp = Math.floor(endDateUTC / 1000);
+    
+    // 找到最接近年底的有效匯率
+    let closestRate = null;
+    let closestDiff = Infinity;
+    
+    for (let i = 0; i < timestamps.length; i++) {
       if (closes[i] != null && closes[i] > 0) {
-        lastRate = closes[i];
-        break;
+        const diff = Math.abs(timestamps[i] - targetTimestamp);
+        // 只考慮在年底之前的數據（不能使用未來的數據）
+        if (timestamps[i] <= targetTimestamp && diff < closestDiff) {
+          closestDiff = diff;
+          closestRate = closes[i];
+        }
       }
     }
 
-    if (lastRate != null && lastRate > 0) {
-      console.log(`取得 ${year} 年歷史匯率: ${lastRate}`);
-      return lastRate;
+    // 如果找不到年底之前的數據，則使用最後一個有效匯率（向後兼容）
+    if (closestRate == null) {
+      for (let i = closes.length - 1; i >= 0; i--) {
+        if (closes[i] != null && closes[i] > 0) {
+          closestRate = closes[i];
+          break;
+        }
+      }
+    }
+
+    if (closestRate != null && closestRate > 0) {
+      console.log(`取得 ${year} 年歷史匯率（最接近年底）: ${closestRate}`);
+      return closestRate;
     } else {
       console.warn(`無法取得有效的歷史匯率，使用當前匯率作為備用`);
       return await fetchExchangeRate();
