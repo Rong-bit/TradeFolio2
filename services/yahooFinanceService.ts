@@ -51,43 +51,84 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK'): stri
  * 使用 CORS 代理服務取得資料（帶備用方案）
  */
 const fetchWithProxy = async (url: string): Promise<Response | null> => {
-  // 多個 CORS 代理服務作為備用
+  // 多個 CORS 代理服務作為備用（按優先順序排列）
   const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    // 使用 CORS Anywhere 風格的代理
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    // 使用 allorigins.win（但改用 get 方法，更穩定）
+    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    // 其他備選代理服務
+    `https://cors-anywhere.herokuapp.com/${url}`,
+    `https://thingproxy.freeboard.io/fetch/${url}`,
     // 直接嘗試（某些環境可能允許）
     url
   ];
 
-  for (const proxyUrl of proxies) {
+  for (let i = 0; i < proxies.length; i++) {
+    const proxyUrl = proxies[i];
     try {
       // 使用 AbortController 實現超時（兼容性更好）
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 秒超時
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 秒超時
 
       const response = await fetch(proxyUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
-        signal: controller.signal
+        signal: controller.signal,
+        // 添加 mode 選項以處理 CORS
+        mode: 'cors',
+        credentials: 'omit'
       });
 
       clearTimeout(timeoutId);
 
+      // 檢查響應狀態
       if (response.ok) {
+        // 如果使用 allorigins.win 的 get 方法，需要解析 JSON 並提取內容
+        if (proxyUrl.includes('api.allorigins.win/get')) {
+          try {
+            const jsonData = await response.json();
+            // allorigins.win 的 get 方法返回格式：{ contents: "...", status: {...} }
+            if (jsonData.contents) {
+              // 創建一個新的 Response 對象，包含解析後的內容
+              return new Response(jsonData.contents, {
+                status: 200,
+                statusText: 'OK',
+                headers: { 'Content-Type': 'application/json' }
+              });
+            } else {
+              console.warn(`allorigins.win 返回的內容為空`);
+              continue;
+            }
+          } catch (parseError) {
+            console.warn(`解析 allorigins.win 響應失敗:`, parseError);
+            continue;
+          }
+        }
+        // 其他代理服務直接返回響應
         return response;
+      } else {
+        // 記錄非 200 狀態碼
+        console.warn(`代理服務返回錯誤狀態碼 ${response.status}: ${proxyUrl.substring(0, 60)}...`);
+        continue;
       }
     } catch (error: any) {
       // 繼續嘗試下一個代理
-      if (error.name !== 'AbortError') {
-        console.warn(`代理服務失敗，嘗試下一個: ${proxyUrl.substring(0, 50)}...`);
+      if (error.name === 'AbortError') {
+        console.warn(`代理服務超時: ${proxyUrl.substring(0, 50)}...`);
+      } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+        console.warn(`CORS 錯誤，嘗試下一個代理: ${proxyUrl.substring(0, 50)}...`);
+      } else {
+        console.warn(`代理服務失敗 (${error.name})，嘗試下一個: ${proxyUrl.substring(0, 50)}...`);
       }
       continue;
     }
   }
 
+  console.error(`所有代理服務均失敗，無法取得資料: ${url.substring(0, 80)}...`);
   return null;
 };
 
