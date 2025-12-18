@@ -151,7 +151,7 @@ const App: React.FC = () => {
 
   const handleContactAdmin = () => {
     const subject = encodeURIComponent("TradeFolio 購買/權限開通申請");
-    const body = encodeURIComponent(`Hi 管理員,\n\n我的帳號是: ${currentUser}\n\n我目前是訪客身份，希望申請/購買完整權限。\n\n請協助處理，謝謝。`);
+    const body = encodeURIComponent(`Hi 管理員,\n\n我的帳號是: ${currentUser}\n\n我目前是非會員身份，希望申請/購買完整權限。\n\n請協助處理，謝謝。`);
     window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
   };
 
