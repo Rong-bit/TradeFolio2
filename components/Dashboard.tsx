@@ -258,7 +258,7 @@ const Dashboard: React.FC<Props> = ({
                     <Bar yAxisId="left" dataKey="cost" name="投資成本" stackId="a" fill="#8b5cf6" barSize={30} />
                     
                     {/* Profit Bar - Stacked on Cost, Single Color */}
-                    <Bar yAxisId="left" dataKey="profit" name="累積損益" stackId="a" fill="#10b981" barSize={30} />
+                    <Bar yAxisId="left" dataKey="profit" name="累積損益" stackId="a" fill="transparent" stroke="#10b981" strokeWidth={2} barSize={30} />
 
                     {/* Lines */}
                     <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name="預估總資產 (8%)" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
