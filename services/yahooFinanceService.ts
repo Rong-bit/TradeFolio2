@@ -468,6 +468,58 @@ export const fetchHistoricalYearEndData = async (
 };
 
 /**
+ * 從 MoneyDJ 理財網取得 ETF 的年化報酬率
+ * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
+ * @returns 年化報酬率 (%)，如果無法取得則返回 null
+ */
+const fetchAnnualizedReturnFromMoneyDJ = async (ticker: string): Promise<number | null> => {
+  try {
+    // 清理 ticker（移除 TPE: 前綴）
+    const cleanTicker = ticker.replace(/^TPE:/i, '').trim();
+    
+    // MoneyDJ ETF 年化報酬率排名頁面
+    const url = `https://www.moneydj.com/etf/x/rank/rank0007.xdjhtm?erank=irr&eord=t800652`;
+    
+    const response = await fetchWithProxy(url);
+    if (!response || !response.ok) {
+      console.warn(`無法連接 MoneyDJ: ${response?.status || '無法連接'}`);
+      return null;
+    }
+
+    const html = await response.text();
+    
+    // 使用正則表達式尋找該 ETF 的年化報酬率
+    // MoneyDJ 頁面中，ETF 數據通常在表格中，格式類似：<td>0050</td>...<td>年化報酬率%</td>
+    // 嘗試多種可能的模式
+    const patterns = [
+      // 模式1: 尋找包含 ticker 的行，然後找年化報酬率
+      new RegExp(`<tr[^>]*>.*?${cleanTicker}.*?<td[^>]*>([\\d.]+)%</td>`, 'is'),
+      // 模式2: 尋找 ticker 後面的數字（可能是年化報酬率）
+      new RegExp(`${cleanTicker}[^<]*<td[^>]*>([\\d.]+)</td>`, 'is'),
+      // 模式3: 更寬鬆的匹配
+      new RegExp(`(${cleanTicker})[^>]*>[^<]*<[^>]*>([\\d.]+)%`, 'is'),
+    ];
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const returnValue = parseFloat(match[1]);
+        if (!isNaN(returnValue) && returnValue > 0 && returnValue < 1000) {
+          console.log(`從 MoneyDJ 取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
+          return returnValue;
+        }
+      }
+    }
+
+    console.warn(`無法從 MoneyDJ 解析 ${cleanTicker} 的年化報酬率`);
+    return null;
+  } catch (error) {
+    console.error(`從 MoneyDJ 取得年化報酬率時發生錯誤:`, error);
+    return null;
+  }
+};
+
+/**
  * 取得股票上市以來的年化報酬率 (CAGR)
  * @param ticker 股票代號（格式可以是 "TPE:2330" 或 "AAPL"）
  * @param market 市場類型
@@ -477,6 +529,16 @@ export const fetchAnnualizedReturn = async (
   ticker: string,
   market?: 'US' | 'TW' | 'UK' | 'JP'
 ): Promise<number | null> => {
+  // 對於台股 ETF，優先嘗試從 MoneyDJ 取得（數據更完整）
+  if (market === 'TW' || /^\d{4}$/.test(ticker.replace(/^TPE:/i, '').trim())) {
+    const moneydjReturn = await fetchAnnualizedReturnFromMoneyDJ(ticker);
+    if (moneydjReturn !== null) {
+      return moneydjReturn;
+    }
+    // 如果 MoneyDJ 失敗，繼續使用 Yahoo Finance
+    console.log(`MoneyDJ 無法取得 ${ticker} 的年化報酬率，改用 Yahoo Finance 計算`);
+  }
+
   try {
     const yahooSymbol = convertToYahooSymbol(ticker, market);
     console.log(`查詢年化報酬率: ${ticker} (${market}) -> ${yahooSymbol}`);
@@ -629,39 +691,15 @@ export const fetchAnnualizedReturn = async (
     const cagr = Math.pow(priceRatio, 1 / years) - 1;
     const cagrPercent = cagr * 100; // 轉換為百分比
 
-    // 檢查是否可能缺少早期歷史數據
     const actualStartDate = new Date(earliestTimestamp * 1000);
-    const expectedStartDates: Record<string, string> = {
-      '0050': '2003-06-30', // 元大台灣50成立日期
-      '0056': '2007-12-13', // 元大高股息成立日期
-      '006208': '2012-06-25', // 富邦台50成立日期
-    };
     
-    const tickerKey = ticker.replace(/^TPE:/i, '').trim();
-    const expectedStartDate = expectedStartDates[tickerKey];
-    let dataWarning = '';
-    
-    if (expectedStartDate) {
-      const expectedDate = new Date(expectedStartDate);
-      if (actualStartDate > expectedDate) {
-        const missingYears = (actualStartDate.getTime() - expectedDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-        dataWarning = `⚠️ 注意：Yahoo Finance 的歷史數據只從 ${actualStartDate.toLocaleDateString('zh-TW')} 開始，但 ${tickerKey} 實際成立於 ${expectedStartDate}。缺少約 ${missingYears.toFixed(1)} 年的數據，這可能導致年化報酬率被低估。`;
-      }
-    }
-
     console.log(`${ticker} 年化報酬率計算結果:`);
     console.log(`  使用調整後價格: ${useAdjusted ? '是' : '否'}`);
-    console.log(`  上市日期: ${actualStartDate.toLocaleDateString('zh-TW')}`);
-    if (expectedStartDate) {
-      console.log(`  實際成立日期: ${expectedStartDate}`);
-    }
-    console.log(`  上市價格: ${earliestPrice.toFixed(2)} ${useAdjusted ? '(調整後)' : ''}`);
+    console.log(`  數據起始日期: ${actualStartDate.toLocaleDateString('zh-TW')} (基於 Yahoo Finance 可取得的數據)`);
+    console.log(`  起始價格: ${earliestPrice.toFixed(2)} ${useAdjusted ? '(調整後)' : ''}`);
     console.log(`  當前價格: ${currentPriceForCalculation.toFixed(2)} ${useAdjusted ? '(調整後)' : ''}`);
-    console.log(`  年數: ${years.toFixed(2)} 年`);
+    console.log(`  計算期間: ${years.toFixed(2)} 年`);
     console.log(`  年化報酬率: ${cagrPercent.toFixed(2)}%`);
-    if (dataWarning) {
-      console.warn(dataWarning);
-    }
 
     return cagrPercent;
   } catch (error) {
