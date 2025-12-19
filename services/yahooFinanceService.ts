@@ -134,14 +134,31 @@ const fetchWithProxy = async (url: string, proxyIndex: number = 0): Promise<Resp
         continue;
       }
     } catch (error: any) {
-      // 記錄錯誤
-      if (error.name !== 'AbortError' && !error.message?.includes('CORS') && !error.message?.includes('cors')) {
+      // 檢查是否為 CORS 錯誤
+      const isCorsError = error.message?.includes('CORS') || 
+                         error.message?.includes('cors') ||
+                         error.message?.includes('Access-Control-Allow-Origin') ||
+                         error.message?.includes('blocked by CORS policy') ||
+                         error.name === 'TypeError' && error.message?.includes('Failed to fetch');
+      
+      // 檢查是否為網路錯誤
+      const isNetworkError = error.message?.includes('ERR_FAILED') ||
+                            error.message?.includes('Failed to fetch') ||
+                            error.message?.includes('NetworkError');
+      
+      if (error.name === 'AbortError') {
+        // 超時錯誤，靜默處理
+        lastError = error;
+        console.debug(`[調試] 代理服務 ${proxyName} 請求超時，嘗試下一個...`);
+      } else if (isCorsError || isNetworkError) {
+        // CORS 錯誤或網路錯誤是正常的，系統會自動嘗試下一個代理
+        // 這些錯誤通常表示代理服務不可用或配置問題，不需要顯示為警告
+        lastError = error;
+        console.debug(`[調試] 代理服務 ${proxyName} ${isCorsError ? 'CORS' : '網路'}錯誤（正常，會自動切換代理）`);
+      } else {
+        // 其他錯誤需要記錄
         lastError = error;
         console.warn(`[調試] 代理服務 ${proxyName} 失敗: ${error.message?.substring(0, 50)}...，嘗試下一個...`);
-      } else {
-        // 對於 CORS 錯誤，靜默處理（這是正常的，會自動嘗試下一個代理）
-        lastError = error;
-        console.debug(`[調試] 代理服務 ${proxyName} CORS 錯誤，嘗試下一個...`);
       }
       continue;
     }
@@ -691,6 +708,10 @@ export const fetchCurrentPrices = async (
   markets?: ('US' | 'TW' | 'UK' | 'JP')[]
 ): Promise<{ prices: Record<string, PriceData>, exchangeRate: number, jpyExchangeRate?: number }> => {
   try {
+    console.log(`[調試] ===== 開始批次取得股價與匯率 =====`);
+    console.log(`[調試] 注意：瀏覽器可能顯示 CORS 錯誤，這是正常的。系統會自動切換代理服務。`);
+    console.log(`[調試] 請查看下方日誌中的 ✓ 標記，確認哪些請求成功。`);
+    
     // 轉換所有代號為 Yahoo Finance 格式
     const yahooSymbols = tickers.map((ticker, index) => {
       const market = markets?.[index];
