@@ -940,27 +940,39 @@ const fetchAnnualizedReturnFromStockAnalysis = async (
     
     // StockAnalysis.com 的 URL 格式（根據市場類型）：
     // - 台股：https://stockanalysis.com/quote/tpe/0050/
-    // - 英國：https://stockanalysis.com/quote/swx/VWRA/（或其他交易所格式）
+    // - 英國：https://stockanalysis.com/quote/lon/VWRA/（LON = London Stock Exchange）
     // - 日本：https://stockanalysis.com/quote/tyo/9984/
     // - 美國：先嘗試 /etf/VT/，失敗後嘗試 /stocks/VT/
     let urls: string[] = [];
     
-    if (market === 'TW' || /^\d{4}$/.test(cleanTicker)) {
+    // 優先檢查明確的 market 參數（避免誤判，例如日本股票 8890 不應被誤判為台股）
+    if (market === 'TW') {
       // 台灣市場：使用 /quote/tpe/0050/ 格式
       urls = [`https://stockanalysis.com/quote/tpe/${cleanTicker}/`];
     } else if (market === 'UK') {
-      // 英國市場：使用 /quote/swx/VWRA/ 格式（或其他英國交易所格式）
-      // 注意：SWX 實際上是瑞士交易所，但根據用戶要求使用此格式
-      urls = [`https://stockanalysis.com/quote/swx/${cleanTicker}/`];
+      // 英國市場：使用 /quote/lon/VWRA/ 格式（LON = London Stock Exchange）
+      urls = [`https://stockanalysis.com/quote/lon/${cleanTicker}/`];
     } else if (market === 'JP') {
       // 日本市場：使用 /quote/tyo/9984/ 格式（TYO = Tokyo Stock Exchange）
       urls = [`https://stockanalysis.com/quote/tyo/${cleanTicker}/`];
-    } else if (market === 'US' || market === undefined) {
+    } else if (market === 'US') {
       // 美國市場：先嘗試 ETF，如果失敗再嘗試 stocks
       urls = [
         `https://stockanalysis.com/etf/${cleanTicker}/`,
         `https://stockanalysis.com/stocks/${cleanTicker}/`
       ];
+    } else if (market === undefined) {
+      // 如果 market 未指定，則根據 ticker 格式推斷
+      if (/^\d{4}$/.test(cleanTicker)) {
+        // 4 位數字代號，預設視為台股
+        urls = [`https://stockanalysis.com/quote/tpe/${cleanTicker}/`];
+      } else {
+        // 其他格式，先嘗試 ETF，如果失敗再嘗試 stocks
+        urls = [
+          `https://stockanalysis.com/etf/${cleanTicker}/`,
+          `https://stockanalysis.com/stocks/${cleanTicker}/`
+        ];
+      }
     } else {
       // 其他市場：先嘗試 ETF，如果失敗再嘗試 stocks
       urls = [
