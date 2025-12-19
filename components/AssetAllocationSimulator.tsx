@@ -3,6 +3,7 @@ import { AssetSimulationItem, SimulationResult, Market, YearlyProjection } from 
 import { formatCurrency } from '../utils/calculations';
 import { v4 as uuidv4 } from 'uuid';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
+import { fetchAnnualizedReturn } from '../services/yahooFinanceService';
 
 interface Props {
   holdings?: Array<{ ticker: string; market: Market; annualizedReturn: number }>; // 可選：從現有持倉導入
@@ -20,6 +21,8 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
   const [newAllocation, setNewAllocation] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
+  const [loadingReturn, setLoadingReturn] = useState<boolean>(false);
+  const [loadingTicker, setLoadingTicker] = useState<string>(''); // 正在查詢的股票代號
 
   // 預設的常見資產選項（可擴展）
   const defaultAssets: Array<{ ticker: string; market: Market; name: string; defaultReturn: number }> = [
@@ -197,6 +200,35 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
     }));
 
     setAssets([...assets, ...newAssets]);
+  };
+
+  // 自動查詢年化報酬率
+  const fetchReturnForTicker = async () => {
+    if (!newTicker.trim()) {
+      setErrorMessage('請先輸入股票代號');
+      return;
+    }
+
+    setErrorMessage('');
+    setLoadingReturn(true);
+    setLoadingTicker(newTicker.trim().toUpperCase());
+
+    try {
+      const annualReturn = await fetchAnnualizedReturn(newTicker.trim().toUpperCase(), newMarket);
+      
+      if (annualReturn !== null) {
+        setNewAnnualReturn(annualReturn);
+        setErrorMessage(''); // 清除錯誤訊息
+      } else {
+        setErrorMessage(`無法取得 ${newTicker.trim().toUpperCase()} 的年化報酬率，請手動輸入`);
+      }
+    } catch (error) {
+      console.error('查詢年化報酬率時發生錯誤:', error);
+      setErrorMessage(`查詢年化報酬率失敗，請手動輸入`);
+    } finally {
+      setLoadingReturn(false);
+      setLoadingTicker('');
+    }
   };
 
   // 更新資產
@@ -417,7 +449,29 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">年化報酬率 (%)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              年化報酬率 (%)
+              {newTicker.trim() && (
+                <button
+                  onClick={fetchReturnForTicker}
+                  disabled={loadingReturn}
+                  className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 active:bg-blue-200 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="自動查詢上市以來的年化報酬率"
+                >
+                  {loadingReturn && loadingTicker === newTicker.trim().toUpperCase() ? (
+                    <span className="flex items-center gap-1">
+                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      查詢中
+                    </span>
+                  ) : (
+                    '🔍 自動查詢'
+                  )}
+                </button>
+              )}
+            </label>
             <input
               type="number"
               value={newAnnualReturn}
@@ -427,6 +481,9 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
               min="0"
               max="100"
             />
+            {loadingReturn && loadingTicker === newTicker.trim().toUpperCase() && (
+              <p className="text-xs text-blue-600 mt-1">正在查詢 {newTicker.trim().toUpperCase()} 的年化報酬率...</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">配置比例 (%)</label>
