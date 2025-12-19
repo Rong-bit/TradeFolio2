@@ -468,6 +468,49 @@ export const fetchHistoricalYearEndData = async (
 };
 
 /**
+ * 從 StockAnalysis.com 取得 ETF 的年化報酬率
+ * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
+ * @returns 年化報酬率 (%)，如果無法取得則返回 null
+ */
+const fetchAnnualizedReturnFromStockAnalysis = async (ticker: string): Promise<number | null> => {
+  try {
+    // 清理 ticker（移除 TPE: 前綴）
+    const cleanTicker = ticker.replace(/^TPE:/i, '').trim();
+    
+    // StockAnalysis.com 的 URL 格式：https://stockanalysis.com/quote/tpe/0050/
+    const url = `https://stockanalysis.com/quote/tpe/${cleanTicker}/`;
+    
+    console.log(`嘗試從 StockAnalysis.com 取得 ${cleanTicker} 的年化報酬率...`);
+    const response = await fetchWithProxy(url);
+    if (!response || !response.ok) {
+      console.warn(`無法連接 StockAnalysis.com: ${response?.status || '無法連接'}`);
+      return null;
+    }
+
+    const html = await response.text();
+    
+    // StockAnalysis.com 頁面中，年化報酬率通常在 "Since the fund's inception, the average annual return has been X.XX%." 這樣的文字中
+    // 尋找模式：average annual return has been X.XX%
+    const pattern = /average annual return has been\s+([\d.]+)%/i;
+    const match = html.match(pattern);
+    
+    if (match && match[1]) {
+      const returnValue = parseFloat(match[1]);
+      if (!isNaN(returnValue) && returnValue > 0 && returnValue < 1000) {
+        console.log(`從 StockAnalysis.com 取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
+        return returnValue;
+      }
+    }
+
+    console.warn(`無法從 StockAnalysis.com 解析 ${cleanTicker} 的年化報酬率`);
+    return null;
+  } catch (error) {
+    console.error(`從 StockAnalysis.com 取得年化報酬率時發生錯誤:`, error);
+    return null;
+  }
+};
+
+/**
  * 從 MoneyDJ 理財網取得 ETF 的年化報酬率
  * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
  * @returns 年化報酬率 (%)，如果無法取得則返回 null
@@ -535,6 +578,71 @@ const fetchAnnualizedReturnFromMoneyDJ = async (ticker: string): Promise<number 
 };
 
 /**
+ * 從 Yahoo Finance 績效頁面取得 ETF 的年化報酬率
+ * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
+ * @param market 市場類型
+ * @returns 年化報酬率 (%)，如果無法取得則返回 null
+ */
+const fetchAnnualizedReturnFromYahooPerformance = async (ticker: string, market?: 'US' | 'TW' | 'UK' | 'JP'): Promise<number | null> => {
+  try {
+    // 清理 ticker（移除 TPE: 前綴）
+    const cleanTicker = ticker.replace(/^TPE:/i, '').trim();
+    const yahooSymbol = convertToYahooSymbol(ticker, market);
+    
+    // Yahoo Finance 績效頁面 URL（使用多個地區的 Yahoo Finance）
+    const urls = [
+      `https://finance.yahoo.com/quote/${yahooSymbol}/performance/`,
+      `https://nz.finance.yahoo.com/quote/${yahooSymbol}/performance/`,
+      `https://au.finance.yahoo.com/quote/${yahooSymbol}/performance/`,
+    ];
+    
+    console.log(`嘗試從 Yahoo Finance 績效頁面取得 ${cleanTicker} 的年化報酬率...`);
+    
+    for (const url of urls) {
+      try {
+        const response = await fetchWithProxy(url);
+        if (!response || !response.ok) {
+          continue;
+        }
+
+        const html = await response.text();
+        
+        // Yahoo Finance 績效頁面可能包含年化報酬率數據
+        // 嘗試多種可能的模式
+        const patterns = [
+          // 模式1: "Annualized Return" 或 "CAGR"
+          /(?:annualized return|cagr|average annual return)[\s:]+([\d.]+)%/i,
+          // 模式2: "Since Inception" 相關的年化報酬率
+          /since\s+inception[^%]*?([\d.]+)%/i,
+          // 模式3: 尋找包含 "year" 和百分比的數字
+          /([\d.]+)%\s*(?:per\s+year|annual|annually)/i,
+        ];
+
+        for (const pattern of patterns) {
+          const match = html.match(pattern);
+          if (match && match[1]) {
+            const returnValue = parseFloat(match[1]);
+            if (!isNaN(returnValue) && returnValue > 0 && returnValue < 1000) {
+              console.log(`從 Yahoo Finance 績效頁面取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
+              return returnValue;
+            }
+          }
+        }
+      } catch (error) {
+        // 繼續嘗試下一個 URL
+        continue;
+      }
+    }
+
+    console.warn(`無法從 Yahoo Finance 績效頁面解析 ${cleanTicker} 的年化報酬率`);
+    return null;
+  } catch (error) {
+    console.error(`從 Yahoo Finance 績效頁面取得年化報酬率時發生錯誤:`, error);
+    return null;
+  }
+};
+
+/**
  * 取得股票上市以來的年化報酬率 (CAGR)
  * @param ticker 股票代號（格式可以是 "TPE:2330" 或 "AAPL"）
  * @param market 市場類型
@@ -544,14 +652,28 @@ export const fetchAnnualizedReturn = async (
   ticker: string,
   market?: 'US' | 'TW' | 'UK' | 'JP'
 ): Promise<number | null> => {
-  // 對於台股 ETF，優先嘗試從 MoneyDJ 取得（數據更完整）
+  // 對於台股 ETF，嘗試多個數據源（按優先順序）
   if (market === 'TW' || /^\d{4}$/.test(ticker.replace(/^TPE:/i, '').trim())) {
+    // 優先順序 1: StockAnalysis.com（數據準確且包含成立以來的年化報酬率）
+    const stockAnalysisReturn = await fetchAnnualizedReturnFromStockAnalysis(ticker);
+    if (stockAnalysisReturn !== null) {
+      return stockAnalysisReturn;
+    }
+    
+    // 優先順序 2: Yahoo Finance 績效頁面（官方數據）
+    const yahooPerformanceReturn = await fetchAnnualizedReturnFromYahooPerformance(ticker, market);
+    if (yahooPerformanceReturn !== null) {
+      return yahooPerformanceReturn;
+    }
+    
+    // 優先順序 3: MoneyDJ 理財網（數據完整）
     const moneydjReturn = await fetchAnnualizedReturnFromMoneyDJ(ticker);
     if (moneydjReturn !== null) {
       return moneydjReturn;
     }
-    // 如果 MoneyDJ 失敗，繼續使用 Yahoo Finance
-    console.log(`MoneyDJ 無法取得 ${ticker} 的年化報酬率，改用 Yahoo Finance 計算`);
+    
+    // 如果以上都失敗，使用 Yahoo Finance 歷史數據計算
+    console.log(`所有數據源都無法取得 ${ticker} 的年化報酬率，改用 Yahoo Finance 歷史數據計算`);
   }
 
   try {
