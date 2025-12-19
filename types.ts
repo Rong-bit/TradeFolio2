@@ -8,7 +8,8 @@ export enum Market {
 
 export enum Currency {
   TWD = 'TWD',
-  USD = 'USD'
+  USD = 'USD',
+  JPY = 'JPY'
 }
 
 export enum TransactionType {
@@ -90,6 +91,7 @@ export interface PortfolioSummary {
   netInvestedTWD: number; // Total cash deposits - withdrawals
   annualizedReturn: number; // CAGR
   exchangeRateUsdToTwd: number;
+  jpyExchangeRate?: number; // JPY to TWD exchange rate (optional)
   // Detailed fields
   accumulatedCashDividendsTWD: number;
   accumulatedStockDividendsTWD: number;
@@ -139,6 +141,7 @@ export interface HistoricalData {
   [year: string]: {
     prices: Record<string, number>; // Ticker -> Price on Dec 31
     exchangeRate: number; // USD to TWD on Dec 31
+    jpyExchangeRate?: number; // JPY to TWD on Dec 31 (optional)
   };
 }
 
