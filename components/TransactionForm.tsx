@@ -217,4 +217,3 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onClose }) => {
 
 export default TransactionForm;
 
-
