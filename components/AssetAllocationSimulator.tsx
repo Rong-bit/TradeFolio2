@@ -12,6 +12,8 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
   const [assets, setAssets] = useState<AssetSimulationItem[]>([]);
   const [initialAmount, setInitialAmount] = useState<number>(1000000); // 預設 100 萬
   const [years, setYears] = useState<number>(10); // 預設 10 年
+  const [regularInvestment, setRegularInvestment] = useState<number>(0); // 定期定額金額
+  const [regularFrequency, setRegularFrequency] = useState<'monthly' | 'yearly'>('monthly'); // 定期定額頻率
   const [newTicker, setNewTicker] = useState<string>('');
   const [newMarket, setNewMarket] = useState<Market>(Market.TW);
   const [newAnnualReturn, setNewAnnualReturn] = useState<number>(8);
@@ -44,27 +46,68 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
       return sum + (a.annualizedReturn * a.allocation / 100);
     }, 0);
 
-    // 計算年度預測
+    // 計算年度預測（包含定期定額）
     const yearlyProjections: YearlyProjection[] = [];
     let currentValue = initialAmount;
+    let cumulativeInvestment = initialAmount; // 累積總投入
+    const monthlyReturn = Math.pow(1 + weightedReturn / 100, 1 / 12) - 1; // 月化報酬率
+
+    // 計算年度定期定額投入
+    const annualRegularInvestment = regularFrequency === 'monthly' 
+      ? regularInvestment * 12 
+      : regularInvestment;
 
     for (let year = 1; year <= years; year++) {
-      const previousValue = currentValue;
-      currentValue = currentValue * (1 + weightedReturn / 100);
-      const yearReturn = currentValue - previousValue;
-      const yearReturnPercent = previousValue > 0 ? (yearReturn / previousValue) * 100 : 0;
+      const yearStartValue = currentValue;
+      let yearRegularInvestment = 0;
+
+      if (regularInvestment > 0) {
+        if (regularFrequency === 'monthly') {
+          // 每月投入，計算複利效果
+          for (let month = 1; month <= 12; month++) {
+            // 先投入定期定額
+            currentValue += regularInvestment;
+            cumulativeInvestment += regularInvestment;
+            yearRegularInvestment += regularInvestment;
+            
+            // 然後計算該月的報酬
+            currentValue = currentValue * (1 + monthlyReturn);
+          }
+        } else {
+          // 每年投入一次（在年初投入）
+          currentValue += annualRegularInvestment;
+          cumulativeInvestment += annualRegularInvestment;
+          yearRegularInvestment = annualRegularInvestment;
+          
+          // 計算整年的報酬
+          currentValue = currentValue * (1 + weightedReturn / 100);
+        }
+      } else {
+        // 沒有定期定額，只計算報酬
+        currentValue = currentValue * (1 + weightedReturn / 100);
+      }
+
+      const yearReturn = currentValue - yearStartValue - yearRegularInvestment;
+      const yearReturnPercent = yearStartValue > 0 
+        ? (yearReturn / (yearStartValue + yearRegularInvestment)) * 100 
+        : 0;
 
       yearlyProjections.push({
         year,
         value: currentValue,
         return: yearReturn,
-        returnPercent: yearReturnPercent
+        returnPercent: yearReturnPercent,
+        regularInvestment: yearRegularInvestment,
+        cumulativeInvestment
       });
     }
 
     const finalValue = currentValue;
-    const totalReturn = finalValue - initialAmount;
-    const totalReturnPercent = (totalReturn / initialAmount) * 100;
+    const totalInvested = cumulativeInvestment;
+    const totalReturn = finalValue - totalInvested;
+    const totalReturnPercent = totalInvested > 0 
+      ? (totalReturn / totalInvested) * 100 
+      : 0;
 
     return {
       initialAmount,
@@ -73,9 +116,14 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
       totalReturn,
       totalReturnPercent,
       annualizedReturn: weightedReturn,
-      yearlyProjections
+      yearlyProjections,
+      regularInvestment: regularInvestment > 0 ? {
+        amount: regularInvestment,
+        frequency: regularFrequency,
+        totalInvested: totalInvested
+      } : undefined
     };
-  }, [assets, initialAmount, years]);
+  }, [assets, initialAmount, years, regularInvestment, regularFrequency]);
 
   // 添加資產
   const addAsset = () => {
@@ -201,6 +249,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
     年份: yp.year,
     資產價值: Math.round(yp.value),
     年度報酬: Math.round(yp.return),
+    累積投入: yp.cumulativeInvestment ? Math.round(yp.cumulativeInvestment) : initialAmount,
     初始金額: initialAmount
   })) || [];
 
@@ -247,6 +296,56 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
               min="1"
               max="50"
             />
+          </div>
+        </div>
+        
+        {/* 定期定額設定 */}
+        <div className="mt-6 pt-6 border-t border-slate-200">
+          <h4 className="text-sm font-semibold text-slate-700 mb-4">定期定額投資（選填）</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                定期定額金額 (TWD)
+              </label>
+              <input
+                type="number"
+                value={regularInvestment}
+                onChange={(e) => setRegularInvestment(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                min="0"
+                step="1000"
+                placeholder="0"
+              />
+              <p className="text-xs text-slate-500 mt-1">設定為 0 則不使用定期定額</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                投入頻率
+              </label>
+              <select
+                value={regularFrequency}
+                onChange={(e) => setRegularFrequency(e.target.value as 'monthly' | 'yearly')}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={regularInvestment === 0}
+              >
+                <option value="monthly">每月投入</option>
+                <option value="yearly">每年投入</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <div className="w-full p-3 bg-slate-50 rounded-lg">
+                <p className="text-xs text-slate-600 mb-1">年度總投入</p>
+                <p className="text-lg font-bold text-slate-800">
+                  {regularInvestment > 0 
+                    ? formatCurrency(
+                        regularFrequency === 'monthly' ? regularInvestment * 12 : regularInvestment,
+                        'TWD'
+                      )
+                    : formatCurrency(0, 'TWD')
+                  }
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -447,10 +546,22 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
           {/* 結果摘要卡片 */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-xl shadow border-l-4 border-purple-500">
-              <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">初始投資</h4>
+              <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                {simulationResult.regularInvestment ? '總投入金額' : '初始投資'}
+              </h4>
               <p className="text-2xl font-bold text-slate-800 mt-2">
-                {formatCurrency(simulationResult.initialAmount, 'TWD')}
+                {formatCurrency(
+                  simulationResult.regularInvestment 
+                    ? simulationResult.regularInvestment.totalInvested 
+                    : simulationResult.initialAmount,
+                  'TWD'
+                )}
               </p>
+              {simulationResult.regularInvestment && (
+                <p className="text-xs text-slate-500 mt-1">
+                  初始: {formatCurrency(simulationResult.initialAmount, 'TWD')}
+                </p>
+              )}
             </div>
             <div className="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
               <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">最終價值</h4>
@@ -503,6 +614,15 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
                   />
                   <Line 
                     type="monotone" 
+                    dataKey="累積投入" 
+                    stroke="#10b981" 
+                    strokeWidth={2} 
+                    strokeDasharray="3 3" 
+                    dot={false}
+                    name="累積投入"
+                  />
+                  <Line 
+                    type="monotone" 
                     dataKey="初始金額" 
                     stroke="#8b5cf6" 
                     strokeWidth={2} 
@@ -550,6 +670,10 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
                   <tr>
                     <th className="px-6 py-3">年份</th>
                     <th className="px-6 py-3 text-right">資產價值</th>
+                    {simulationResult.regularInvestment && (
+                      <th className="px-6 py-3 text-right">年度投入</th>
+                    )}
+                    <th className="px-6 py-3 text-right">累積投入</th>
                     <th className="px-6 py-3 text-right">年度報酬</th>
                     <th className="px-6 py-3 text-right">年度報酬率</th>
                   </tr>
@@ -560,6 +684,14 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
                       <td className="px-6 py-3 font-bold text-slate-700">第 {yp.year} 年</td>
                       <td className="px-6 py-3 text-right font-medium">
                         {formatCurrency(yp.value, 'TWD')}
+                      </td>
+                      {simulationResult.regularInvestment && (
+                        <td className="px-6 py-3 text-right text-slate-600">
+                          {yp.regularInvestment ? formatCurrency(yp.regularInvestment, 'TWD') : '-'}
+                        </td>
+                      )}
+                      <td className="px-6 py-3 text-right text-slate-600">
+                        {yp.cumulativeInvestment ? formatCurrency(yp.cumulativeInvestment, 'TWD') : formatCurrency(initialAmount, 'TWD')}
                       </td>
                       <td className={`px-6 py-3 text-right font-bold ${yp.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(yp.return, 'TWD')}
