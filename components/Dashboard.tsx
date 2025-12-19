@@ -257,8 +257,21 @@ const Dashboard: React.FC<Props> = ({
                     {/* Cost Bar */}
                     <Bar yAxisId="left" dataKey="cost" name="投資成本" stackId="a" fill="#8b5cf6" barSize={30} />
                     
-                    {/* Profit Bar - Stacked on Cost, Single Color */}
-                    <Bar yAxisId="left" dataKey="profit" name="累積損益" stackId="a" fill="transparent" stroke="#10b981" strokeWidth={2} barSize={30} />
+                    {/* Profit Bar - Stacked on Cost, Solid with Dynamic Color */}
+                    <Bar 
+                      yAxisId="left" 
+                      dataKey="profit" 
+                      name="累積損益" 
+                      stackId="a" 
+                      barSize={30}
+                    >
+                      {chartData.map((entry: ChartDataPoint, index: number) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.profit >= 0 ? "#10b981" : "#ef4444"}
+                        />
+                      ))}
+                    </Bar>
 
                     {/* Lines */}
                     <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name="預估總資產 (8%)" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
