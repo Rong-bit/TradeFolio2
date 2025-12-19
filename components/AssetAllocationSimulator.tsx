@@ -259,7 +259,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
             <button
               key={`${asset.market}-${asset.ticker}`}
               onClick={() => addDefaultAsset(asset)}
-              className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 text-left"
+              className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100 active:scale-95 active:shadow-inner transition-all duration-150 text-left"
             >
               <div className="font-semibold text-slate-800">{asset.ticker}</div>
               <div className="text-xs text-slate-500">{asset.name}</div>
@@ -270,7 +270,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
         {holdings.length > 0 && (
           <button
             onClick={importFromHoldings}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 active:scale-95 active:shadow-inner transition-all duration-150 text-sm font-medium shadow-md hover:shadow-lg"
           >
             從現有持倉導入
           </button>
@@ -283,7 +283,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
           <p className="text-red-800 font-medium">{errorMessage}</p>
           <button
             onClick={() => setErrorMessage('')}
-            className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            className="mt-2 text-sm text-red-600 hover:text-red-800 active:text-red-900 active:scale-95 transition-all duration-150 underline"
           >
             關閉
           </button>
@@ -344,7 +344,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
           <div className="flex items-end">
             <button
               onClick={addAsset}
-              className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium"
+              className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 active:bg-slate-950 active:scale-95 active:shadow-inner transition-all duration-150 font-medium shadow-md hover:shadow-lg"
             >
               添加
             </button>
@@ -360,13 +360,13 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
             <div className="flex gap-2">
               <button
                 onClick={autoBalance}
-                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium"
+                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 active:bg-blue-200 active:scale-95 active:shadow-inner transition-all duration-150 text-sm font-medium border border-blue-200 hover:border-blue-300"
               >
                 自動平衡
               </button>
               <button
                 onClick={clearAll}
-                className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 text-sm font-medium"
+                className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 active:bg-red-200 active:scale-95 active:shadow-inner transition-all duration-150 text-sm font-medium border border-red-200 hover:border-red-300"
               >
                 清空全部
               </button>
@@ -416,7 +416,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => removeAsset(asset.id)}
-                          className="text-red-500 hover:text-red-700 text-sm"
+                          className="text-red-500 hover:text-red-700 active:text-red-900 active:scale-95 transition-all duration-150 text-sm px-2 py-1 rounded hover:bg-red-50 active:bg-red-100"
                         >
                           刪除
                         </button>
@@ -594,13 +594,13 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="px-4 py-2 rounded border hover:bg-slate-50"
+                className="px-4 py-2 rounded border hover:bg-slate-50 active:bg-slate-100 active:scale-95 active:shadow-inner transition-all duration-150"
               >
                 取消
               </button>
               <button
                 onClick={confirmClearAll}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 active:bg-red-800 active:scale-95 active:shadow-inner transition-all duration-150 shadow-md hover:shadow-lg"
               >
                 確認清空
               </button>
