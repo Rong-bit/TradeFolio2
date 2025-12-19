@@ -25,17 +25,6 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
   const [loadingTicker, setLoadingTicker] = useState<string>(''); // 正在查詢的股票代號
   const [dataWarning, setDataWarning] = useState<string>(''); // 數據不完整的警告訊息
 
-  // 預設的常見資產選項（可擴展）
-  const defaultAssets: Array<{ ticker: string; market: Market; name: string; defaultReturn: number }> = [
-    { ticker: '0050', market: Market.TW, name: '元大台灣50', defaultReturn: 8.5 },
-    { ticker: '0056', market: Market.TW, name: '元大高股息', defaultReturn: 6.5 },
-    { ticker: '2330', market: Market.TW, name: '台積電', defaultReturn: 15.0 },
-    { ticker: 'SPY', market: Market.US, name: 'S&P 500 ETF', defaultReturn: 10.0 },
-    { ticker: 'QQQ', market: Market.US, name: 'NASDAQ 100 ETF', defaultReturn: 12.0 },
-    { ticker: 'VTI', market: Market.US, name: 'Vanguard Total Stock Market', defaultReturn: 9.5 },
-    { ticker: 'VT', market: Market.US, name: 'Vanguard Total World Stock', defaultReturn: 8.5 },
-    { ticker: 'BND', market: Market.US, name: 'Vanguard Total Bond Market', defaultReturn: 4.0 },
-  ];
 
   // 計算模擬結果
   const simulationResult = useMemo<SimulationResult | null>(() => {
@@ -175,29 +164,6 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
     setNewAllocation(0);
   };
 
-  // 從預設選項快速添加
-  const addDefaultAsset = (asset: typeof defaultAssets[0]) => {
-    setErrorMessage('');
-    const currentTotal = assets.reduce((sum, a) => sum + a.allocation, 0);
-    const remaining = 100 - currentTotal;
-    if (remaining <= 0) {
-      setErrorMessage('配置比例已達 100%');
-      return;
-    }
-
-    const suggestedAllocation = Math.min(remaining, 20); // 建議配置 20%，但不超過剩餘比例
-
-    const newAsset: AssetSimulationItem = {
-      id: uuidv4(),
-      ticker: asset.ticker,
-      market: asset.market,
-      name: asset.name,
-      annualizedReturn: asset.defaultReturn,
-      allocation: suggestedAllocation
-    };
-
-    setAssets([...assets, newAsset]);
-  };
 
   // 從現有持倉導入
   const importFromHoldings = () => {
@@ -512,6 +478,19 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
           </div>
         </div>
       </div>
+
+      {/* 從現有持倉導入 */}
+      {holdings.length > 0 && (
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h3 className="font-bold text-slate-800 text-lg mb-4">現有持倉導入</h3>
+          <button
+            onClick={importFromHoldings}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 active:scale-95 active:shadow-inner transition-all duration-150 text-sm font-medium shadow-md hover:shadow-lg"
+          >
+            從現有持倉導入
+          </button>
+        </div>
+      )}
 
       {/* 錯誤訊息顯示 */}
       {errorMessage && (
