@@ -13,6 +13,7 @@ interface Props {
   onDelete: (id: string) => void;
   onClearAll: () => void;
   currentExchangeRate?: number;
+  currentJpyExchangeRate?: number;
 }
 
 const FundManager: React.FC<Props> = ({ 
@@ -22,7 +23,8 @@ const FundManager: React.FC<Props> = ({
   onBatchAdd, 
   onDelete, 
   onClearAll, 
-  currentExchangeRate = 32 
+  currentExchangeRate = 32,
+  currentJpyExchangeRate = 0.21
 }) => {
   // Form State
   const [type, setType] = useState<CashFlowType>(CashFlowType.DEPOSIT);
@@ -92,6 +94,16 @@ const FundManager: React.FC<Props> = ({
           // Transfer from USD -> TWD or USD -> USD
           calculatedTWD = (numAmount * numRate);
        }
+    } else if (account?.currency === Currency.JPY && numRate) {
+       // JPY Logic: Similar to USD
+       if (type === CashFlowType.DEPOSIT) {
+          calculatedTWD = (numAmount * numRate) + numFee;
+       } else if (type === CashFlowType.WITHDRAW) {
+          calculatedTWD = (numAmount * numRate) - numFee;
+       } else {
+          // Transfer from JPY -> TWD or JPY -> JPY
+          calculatedTWD = (numAmount * numRate);
+       }
     } else if (account?.currency === Currency.TWD) {
         // TWD Logic
         if (type === CashFlowType.DEPOSIT) calculatedTWD = numAmount + numFee;
@@ -138,8 +150,8 @@ const FundManager: React.FC<Props> = ({
   const isSameCurrencyTransfer = isTransfer && selectedAccount && targetAccount && selectedAccount.currency === targetAccount.currency;
 
   const showExchangeRateInput = 
-    // Case 1: USD Account doing non-transfer operations (Need rate to calculate TWD cost)
-    (!isTransfer && selectedAccount?.currency === Currency.USD) || 
+    // Case 1: USD/JPY Account doing non-transfer operations (Need rate to calculate TWD cost)
+    (!isTransfer && (selectedAccount?.currency === Currency.USD || selectedAccount?.currency === Currency.JPY)) || 
     // Case 2: Transfer between DIFFERENT currencies
     (isTransfer && targetAccountId !== '' && isCrossCurrencyTransfer);
 
@@ -298,6 +310,7 @@ const FundManager: React.FC<Props> = ({
               <th className="px-4 py-3">日期</th>
               <th className="px-4 py-3 text-right">台幣 (TWD)</th>
               <th className="px-4 py-3 text-right">美元 (USD)</th>
+              <th className="px-4 py-3 text-right">日幣 (JPY)</th>
               <th className="px-4 py-3 text-right">匯率</th>
               <th className="px-4 py-3 text-right">手續費</th>
               <th className="px-4 py-3 text-right">總計成本 (NT$)</th>
@@ -308,7 +321,7 @@ const FundManager: React.FC<Props> = ({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredFlows.length === 0 ? (
-                <tr><td colSpan={9} className="p-8 text-center text-slate-400">沒有符合條件的資金紀錄。</td></tr>
+                <tr><td colSpan={10} className="p-8 text-center text-slate-400">沒有符合條件的資金紀錄。</td></tr>
             ) : (
                 filteredFlows.map(cf => {
                    const account = accounts.find(a => a.id === cf.accountId);
@@ -320,14 +333,15 @@ const FundManager: React.FC<Props> = ({
                    
                    const isTWD = account?.currency === Currency.TWD;
                    const isUSD = account?.currency === Currency.USD;
+                   const isJPY = account?.currency === Currency.JPY;
 
                    // Calculate Total TWD for display
                    let displayTotalTWD = 0;
                    if (cf.amountTWD) {
                        displayTotalTWD = cf.amountTWD;
                    } else {
-                       const rate = cf.exchangeRate || currentExchangeRate;
-                       const baseAmt = isUSD ? cf.amount * rate : cf.amount;
+                       const rate = cf.exchangeRate || (isUSD ? currentExchangeRate : (isJPY ? currentJpyExchangeRate : 1));
+                       const baseAmt = (isUSD || isJPY) ? cf.amount * rate : cf.amount;
                        const feeVal = cf.fee || 0;
                        if (cf.type === CashFlowType.DEPOSIT) {
                            displayTotalTWD = baseAmt + feeVal;
@@ -352,6 +366,10 @@ const FundManager: React.FC<Props> = ({
                        
                        <td className="px-4 py-3 text-right font-mono text-slate-600">
                          {isUSD ? cf.amount.toLocaleString() : '-'}
+                       </td>
+                       
+                       <td className="px-4 py-3 text-right font-mono text-slate-600">
+                         {isJPY ? cf.amount.toLocaleString() : '-'}
                        </td>
                        
                        <td className="px-4 py-3 text-right text-slate-500">
@@ -445,14 +463,21 @@ const FundManager: React.FC<Props> = ({
                      {showExchangeRateInput ? (
                        <div>
                          <label className="block text-sm font-medium text-slate-700">
-                            匯率 (TWD/USD) 
+                            {selectedAccount?.currency === Currency.USD ? '匯率 (TWD/USD)' : 
+                             selectedAccount?.currency === Currency.JPY ? '匯率 (TWD/JPY)' : 
+                             '匯率'}
                             {isCrossCurrencyTransfer && <span className="text-xs text-blue-600 ml-1">不同幣別轉帳</span>}
                             {!isTransfer && selectedAccount?.currency === Currency.USD && <span className="text-xs text-green-600 ml-1">美金換算</span>}
+                            {!isTransfer && selectedAccount?.currency === Currency.JPY && <span className="text-xs text-orange-600 ml-1">日幣換算</span>}
                          </label>
                          <input 
                            type="number" 
                            step="0.0001" 
-                           placeholder={currentExchangeRate.toString()} 
+                           placeholder={
+                             selectedAccount?.currency === Currency.USD ? currentExchangeRate.toString() :
+                             selectedAccount?.currency === Currency.JPY ? currentJpyExchangeRate.toString() :
+                             currentExchangeRate.toString()
+                           } 
                            value={exchangeRate} 
                            onChange={e => setExchangeRate(e.target.value)} 
                            className="mt-1 w-full border border-slate-300 rounded p-2"
