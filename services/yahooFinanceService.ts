@@ -476,19 +476,32 @@ export const fetchHistoricalYearEndData = async (
 };
 
 /**
- * 從 StockAnalysis.com 取得 ETF 的年化報酬率
- * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
+ * 從 StockAnalysis.com 取得股票的年化報酬率
+ * @param ticker 股票代號（格式可以是 "VT"、"AAPL" 或 "0050"）
+ * @param market 市場類型
  * @returns 年化報酬率 (%)，如果無法取得則返回 null
  */
-const fetchAnnualizedReturnFromStockAnalysis = async (ticker: string): Promise<number | null> => {
+const fetchAnnualizedReturnFromStockAnalysis = async (
+  ticker: string,
+  market?: 'US' | 'TW' | 'UK' | 'JP'
+): Promise<number | null> => {
   try {
     // 清理 ticker（移除 TPE: 前綴）
-    const cleanTicker = ticker.replace(/^TPE:/i, '').trim();
+    const cleanTicker = ticker.replace(/^TPE:/i, '').trim().toUpperCase();
     
-    // StockAnalysis.com 的 URL 格式：https://stockanalysis.com/quote/tpe/0050/
-    const url = `https://stockanalysis.com/quote/tpe/${cleanTicker}/`;
+    // StockAnalysis.com 的 URL 格式：
+    // - 美股：https://stockanalysis.com/stocks/VT/
+    // - 台股：https://stockanalysis.com/quote/tpe/0050/
+    let url: string;
+    if (market === 'TW' || /^\d{4}$/.test(cleanTicker)) {
+      // 台股格式
+      url = `https://stockanalysis.com/quote/tpe/${cleanTicker}/`;
+    } else {
+      // 美股或其他市場格式
+      url = `https://stockanalysis.com/stocks/${cleanTicker}/`;
+    }
     
-    console.log(`嘗試從 StockAnalysis.com 取得 ${cleanTicker} 的年化報酬率...`);
+    console.log(`嘗試從 StockAnalysis.com 取得 ${cleanTicker} 的年化報酬率: ${url}`);
     const response = await fetchWithProxy(url);
     if (!response || !response.ok) {
       console.warn(`無法連接 StockAnalysis.com: ${response?.status || '無法連接'}`);
@@ -497,16 +510,36 @@ const fetchAnnualizedReturnFromStockAnalysis = async (ticker: string): Promise<n
 
     const html = await response.text();
     
-    // StockAnalysis.com 頁面中，年化報酬率通常在 "Since the fund's inception, the average annual return has been X.XX%." 這樣的文字中
-    // 尋找模式：average annual return has been X.XX%
-    const pattern = /average annual return has been\s+([\d.]+)%/i;
-    const match = html.match(pattern);
+    // StockAnalysis.com 頁面中，年化報酬率的格式可能是：
+    // 1. "自該基金成立以來，其年均回報率為8.35%。"
+    // 2. "Since the fund's inception, the average annual return has been 8.35%."
+    // 3. "年均回報率為 X.XX%"
+    // 4. "average annual return has been X.XX%"
     
-    if (match && match[1]) {
-      const returnValue = parseFloat(match[1]);
-      if (!isNaN(returnValue) && returnValue > 0 && returnValue < 1000) {
-        console.log(`從 StockAnalysis.com 取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
-        return returnValue;
+    // 嘗試多種正則表達式模式
+    const patterns = [
+      // 中文模式：年均回報率為 X.XX%
+      /年均回報率[為是]\s*([\d.]+)%/i,
+      // 中文模式：自.*成立以來.*年均回報率.*X.XX%
+      /自[^以]*成立以來[^，]*年均回報率[為是]\s*([\d.]+)%/i,
+      // 英文模式：average annual return has been X.XX%
+      /average annual return has been\s+([\d.]+)%/i,
+      // 英文模式：Since.*inception.*average annual return.*X.XX%
+      /since[^,]*inception[^.]*average annual return[^.]*?([\d.]+)%/i,
+      // 更寬鬆的中文模式：年均.*X.XX%
+      /年均[^%]*?([\d.]+)%/i,
+      // 更寬鬆的英文模式：annual return.*X.XX%
+      /annual return[^%]*?([\d.]+)%/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const returnValue = parseFloat(match[1]);
+        if (!isNaN(returnValue) && returnValue > -100 && returnValue < 1000) {
+          console.log(`從 StockAnalysis.com 取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
+          return returnValue;
+        }
       }
     }
 
@@ -514,138 +547,6 @@ const fetchAnnualizedReturnFromStockAnalysis = async (ticker: string): Promise<n
     return null;
   } catch (error) {
     console.error(`從 StockAnalysis.com 取得年化報酬率時發生錯誤:`, error);
-    return null;
-  }
-};
-
-/**
- * 從 MoneyDJ 理財網取得 ETF 的年化報酬率
- * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
- * @returns 年化報酬率 (%)，如果無法取得則返回 null
- */
-const fetchAnnualizedReturnFromMoneyDJ = async (ticker: string): Promise<number | null> => {
-  try {
-    // 清理 ticker（移除 TPE: 前綴）
-    const cleanTicker = ticker.replace(/^TPE:/i, '').trim();
-    
-    // MoneyDJ ETF 年化報酬率排名頁面
-    const url = `https://www.moneydj.com/etf/x/rank/rank0007.xdjhtm?erank=irr&eord=t800652`;
-    
-    const response = await fetchWithProxy(url);
-    if (!response || !response.ok) {
-      console.warn(`無法連接 MoneyDJ: ${response?.status || '無法連接'}`);
-      return null;
-    }
-
-    const html = await response.text();
-    
-    // MoneyDJ 頁面結構分析（根據實際 HTML）：
-    // - 表格行：<tr class="even"> 或 <tr class="odd">
-    // - 代碼在 <td class="col01"><a>0050</a></td>
-    // - 年化報酬率在 <td class="col05 sort"><span class="positive">12.34</span></td> 或 <span class="negative">-1.23</span>
-    
-    // 方法1: 尋找包含 ticker 的表格行，然後在同一行中找到 col05 的年化報酬率
-    // 使用更精確的正則表達式：找到包含 ticker 的 <tr> 到 </tr> 之間的內容
-    const rowPattern = new RegExp(`<tr[^>]*>([\\s\\S]*?<td[^>]*class="col01"[^>]*>.*?${cleanTicker}.*?</td>[\\s\\S]*?)</tr>`, 'i');
-    const rowMatch = html.match(rowPattern);
-    
-    if (rowMatch && rowMatch[1]) {
-      const rowContent = rowMatch[1];
-      
-      // 在該行中尋找 col05 的年化報酬率
-      // 格式：<td class="col05 sort"><span class="positive">12.34</span></td> 或 <span class="negative">-1.23</span>
-      const returnPattern = /<td[^>]*class="col05[^"]*"[^>]*>\s*<span[^>]*>([\d.-]+)<\/span>\s*<\/td>/i;
-      const returnMatch = rowContent.match(returnPattern);
-      
-      if (returnMatch && returnMatch[1]) {
-        const returnValue = parseFloat(returnMatch[1]);
-        if (!isNaN(returnValue)) {
-          console.log(`從 MoneyDJ 取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
-          return returnValue;
-        }
-      }
-    }
-    
-    // 方法2: 更寬鬆的匹配，直接搜尋 ticker 後面的 col05
-    const loosePattern = new RegExp(`${cleanTicker}[\\s\\S]*?<td[^>]*class="col05[^"]*"[^>]*>\\s*<span[^>]*>([\\d.-]+)</span>`, 'i');
-    const looseMatch = html.match(loosePattern);
-    if (looseMatch && looseMatch[1]) {
-      const returnValue = parseFloat(looseMatch[1]);
-      if (!isNaN(returnValue)) {
-        console.log(`從 MoneyDJ 取得 ${cleanTicker} 年化報酬率（方法2）: ${returnValue}%`);
-        return returnValue;
-      }
-    }
-
-    console.warn(`無法從 MoneyDJ 解析 ${cleanTicker} 的年化報酬率`);
-    return null;
-  } catch (error) {
-    console.error(`從 MoneyDJ 取得年化報酬率時發生錯誤:`, error);
-    return null;
-  }
-};
-
-/**
- * 從 Yahoo Finance 績效頁面取得 ETF 的年化報酬率
- * @param ticker 股票代號（格式可以是 "0050" 或 "TPE:0050"）
- * @param market 市場類型
- * @returns 年化報酬率 (%)，如果無法取得則返回 null
- */
-const fetchAnnualizedReturnFromYahooPerformance = async (ticker: string, market?: 'US' | 'TW' | 'UK' | 'JP'): Promise<number | null> => {
-  try {
-    // 清理 ticker（移除 TPE: 前綴）
-    const cleanTicker = ticker.replace(/^TPE:/i, '').trim();
-    const yahooSymbol = convertToYahooSymbol(ticker, market);
-    
-    // Yahoo Finance 績效頁面 URL（使用多個地區的 Yahoo Finance）
-    const urls = [
-      `https://finance.yahoo.com/quote/${yahooSymbol}/performance/`,
-      `https://nz.finance.yahoo.com/quote/${yahooSymbol}/performance/`,
-      `https://au.finance.yahoo.com/quote/${yahooSymbol}/performance/`,
-    ];
-    
-    console.log(`嘗試從 Yahoo Finance 績效頁面取得 ${cleanTicker} 的年化報酬率...`);
-    
-    for (const url of urls) {
-      try {
-        const response = await fetchWithProxy(url);
-        if (!response || !response.ok) {
-          continue;
-        }
-
-        const html = await response.text();
-        
-        // Yahoo Finance 績效頁面可能包含年化報酬率數據
-        // 嘗試多種可能的模式
-        const patterns = [
-          // 模式1: "Annualized Return" 或 "CAGR"
-          /(?:annualized return|cagr|average annual return)[\s:]+([\d.]+)%/i,
-          // 模式2: "Since Inception" 相關的年化報酬率
-          /since\s+inception[^%]*?([\d.]+)%/i,
-          // 模式3: 尋找包含 "year" 和百分比的數字
-          /([\d.]+)%\s*(?:per\s+year|annual|annually)/i,
-        ];
-
-        for (const pattern of patterns) {
-          const match = html.match(pattern);
-          if (match && match[1]) {
-            const returnValue = parseFloat(match[1]);
-            if (!isNaN(returnValue) && returnValue > 0 && returnValue < 1000) {
-              console.log(`從 Yahoo Finance 績效頁面取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
-              return returnValue;
-            }
-          }
-        }
-      } catch (error) {
-        // 繼續嘗試下一個 URL
-        continue;
-      }
-    }
-
-    console.warn(`無法從 Yahoo Finance 績效頁面解析 ${cleanTicker} 的年化報酬率`);
-    return null;
-  } catch (error) {
-    console.error(`從 Yahoo Finance 績效頁面取得年化報酬率時發生錯誤:`, error);
     return null;
   }
 };
@@ -660,30 +561,15 @@ export const fetchAnnualizedReturn = async (
   ticker: string,
   market?: 'US' | 'TW' | 'UK' | 'JP'
 ): Promise<number | null> => {
-  // 對於台股 ETF，嘗試多個數據源（按優先順序）
-  if (market === 'TW' || /^\d{4}$/.test(ticker.replace(/^TPE:/i, '').trim())) {
-    // 優先順序 1: StockAnalysis.com（數據準確且包含成立以來的年化報酬率）
-    const stockAnalysisReturn = await fetchAnnualizedReturnFromStockAnalysis(ticker);
-    if (stockAnalysisReturn !== null) {
-      return stockAnalysisReturn;
-    }
-    
-    // 優先順序 2: Yahoo Finance 績效頁面（官方數據）
-    const yahooPerformanceReturn = await fetchAnnualizedReturnFromYahooPerformance(ticker, market);
-    if (yahooPerformanceReturn !== null) {
-      return yahooPerformanceReturn;
-    }
-    
-    // 優先順序 3: MoneyDJ 理財網（數據完整）
-    const moneydjReturn = await fetchAnnualizedReturnFromMoneyDJ(ticker);
-    if (moneydjReturn !== null) {
-      return moneydjReturn;
-    }
-    
-    // 如果以上都失敗，使用 Yahoo Finance 歷史數據計算
-    console.log(`所有數據源都無法取得 ${ticker} 的年化報酬率，改用 Yahoo Finance 歷史數據計算`);
+  // 優先嘗試從 StockAnalysis.com 取得（數據準確且包含成立以來的年化報酬率）
+  const stockAnalysisReturn = await fetchAnnualizedReturnFromStockAnalysis(ticker, market);
+  if (stockAnalysisReturn !== null) {
+    return stockAnalysisReturn;
   }
-
+  
+  // 如果 StockAnalysis.com 無法取得，使用 Yahoo Finance 歷史數據計算
+  console.log(`StockAnalysis.com 無法取得 ${ticker} 的年化報酬率，改用 Yahoo Finance 歷史數據計算`);
+  
   try {
     const yahooSymbol = convertToYahooSymbol(ticker, market);
     console.log(`查詢年化報酬率: ${ticker} (${market}) -> ${yahooSymbol}`);
