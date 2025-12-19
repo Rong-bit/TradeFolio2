@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { AssetSimulationItem, SimulationResult, Market, YearlyProjection } from '../types';
 import { formatCurrency } from '../utils/calculations';
@@ -802,4 +803,5 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
 };
 
 export default AssetAllocationSimulator;
+
 
