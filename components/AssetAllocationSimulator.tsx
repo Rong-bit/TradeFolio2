@@ -39,6 +39,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
   // 計算模擬結果
   const simulationResult = useMemo<SimulationResult | null>(() => {
     if (assets.length === 0) return null;
+    if (years <= 0) return null; // 投資年數必須大於 0
 
     // 檢查配置比例總和
     const totalAllocation = assets.reduce((sum, a) => sum + a.allocation, 0);
@@ -374,20 +375,23 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
               投資年數
             </label>
             <input
-              type="number"
-              value={years === 0 ? '' : years}
+              type="text"
+              value={years === 0 ? '' : years.toString()}
               onChange={(e) => {
-                const inputValue = e.target.value;
-                // 如果輸入為空，設為 1（最小年數）
+                const inputValue = e.target.value.trim();
+                // 允許空字串（用戶正在輸入時）
                 if (inputValue === '' || inputValue === null || inputValue === undefined) {
-                  setYears(1);
+                  setYears(0); // 使用 0 作為空值的標記
                   return;
                 }
-                // 移除前導零並轉換為整數
+                // 只允許數字
+                if (!/^\d+$/.test(inputValue)) {
+                  return; // 如果不是純數字，不更新
+                }
+                // 轉換為整數
                 const numValue = parseInt(inputValue, 10);
-                // 如果轉換失敗或為 NaN，設為 1
+                // 如果轉換失敗或為 NaN，不更新
                 if (isNaN(numValue)) {
-                  setYears(1);
                   return;
                 }
                 // 確保值在有效範圍內
@@ -401,9 +405,14 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
               }}
               onBlur={(e) => {
                 // 當失去焦點時，確保值正確格式化
-                const numValue = parseInt(e.target.value, 10);
+                const inputValue = e.target.value.trim();
+                if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                  setYears(10); // 預設為 10 年
+                  return;
+                }
+                const numValue = parseInt(inputValue, 10);
                 if (isNaN(numValue) || numValue < 1) {
-                  setYears(1);
+                  setYears(10); // 預設為 10 年
                 } else if (numValue > 50) {
                   setYears(50);
                 } else {
