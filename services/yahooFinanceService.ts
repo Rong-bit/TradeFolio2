@@ -467,5 +467,117 @@ export const fetchHistoricalYearEndData = async (
   }
 };
 
+/**
+ * 取得股票上市以來的年化報酬率 (CAGR)
+ * @param ticker 股票代號（格式可以是 "TPE:2330" 或 "AAPL"）
+ * @param market 市場類型
+ * @returns 年化報酬率 (%)，如果無法取得則返回 null
+ */
+export const fetchAnnualizedReturn = async (
+  ticker: string,
+  market?: 'US' | 'TW' | 'UK' | 'JP'
+): Promise<number | null> => {
+  try {
+    const yahooSymbol = convertToYahooSymbol(ticker, market);
+    console.log(`查詢年化報酬率: ${ticker} (${market}) -> ${yahooSymbol}`);
+
+    // 1. 取得當前股價
+    const currentPriceData = await fetchSingleStockPrice(yahooSymbol);
+    if (!currentPriceData || currentPriceData.price <= 0) {
+      console.warn(`無法取得 ${ticker} 的當前股價`);
+      return null;
+    }
+    const currentPrice = currentPriceData.price;
+    const currentDate = Date.now();
+
+    // 2. 查詢歷史股價（查詢過去20年的數據以找到最早可取得的股價）
+    const yearsToSearch = 20;
+    const endDate = Math.floor(currentDate / 1000);
+    const startDate = Math.floor((currentDate - yearsToSearch * 365 * 24 * 60 * 60 * 1000) / 1000);
+
+    const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?period1=${startDate}&period2=${endDate}&interval=1d`;
+    
+    const response = await fetchWithProxy(baseUrl);
+    if (!response || !response.ok) {
+      console.warn(`無法取得 ${ticker} 的歷史數據`);
+      return null;
+    }
+
+    const data = await response.json();
+    if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+      console.warn(`Yahoo Finance 返回空數據: ${ticker}`);
+      return null;
+    }
+
+    const result = data.chart.result[0];
+    
+    // 檢查是否有錯誤訊息
+    if (result.error) {
+      console.warn(`Yahoo Finance API 錯誤: ${ticker} -`, result.error);
+      return null;
+    }
+
+    const timestamps = result.timestamp || [];
+    const closes = result.indicators?.quote?.[0]?.close || [];
+
+    if (timestamps.length === 0 || closes.length === 0) {
+      console.warn(`無有效的歷史價格數據: ${ticker}`);
+      return null;
+    }
+
+    // 3. 找到最早的有效價格（上市價格）
+    let earliestPrice: number | null = null;
+    let earliestTimestamp: number | null = null;
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (closes[i] != null && closes[i] > 0) {
+        earliestPrice = closes[i];
+        earliestTimestamp = timestamps[i];
+        break; // 找到第一個有效價格就停止
+      }
+    }
+
+    if (!earliestPrice || !earliestTimestamp) {
+      console.warn(`無法找到 ${ticker} 的有效歷史價格`);
+      return null;
+    }
+
+    // 4. 計算年化報酬率 (CAGR)
+    // CAGR = ((當前價格 / 初始價格) ^ (1 / 年數)) - 1
+    const years = (currentDate / 1000 - earliestTimestamp) / (365.25 * 24 * 60 * 60);
+    
+    if (years <= 0) {
+      console.warn(`計算年數無效: ${years}`);
+      return null;
+    }
+
+    // 如果上市時間少於1年，可能不夠準確，但仍計算
+    if (years < 1) {
+      console.warn(`警告: ${ticker} 上市時間少於1年 (${years.toFixed(2)} 年)，年化報酬率可能不夠準確`);
+    }
+
+    const priceRatio = currentPrice / earliestPrice;
+    if (priceRatio <= 0) {
+      console.warn(`價格比率無效: ${priceRatio}`);
+      return null;
+    }
+
+    const cagr = Math.pow(priceRatio, 1 / years) - 1;
+    const cagrPercent = cagr * 100;
+
+    console.log(`${ticker} 年化報酬率計算結果:`);
+    console.log(`  上市日期: ${new Date(earliestTimestamp * 1000).toLocaleDateString('zh-TW')}`);
+    console.log(`  上市價格: ${earliestPrice.toFixed(2)}`);
+    console.log(`  當前價格: ${currentPrice.toFixed(2)}`);
+    console.log(`  年數: ${years.toFixed(2)} 年`);
+    console.log(`  年化報酬率: ${cagrPercent.toFixed(2)}%`);
+
+    return cagrPercent;
+  } catch (error) {
+    console.error(`取得 ${ticker} 年化報酬率時發生錯誤:`, error);
+    return null;
+  }
+};
+
 
 
