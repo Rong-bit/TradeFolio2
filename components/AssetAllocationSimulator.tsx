@@ -638,9 +638,6 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
               <p className="text-blue-700">
                 <strong>範例：</strong>股票從 100 元漲到 200 元，經過 5 年，年化報酬率約為 <strong>14.87%</strong>
               </p>
-              <p className="mt-2 text-orange-700 border-t border-orange-200 pt-2">
-                <strong>注意：</strong>Yahoo Finance 對某些台股 ETF（如 0050）的歷史數據可能不完整，只從 2009 年開始，這會導致年化報酬率被低估。請查看瀏覽器控制台（F12）以獲取詳細信息。
-              </p>
             </div>
           </div>
           <div>
@@ -1024,4 +1021,5 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
 };
 
 export default AssetAllocationSimulator;
+
 
