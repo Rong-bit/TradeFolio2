@@ -64,6 +64,7 @@ const App: React.FC = () => {
   const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({});
   const [priceDetails, setPriceDetails] = useState<Record<string, { change: number, changePercent: number }>>({});
   const [exchangeRate, setExchangeRate] = useState<number>(31.5);
+  const [jpyExchangeRate, setJpyExchangeRate] = useState<number | undefined>(undefined);
   const [rebalanceTargets, setRebalanceTargets] = useState<Record<string, number>>({});
   const [historicalData, setHistoricalData] = useState<HistoricalData>({}); 
   
@@ -181,6 +182,7 @@ const App: React.FC = () => {
     setCurrentPrices({});
     setPriceDetails({});
     setExchangeRate(31.5);
+    setJpyExchangeRate(undefined);
     setRebalanceTargets({});
     setHistoricalData({});
     setHasAutoUpdated(false); // 重置自動更新狀態
@@ -204,6 +206,9 @@ const App: React.FC = () => {
     const rate = localStorage.getItem(getKey('exchangeRate'));
     setExchangeRate(rate ? parseFloat(rate) : 31.5);
     
+    const jpyRate = localStorage.getItem(getKey('jpyExchangeRate'));
+    setJpyExchangeRate(jpyRate ? parseFloat(jpyRate) : undefined);
+    
     setRebalanceTargets(load('rebalanceTargets', {}));
     setHistoricalData(load('historicalData', {}));
 
@@ -219,9 +224,12 @@ const App: React.FC = () => {
     localStorage.setItem(getKey('prices'), JSON.stringify(currentPrices));
     localStorage.setItem(getKey('priceDetails'), JSON.stringify(priceDetails));
     localStorage.setItem(getKey('exchangeRate'), exchangeRate.toString());
+    if (jpyExchangeRate !== undefined) {
+      localStorage.setItem(getKey('jpyExchangeRate'), jpyExchangeRate.toString());
+    }
     localStorage.setItem(getKey('rebalanceTargets'), JSON.stringify(rebalanceTargets));
     localStorage.setItem(getKey('historicalData'), JSON.stringify(historicalData));
-  }, [transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, rebalanceTargets, historicalData, isAuthenticated, currentUser]);
+  }, [transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, jpyExchangeRate, rebalanceTargets, historicalData, isAuthenticated, currentUser]);
 
   const showAlert = (message: string, title: string = '提示', type: 'info' | 'success' | 'error' = 'info') => {
     setAlertDialog({ isOpen: true, title, message, type });
@@ -588,10 +596,10 @@ const App: React.FC = () => {
     }
   }, [isAuthenticated, baseHoldings.length, hasAutoUpdated]);
 
-  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData), [transactions, cashFlows, accounts, summary, exchangeRate, historicalData]);
+  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate), [transactions, cashFlows, accounts, summary, exchangeRate, historicalData, jpyExchangeRate]);
   const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate), [holdings, summary, exchangeRate]);
   const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
-  const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate]);
+  const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate]);
 
   // --- Filtering & Balance Calculation Logic (Merged) ---
   const combinedRecords = useMemo(() => {
