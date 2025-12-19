@@ -492,9 +492,13 @@ export const fetchAnnualizedReturn = async (
 
     // 2. 查詢歷史股價（查詢過去30年的數據以找到最早可取得的股價）
     // 增加查詢範圍以確保能取得完整的上市歷史數據
+    // 對於台股 ETF，可能需要更長的查詢範圍
     const yearsToSearch = 30;
     const endDate = Math.floor(currentDate / 1000);
-    const startDate = Math.floor((currentDate - yearsToSearch * 365 * 24 * 60 * 60 * 1000) / 1000);
+    // 嘗試從更早的時間開始查詢（2000年1月1日，涵蓋大部分台股ETF的成立時間）
+    const earliestPossibleDate = Math.floor(new Date('2000-01-01').getTime() / 1000);
+    const calculatedStartDate = Math.floor((currentDate - yearsToSearch * 365 * 24 * 60 * 60 * 1000) / 1000);
+    const startDate = Math.max(earliestPossibleDate, calculatedStartDate);
 
     const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?period1=${startDate}&period2=${endDate}&interval=1d`;
     
@@ -625,13 +629,39 @@ export const fetchAnnualizedReturn = async (
     const cagr = Math.pow(priceRatio, 1 / years) - 1;
     const cagrPercent = cagr * 100; // 轉換為百分比
 
+    // 檢查是否可能缺少早期歷史數據
+    const actualStartDate = new Date(earliestTimestamp * 1000);
+    const expectedStartDates: Record<string, string> = {
+      '0050': '2003-06-30', // 元大台灣50成立日期
+      '0056': '2007-12-13', // 元大高股息成立日期
+      '006208': '2012-06-25', // 富邦台50成立日期
+    };
+    
+    const tickerKey = ticker.replace(/^TPE:/i, '').trim();
+    const expectedStartDate = expectedStartDates[tickerKey];
+    let dataWarning = '';
+    
+    if (expectedStartDate) {
+      const expectedDate = new Date(expectedStartDate);
+      if (actualStartDate > expectedDate) {
+        const missingYears = (actualStartDate.getTime() - expectedDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+        dataWarning = `⚠️ 注意：Yahoo Finance 的歷史數據只從 ${actualStartDate.toLocaleDateString('zh-TW')} 開始，但 ${tickerKey} 實際成立於 ${expectedStartDate}。缺少約 ${missingYears.toFixed(1)} 年的數據，這可能導致年化報酬率被低估。`;
+      }
+    }
+
     console.log(`${ticker} 年化報酬率計算結果:`);
     console.log(`  使用調整後價格: ${useAdjusted ? '是' : '否'}`);
-    console.log(`  上市日期: ${new Date(earliestTimestamp * 1000).toLocaleDateString('zh-TW')}`);
+    console.log(`  上市日期: ${actualStartDate.toLocaleDateString('zh-TW')}`);
+    if (expectedStartDate) {
+      console.log(`  實際成立日期: ${expectedStartDate}`);
+    }
     console.log(`  上市價格: ${earliestPrice.toFixed(2)} ${useAdjusted ? '(調整後)' : ''}`);
     console.log(`  當前價格: ${currentPriceForCalculation.toFixed(2)} ${useAdjusted ? '(調整後)' : ''}`);
     console.log(`  年數: ${years.toFixed(2)} 年`);
     console.log(`  年化報酬率: ${cagrPercent.toFixed(2)}%`);
+    if (dataWarning) {
+      console.warn(dataWarning);
+    }
 
     return cagrPercent;
   } catch (error) {
