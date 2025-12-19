@@ -486,19 +486,33 @@ const fetchAnnualizedReturnFromStockAnalysis = async (
   market?: 'US' | 'TW' | 'UK' | 'JP'
 ): Promise<number | null> => {
   try {
-    // 清理 ticker（移除 TPE: 前綴）
-    const cleanTicker = ticker.replace(/^TPE:/i, '').trim().toUpperCase();
+    // 清理 ticker，處理各種前綴格式
+    let cleanTicker = ticker.trim().toUpperCase();
     
-    // StockAnalysis.com 的 URL 格式：
-    // - 美股 ETF：https://stockanalysis.com/etf/VT/
-    // - 美股股票：https://stockanalysis.com/stocks/AAPL/
+    // 移除可能的 TPE: 前綴
+    cleanTicker = cleanTicker.replace(/^TPE:/i, '').trim();
+    
+    // StockAnalysis.com 的 URL 格式（根據市場類型）：
     // - 台股：https://stockanalysis.com/quote/tpe/0050/
+    // - 英國：https://stockanalysis.com/quote/swx/VWRA/（或其他交易所格式）
+    // - 美國：先嘗試 /etf/VT/，失敗後嘗試 /stocks/VT/
     let urls: string[] = [];
+    
     if (market === 'TW' || /^\d{4}$/.test(cleanTicker)) {
-      // 台股格式
+      // 台灣市場：使用 /quote/tpe/0050/ 格式
       urls = [`https://stockanalysis.com/quote/tpe/${cleanTicker}/`];
+    } else if (market === 'UK') {
+      // 英國市場：使用 /quote/swx/VWRA/ 格式（或其他英國交易所格式）
+      // 注意：SWX 實際上是瑞士交易所，但根據用戶要求使用此格式
+      urls = [`https://stockanalysis.com/quote/swx/${cleanTicker}/`];
+    } else if (market === 'US' || market === undefined) {
+      // 美國市場：先嘗試 ETF，如果失敗再嘗試 stocks
+      urls = [
+        `https://stockanalysis.com/etf/${cleanTicker}/`,
+        `https://stockanalysis.com/stocks/${cleanTicker}/`
+      ];
     } else {
-      // 美股格式：先嘗試 ETF，如果失敗再嘗試 stocks
+      // 其他市場（如日本）：先嘗試 ETF，如果失敗再嘗試 stocks
       urls = [
         `https://stockanalysis.com/etf/${cleanTicker}/`,
         `https://stockanalysis.com/stocks/${cleanTicker}/`
