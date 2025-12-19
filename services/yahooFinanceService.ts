@@ -62,11 +62,11 @@ const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK' | 'JP'
  * 使用 CORS 代理服務取得資料（帶備用方案）
  */
 const fetchWithProxy = async (url: string): Promise<Response | null> => {
-  // 多個 CORS 代理服務作為備用
+  // 多個 CORS 代理服務作為備用（按可靠性排序）
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
     `https://cors-anywhere.herokuapp.com/${url}`,
     // 直接嘗試（某些環境可能允許）
     url
@@ -85,7 +85,7 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
       const response = await fetch(proxyUrl, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
+          'Accept': 'text/html,application/json,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
         signal: controller.signal
       });
@@ -99,17 +99,25 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
         }
         return response;
       } else {
-        // 記錄非成功的響應
+        // 記錄非成功的響應（但不顯示錯誤，因為會嘗試下一個代理）
         lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // 只在開發模式下顯示
+        if (isDevelopment) {
+          console.debug(`代理服務 ${i + 1}/${proxies.length} 返回錯誤 ${response.status}，嘗試下一個...`);
+        }
       }
     } catch (error: any) {
-      // 記錄錯誤（但不顯示超時錯誤）
-      if (error.name !== 'AbortError') {
+      // 記錄錯誤（但不顯示超時錯誤和 CORS 錯誤，因為會自動嘗試下一個代理）
+      // CORS 錯誤是正常的，系統會自動嘗試下一個代理服務
+      if (error.name !== 'AbortError' && !error.message?.includes('CORS') && !error.message?.includes('cors')) {
         lastError = error;
         // 只在開發模式下顯示詳細的警告訊息
         if (isDevelopment) {
-          console.debug(`代理服務 ${i + 1}/${proxies.length} 失敗，嘗試下一個...`);
+          console.debug(`代理服務 ${i + 1}/${proxies.length} 失敗: ${error.message?.substring(0, 50)}...，嘗試下一個...`);
         }
+      } else {
+        // 對於 CORS 錯誤，靜默處理（這是正常的，會自動嘗試下一個代理）
+        lastError = error;
       }
       continue;
     }
