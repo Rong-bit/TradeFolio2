@@ -80,7 +80,7 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
     try {
       // 使用 AbortController 實現超時（兼容性更好）
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 秒超時
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 秒超時
 
       const response = await fetch(proxyUrl, {
         method: 'GET',
@@ -132,9 +132,12 @@ const fetchWithProxy = async (url: string): Promise<Response | null> => {
 };
 
 /**
- * 取得單一股票的即時價格資訊
+ * 取得單一股票的即時價格資訊（帶重試機制）
  */
-const fetchSingleStockPrice = async (symbol: string): Promise<PriceData | null> => {
+const fetchSingleStockPrice = async (symbol: string, retryCount: number = 0): Promise<PriceData | null> => {
+  const maxRetries = 2; // 最多重試 2 次
+  const retryDelay = 3000; // 重試延遲 3 秒
+  
   try {
     // 使用 Yahoo Finance 的公開 API
     // 由於 CORS 限制，使用 CORS 代理服務
@@ -143,6 +146,12 @@ const fetchSingleStockPrice = async (symbol: string): Promise<PriceData | null> 
     const response = await fetchWithProxy(baseUrl);
 
     if (!response || !response.ok) {
+      // 如果是速率限制錯誤且還有重試機會，則重試
+      if ((response?.status === 429 || response?.status === 408) && retryCount < maxRetries) {
+        console.warn(`取得 ${symbol} 股價時遇到速率限制，等待 ${retryDelay}ms 後重試 (${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return fetchSingleStockPrice(symbol, retryCount + 1);
+      }
       console.error(`Yahoo Finance API 錯誤: ${symbol} - ${response?.status || '無法連接'}`);
       return null;
     }
@@ -160,11 +169,28 @@ const fetchSingleStockPrice = async (symbol: string): Promise<PriceData | null> 
         return null;
       }
       
-      // 檢查是否為 HTML 錯誤頁面或純文本錯誤訊息
-      if (text.trim().startsWith('Edge:') || text.trim().startsWith('Too many') || 
-          text.includes('<!DOCTYPE') || text.includes('<html')) {
+      // 檢查是否為速率限制錯誤
+      const isRateLimitError = text.trim().startsWith('Edge:') || 
+                               text.trim().startsWith('Too many') || 
+                               text.trim().startsWith('Too Many');
+      
+      if (isRateLimitError) {
+        // 如果是速率限制錯誤且還有重試機會，則重試
+        if (retryCount < maxRetries) {
+          const errorPreview = text.substring(0, 200);
+          console.warn(`取得 ${symbol} 股價時遇到速率限制: ${errorPreview}，等待 ${retryDelay}ms 後重試 (${retryCount + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return fetchSingleStockPrice(symbol, retryCount + 1);
+        }
         const errorPreview = text.substring(0, 200);
-        console.error(`取得 ${symbol} 股價時發生錯誤: 收到錯誤訊息而非 JSON。內容: ${errorPreview}`);
+        console.error(`取得 ${symbol} 股價時發生錯誤: 收到速率限制錯誤。內容: ${errorPreview}`);
+        return null;
+      }
+      
+      // 檢查是否為 HTML 錯誤頁面
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        const errorPreview = text.substring(0, 200);
+        console.error(`取得 ${symbol} 股價時發生錯誤: 收到 HTML 錯誤頁面。內容: ${errorPreview}`);
         return null;
       }
     } catch (textError: any) {
@@ -608,19 +634,18 @@ export const fetchCurrentPrices = async (
     });
 
     // 批次處理請求，避免速率限制
-    // 每次處理 3 個請求，每個請求之間延遲 200ms
-    const batchSize = 3;
-    const delayMs = 200;
+    // 逐個處理請求，每個請求之間延遲 800ms，避免觸發速率限制
+    const delayMs = 800;
     const prices: (PriceData | null)[] = [];
     
-    for (let i = 0; i < yahooSymbols.length; i += batchSize) {
-      const batch = yahooSymbols.slice(i, i + batchSize);
-      const batchPromises = batch.map(symbol => fetchSingleStockPrice(symbol));
-      const batchResults = await Promise.all(batchPromises);
-      prices.push(...batchResults);
+    // 逐個處理每個股票，避免同時發送太多請求
+    for (let i = 0; i < yahooSymbols.length; i++) {
+      const symbol = yahooSymbols[i];
+      const price = await fetchSingleStockPrice(symbol);
+      prices.push(price);
       
-      // 如果不是最後一批，添加延遲
-      if (i + batchSize < yahooSymbols.length) {
+      // 如果不是最後一個，添加延遲
+      if (i < yahooSymbols.length - 1) {
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
