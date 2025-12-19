@@ -490,55 +490,59 @@ const fetchAnnualizedReturnFromStockAnalysis = async (
     const cleanTicker = ticker.replace(/^TPE:/i, '').trim().toUpperCase();
     
     // StockAnalysis.com 的 URL 格式：
-    // - 美股：https://stockanalysis.com/stocks/VT/
+    // - 美股 ETF：https://stockanalysis.com/etf/VT/
+    // - 美股股票：https://stockanalysis.com/stocks/AAPL/
     // - 台股：https://stockanalysis.com/quote/tpe/0050/
-    let url: string;
+    let urls: string[] = [];
     if (market === 'TW' || /^\d{4}$/.test(cleanTicker)) {
       // 台股格式
-      url = `https://stockanalysis.com/quote/tpe/${cleanTicker}/`;
+      urls = [`https://stockanalysis.com/quote/tpe/${cleanTicker}/`];
     } else {
-      // 美股或其他市場格式
-      url = `https://stockanalysis.com/stocks/${cleanTicker}/`;
+      // 美股格式：先嘗試 ETF，如果失敗再嘗試 stocks
+      urls = [
+        `https://stockanalysis.com/etf/${cleanTicker}/`,
+        `https://stockanalysis.com/stocks/${cleanTicker}/`
+      ];
     }
     
-    console.log(`嘗試從 StockAnalysis.com 取得 ${cleanTicker} 的年化報酬率: ${url}`);
-    const response = await fetchWithProxy(url);
-    if (!response || !response.ok) {
-      console.warn(`無法連接 StockAnalysis.com: ${response?.status || '無法連接'}`);
-      return null;
-    }
-
-    const html = await response.text();
-    
-    // StockAnalysis.com 頁面中，年化報酬率的格式可能是：
-    // 1. "自該基金成立以來，其年均回報率為8.35%。"
-    // 2. "Since the fund's inception, the average annual return has been 8.35%."
-    // 3. "年均回報率為 X.XX%"
-    // 4. "average annual return has been X.XX%"
-    
-    // 嘗試多種正則表達式模式
+    // StockAnalysis.com 頁面中，年化報酬率的格式：
+    // "Since the fund's inception, the average annual return has been 8.35%."
+    // 嘗試多種正則表達式模式（按優先順序）
     const patterns = [
+      // 最精確：Since the fund's inception, the average annual return has been X.XX%
+      /since\s+the\s+fund'?s?\s+inception[^.]*average\s+annual\s+return\s+has\s+been\s+([\d.]+)%/i,
+      // 精確：average annual return has been X.XX%
+      /average\s+annual\s+return\s+has\s+been\s+([\d.]+)%/i,
+      // 寬鬆：Since.*inception.*average annual return.*X.XX%
+      /since[^.]*inception[^.]*average\s+annual\s+return[^.]*?([\d.]+)%/i,
+      // 中文模式：自.*成立以來.*年均回報率.*X.XX%
+      /自[^以]*成立以來[^，。]*年均回報率[為是]\s*([\d.]+)%/i,
       // 中文模式：年均回報率為 X.XX%
       /年均回報率[為是]\s*([\d.]+)%/i,
-      // 中文模式：自.*成立以來.*年均回報率.*X.XX%
-      /自[^以]*成立以來[^，]*年均回報率[為是]\s*([\d.]+)%/i,
-      // 英文模式：average annual return has been X.XX%
-      /average annual return has been\s+([\d.]+)%/i,
-      // 英文模式：Since.*inception.*average annual return.*X.XX%
-      /since[^,]*inception[^.]*average annual return[^.]*?([\d.]+)%/i,
-      // 更寬鬆的中文模式：年均.*X.XX%
-      /年均[^%]*?([\d.]+)%/i,
-      // 更寬鬆的英文模式：annual return.*X.XX%
-      /annual return[^%]*?([\d.]+)%/i,
+      // 更寬鬆：annual return.*X.XX%
+      /annual\s+return[^%]*?([\d.]+)%/i,
     ];
 
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        const returnValue = parseFloat(match[1]);
-        if (!isNaN(returnValue) && returnValue > -100 && returnValue < 1000) {
-          console.log(`從 StockAnalysis.com 取得 ${cleanTicker} 年化報酬率: ${returnValue}%`);
-          return returnValue;
+    // 嘗試每個 URL
+    for (const url of urls) {
+      console.log(`嘗試從 StockAnalysis.com 取得 ${cleanTicker} 的年化報酬率: ${url}`);
+      const response = await fetchWithProxy(url);
+      if (!response || !response.ok) {
+        continue; // 嘗試下一個 URL
+      }
+
+      const html = await response.text();
+      
+      // 嘗試每個正則表達式模式
+      for (let i = 0; i < patterns.length; i++) {
+        const pattern = patterns[i];
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const returnValue = parseFloat(match[1]);
+          if (!isNaN(returnValue) && returnValue > -100 && returnValue < 1000) {
+            console.log(`從 StockAnalysis.com 取得 ${cleanTicker} 年化報酬率: ${returnValue}% (URL: ${url}, 模式: ${i + 1})`);
+            return returnValue;
+          }
         }
       }
     }
