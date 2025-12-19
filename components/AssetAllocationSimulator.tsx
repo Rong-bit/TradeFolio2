@@ -23,6 +23,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
   const [loadingReturn, setLoadingReturn] = useState<boolean>(false);
   const [loadingTicker, setLoadingTicker] = useState<string>(''); // 正在查詢的股票代號
+  const [dataWarning, setDataWarning] = useState<string>(''); // 數據不完整的警告訊息
 
   // 預設的常見資產選項（可擴展）
   const defaultAssets: Array<{ ticker: string; market: Market; name: string; defaultReturn: number }> = [
@@ -614,6 +615,15 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
             {loadingReturn && loadingTicker === newTicker.trim().toUpperCase() && (
               <p className="text-xs text-blue-600 mt-1">正在查詢 {newTicker.trim().toUpperCase()} 的年化報酬率...</p>
             )}
+            {dataWarning && (
+              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
+                <p className="font-semibold mb-1">⚠️ 數據完整性警告：</p>
+                <p>{dataWarning}</p>
+                <p className="mt-2 text-yellow-700">
+                  建議：如果計算結果明顯低於預期，可能是因為 Yahoo Finance 的歷史數據不完整。您可以參考官方資料或手動輸入更準確的年化報酬率。
+                </p>
+              </div>
+            )}
             <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
               <p className="font-semibold mb-1">📊 年化報酬率計算說明：</p>
               <p className="mb-1">
@@ -627,6 +637,9 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
               </p>
               <p className="text-blue-700">
                 <strong>範例：</strong>股票從 100 元漲到 200 元，經過 5 年，年化報酬率約為 <strong>14.87%</strong>
+              </p>
+              <p className="mt-2 text-orange-700 border-t border-orange-200 pt-2">
+                <strong>注意：</strong>Yahoo Finance 對某些台股 ETF（如 0050）的歷史數據可能不完整，只從 2009 年開始，這會導致年化報酬率被低估。請查看瀏覽器控制台（F12）以獲取詳細信息。
               </p>
             </div>
           </div>
