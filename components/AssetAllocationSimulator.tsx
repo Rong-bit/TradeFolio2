@@ -513,12 +513,44 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
             <label className="block text-sm font-medium text-slate-700 mb-2">配置比例 (%)</label>
             <input
               type="number"
-              value={newAllocation}
-              onChange={(e) => setNewAllocation(parseFloat(e.target.value) || 0)}
+              value={newAllocation === 0 ? '' : newAllocation}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                // 如果輸入為空，設為 0
+                if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                  setNewAllocation(0);
+                  return;
+                }
+                // 移除前導零並轉換為數字
+                const numValue = parseFloat(inputValue);
+                // 如果轉換失敗或為 NaN，設為 0
+                if (isNaN(numValue)) {
+                  setNewAllocation(0);
+                  return;
+                }
+                // 確保值在有效範圍內
+                if (numValue < 0) {
+                  setNewAllocation(0);
+                } else if (numValue > 100) {
+                  setNewAllocation(100);
+                } else {
+                  setNewAllocation(numValue);
+                }
+              }}
+              onBlur={(e) => {
+                // 當失去焦點時，確保值正確格式化
+                const numValue = parseFloat(e.target.value);
+                if (isNaN(numValue) || numValue === 0) {
+                  setNewAllocation(0);
+                } else {
+                  setNewAllocation(numValue);
+                }
+              }}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               step="0.1"
               min="0"
               max="100"
+              placeholder="0"
             />
           </div>
           <div className="flex items-end">
@@ -585,12 +617,44 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [] }) => {
                       <td className="px-4 py-3 text-right">
                         <input
                           type="number"
-                          value={asset.allocation}
-                          onChange={(e) => updateAsset(asset.id, 'allocation', parseFloat(e.target.value) || 0)}
+                          value={asset.allocation === 0 ? '' : asset.allocation}
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            // 如果輸入為空，設為 0
+                            if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                              updateAsset(asset.id, 'allocation', 0);
+                              return;
+                            }
+                            // 移除前導零並轉換為數字
+                            const numValue = parseFloat(inputValue);
+                            // 如果轉換失敗或為 NaN，設為 0
+                            if (isNaN(numValue)) {
+                              updateAsset(asset.id, 'allocation', 0);
+                              return;
+                            }
+                            // 確保值在有效範圍內
+                            if (numValue < 0) {
+                              updateAsset(asset.id, 'allocation', 0);
+                            } else if (numValue > 100) {
+                              updateAsset(asset.id, 'allocation', 100);
+                            } else {
+                              updateAsset(asset.id, 'allocation', numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // 當失去焦點時，確保值正確格式化
+                            const numValue = parseFloat(e.target.value);
+                            if (isNaN(numValue) || numValue === 0) {
+                              updateAsset(asset.id, 'allocation', 0);
+                            } else {
+                              updateAsset(asset.id, 'allocation', numValue);
+                            }
+                          }}
                           className="w-20 px-2 py-1 border border-slate-300 rounded text-right focus:ring-2 focus:ring-blue-500"
                           step="0.1"
                           min="0"
                           max="100"
+                          placeholder="0"
                         />
                       </td>
                       <td className="px-4 py-3 text-right">
