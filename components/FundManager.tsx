@@ -9,6 +9,7 @@ interface Props {
   accounts: Account[];
   cashFlows: CashFlow[];
   onAdd: (cf: CashFlow) => void;
+  onUpdate?: (cf: CashFlow) => void;
   onBatchAdd: (cfs: CashFlow[]) => void;
   onDelete: (id: string) => void;
   onClearAll: () => void;
@@ -20,6 +21,7 @@ const FundManager: React.FC<Props> = ({
   accounts, 
   cashFlows, 
   onAdd, 
+  onUpdate,
   onBatchAdd, 
   onDelete, 
   onClearAll, 
@@ -40,6 +42,7 @@ const FundManager: React.FC<Props> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+  const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null);
 
   // Filter State
   const [filterAccount, setFilterAccount] = useState<string>('');
@@ -53,6 +56,30 @@ const FundManager: React.FC<Props> = ({
       setAccountId(accounts[0].id);
     }
   }, [accounts, accountId]);
+
+  // 當進入編輯模式時，載入現有資金記錄資料
+  useEffect(() => {
+    if (editingCashFlow) {
+      setType(editingCashFlow.type);
+      setDate(editingCashFlow.date);
+      setAmount(editingCashFlow.amount.toString());
+      setFee(editingCashFlow.fee?.toString() || '');
+      setAccountId(editingCashFlow.accountId);
+      setTargetAccountId(editingCashFlow.targetAccountId || '');
+      setExchangeRate(editingCashFlow.exchangeRate?.toString() || '');
+      setNote(editingCashFlow.note || '');
+    } else {
+      // 重置為預設值
+      setType(CashFlowType.DEPOSIT);
+      setDate(new Date().toISOString().split('T')[0]);
+      setAmount('');
+      setFee('');
+      setAccountId(accounts[0]?.id || '');
+      setTargetAccountId('');
+      setExchangeRate('');
+      setNote('');
+    }
+  }, [editingCashFlow, accounts]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,8 +138,8 @@ const FundManager: React.FC<Props> = ({
         else calculatedTWD = numAmount;
     }
     
-    onAdd({
-      id: uuidv4(),
+    const cashFlow: CashFlow = {
+      id: editingCashFlow ? editingCashFlow.id : uuidv4(),
       date,
       type,
       amount: numAmount,
@@ -122,12 +149,19 @@ const FundManager: React.FC<Props> = ({
       targetAccountId: type === CashFlowType.TRANSFER ? targetAccountId : undefined,
       exchangeRate: numRate,
       note
-    });
+    };
+
+    if (editingCashFlow && onUpdate) {
+      onUpdate(cashFlow);
+    } else {
+      onAdd(cashFlow);
+    }
 
     // Reset Fields
     setAmount('');
     setFee('');
     setNote('');
+    setEditingCashFlow(null);
     setIsFormOpen(false); // Close Modal
   };
 
@@ -186,7 +220,10 @@ const FundManager: React.FC<Props> = ({
              <button onClick={() => setIsBatchOpen(true)} className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded text-sm hover:bg-indigo-100 border border-indigo-200">
                 批次匯入
              </button>
-             <button onClick={() => setIsFormOpen(true)} className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 shadow-lg shadow-slate-900/20">
+             <button onClick={() => {
+               setEditingCashFlow(null);
+               setIsFormOpen(true);
+             }} className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 shadow-lg shadow-slate-900/20">
                 + 記一筆
              </button>
           </div>
@@ -399,7 +436,20 @@ const FundManager: React.FC<Props> = ({
                        </td>
                        
                        <td className="px-4 py-3 text-right">
-                         <button onClick={() => onDelete(cf.id)} className="text-red-400 hover:text-red-600 text-xs border border-red-200 px-2 py-1 rounded hover:bg-red-50">刪除</button>
+                         <div className="flex gap-2 justify-end">
+                           {onUpdate && (
+                             <button 
+                               onClick={() => {
+                                 setEditingCashFlow(cf);
+                                 setIsFormOpen(true);
+                               }} 
+                               className="text-blue-400 hover:text-blue-600 text-xs border border-blue-200 px-2 py-1 rounded hover:bg-blue-50"
+                             >
+                               編輯
+                             </button>
+                           )}
+                           <button onClick={() => onDelete(cf.id)} className="text-red-400 hover:text-red-600 text-xs border border-red-200 px-2 py-1 rounded hover:bg-red-50">刪除</button>
+                         </div>
                        </td>
                      </tr>
                    );
@@ -414,8 +464,11 @@ const FundManager: React.FC<Props> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
              <div className="bg-slate-900 p-4 flex justify-between items-center">
-                <h2 className="text-white font-bold text-lg">新增資金紀錄</h2>
-                <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-white">&times;</button>
+                <h2 className="text-white font-bold text-lg">{editingCashFlow ? '編輯資金紀錄' : '新增資金紀錄'}</h2>
+                <button onClick={() => {
+                  setIsFormOpen(false);
+                  setEditingCashFlow(null);
+                }} className="text-slate-400 hover:text-white">&times;</button>
              </div>
              
              <div className="p-6">
@@ -508,7 +561,10 @@ const FundManager: React.FC<Props> = ({
                   <div className="pt-4 flex gap-3">
                     <button 
                       type="button" 
-                      onClick={() => setIsFormOpen(false)}
+                      onClick={() => {
+                        setIsFormOpen(false);
+                        setEditingCashFlow(null);
+                      }}
                       className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
                     >
                       取消
@@ -517,7 +573,7 @@ const FundManager: React.FC<Props> = ({
                       type="submit" 
                       className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 shadow-lg shadow-slate-900/20"
                     >
-                      確認執行
+                      {editingCashFlow ? '更新記錄' : '確認執行'}
                     </button>
                   </div>
                 </form>
