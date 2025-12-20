@@ -444,6 +444,7 @@ const Dashboard: React.FC<Props> = ({
       {/* Holdings Table Integration in Dashboard */}
       <HoldingsTable 
         holdings={holdings}
+        accounts={accounts}
         onUpdatePrice={onUpdatePrice}
         onAutoUpdate={onAutoUpdate}
       />
