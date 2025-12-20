@@ -1133,6 +1133,7 @@ const App: React.FC = () => {
                  onAutoUpdate={handleAutoUpdatePrices}
                  isGuest={isGuest}
                  onUpdateHistorical={handleOpenHistoricalModal}
+                 language={language}
                />
             )}
 
