@@ -7,29 +7,64 @@ import { formatCurrency } from '../utils/calculations';
 interface Props {
   accounts: Account[];
   onAdd: (acc: Account) => void;
+  onUpdate?: (acc: Account) => void;
   onDelete: (id: string) => void;
 }
 
-const AccountManager: React.FC<Props> = ({ accounts, onAdd, onDelete }) => {
+const AccountManager: React.FC<Props> = ({ accounts, onAdd, onUpdate, onDelete }) => {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState<Currency>(Currency.TWD);
   const [isSubBrokerage, setIsSubBrokerage] = useState(false);
+  const [balance, setBalance] = useState('');
   
   // State for custom delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<{id: string, name: string} | null>(null);
+  
+  // State for edit modal
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onAdd({
-      id: uuidv4(),
-      name,
-      currency,
-      isSubBrokerage,
-      balance: 0
-    });
+    
+    const accountBalance = balance ? parseFloat(balance) : 0;
+    
+    if (editingAccount && onUpdate) {
+      onUpdate({
+        ...editingAccount,
+        name,
+        currency,
+        isSubBrokerage,
+        balance: accountBalance
+      });
+      setIsEditModalOpen(false);
+      setEditingAccount(null);
+    } else {
+      onAdd({
+        id: uuidv4(),
+        name,
+        currency,
+        isSubBrokerage,
+        balance: accountBalance
+      });
+    }
+    
+    // Reset form
     setName('');
+    setCurrency(Currency.TWD);
     setIsSubBrokerage(false);
+    setBalance('');
+  };
+
+  const handleEditClick = (e: React.MouseEvent, account: Account) => {
+    e.stopPropagation();
+    setEditingAccount(account);
+    setName(account.name);
+    setCurrency(account.currency);
+    setIsSubBrokerage(account.isSubBrokerage);
+    setBalance(account.balance.toString());
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteClick = (e: React.MouseEvent, id: string, accountName: string) => {
@@ -85,7 +120,7 @@ const AccountManager: React.FC<Props> = ({ accounts, onAdd, onDelete }) => {
              </label>
           </div>
           <button type="submit" className="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800">
-            新增
+            {editingAccount ? '更新' : '新增'}
           </button>
         </form>
       </div>
@@ -109,17 +144,31 @@ const AccountManager: React.FC<Props> = ({ accounts, onAdd, onDelete }) => {
                 </div>
               </div>
 
-              {/* Delete Button */}
-              <button 
-                type="button"
-                onClick={(e) => handleDeleteClick(e, acc.id, acc.name)}
-                className="shrink-0 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors relative z-20 cursor-pointer border border-transparent"
-                title="刪除帳戶"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+              {/* Action Buttons */}
+              <div className="flex gap-1 shrink-0">
+                {onUpdate && (
+                  <button 
+                    type="button"
+                    onClick={(e) => handleEditClick(e, acc)}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative z-20 cursor-pointer border border-transparent"
+                    title="編輯帳戶"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                )}
+                <button 
+                  type="button"
+                  onClick={(e) => handleDeleteClick(e, acc.id, acc.name)}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors relative z-20 cursor-pointer border border-transparent"
+                  title="刪除帳戶"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
             
             <div className="pt-4 border-t border-slate-50">
@@ -137,6 +186,86 @@ const AccountManager: React.FC<Props> = ({ accounts, onAdd, onDelete }) => {
           </div>
         )}
       </div>
+
+      {/* Edit Account Modal */}
+      {isEditModalOpen && editingAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">編輯帳戶</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">帳戶名稱</label>
+                <input 
+                  type="text" 
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full border border-slate-300 rounded-md p-2"
+                  placeholder="e.g. 富邦證券, Firstrade"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">幣別</label>
+                  <select 
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value as Currency)}
+                    className="w-full border border-slate-300 rounded-md p-2"
+                  >
+                    <option value={Currency.TWD}>台幣 (TWD)</option>
+                    <option value={Currency.USD}>美金 (USD)</option>
+                    <option value={Currency.JPY}>日幣 (JPY)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">餘額</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={balance}
+                    onChange={(e) => setBalance(e.target.value)}
+                    className="w-full border border-slate-300 rounded-md p-2"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={isSubBrokerage}
+                    onChange={(e) => setIsSubBrokerage(e.target.checked)}
+                    className="rounded text-accent focus:ring-accent"
+                  />
+                  <span className="text-sm text-slate-700">複委託 (Sub-brokerage)</span>
+                </label>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingAccount(null);
+                    setName('');
+                    setCurrency(Currency.TWD);
+                    setIsSubBrokerage(false);
+                    setBalance('');
+                  }}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded transition"
+                >
+                  取消
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-800 transition shadow-sm"
+                >
+                  更新帳戶
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Custom Delete Confirmation Modal */}
       {deleteTarget && (
