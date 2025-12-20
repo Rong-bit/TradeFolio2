@@ -1080,30 +1080,30 @@ const App: React.FC = () => {
             )}
 
             {view === 'history' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-slate-100">
                   <h3 className="text-lg font-bold text-slate-700">操作選項</h3>
-                  <div className="flex gap-2">
-                     <button onClick={() => setIsBatchUpdateMarketOpen(true)} className="bg-purple-600 text-white px-3 py-1.5 rounded text-sm hover:bg-purple-700 shadow-lg shadow-purple-600/20">
+                  <div className="flex flex-wrap gap-2">
+                     <button onClick={() => setIsBatchUpdateMarketOpen(true)} className="bg-purple-600 text-white px-3 py-1.5 rounded text-sm hover:bg-purple-700 shadow-lg shadow-purple-600/20 whitespace-nowrap">
                         批量修改市場
                      </button>
-                     <button onClick={handleClearAllTransactions} className="bg-red-50 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-100 border border-red-200">
+                     <button onClick={handleClearAllTransactions} className="bg-red-50 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-100 border border-red-200 whitespace-nowrap">
                         清空所有交易
                      </button>
-                     <button onClick={() => setIsImportOpen(true)} className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded text-sm hover:bg-indigo-100 border border-indigo-200">
+                     <button onClick={() => setIsImportOpen(true)} className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded text-sm hover:bg-indigo-100 border border-indigo-200 whitespace-nowrap">
                         批次匯入
                      </button>
                      <button onClick={() => {
                        setTransactionToEdit(null);
                        setIsFormOpen(true);
-                     }} className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 shadow-lg shadow-slate-900/20">
+                     }} className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 shadow-lg shadow-slate-900/20 whitespace-nowrap">
                         + 記一筆
                      </button>
                   </div>
                 </div>
                 
                 {/* 篩選器區域 */}
-                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                <div className="bg-white rounded-lg shadow p-4 md:p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-slate-800">查詢/篩選</h3>
                     <button 
@@ -1295,37 +1295,48 @@ const App: React.FC = () => {
 
                          return (
                            <tr key={`${record.type}-${record.id}`} className="hover:bg-slate-50">
-                             <td className="px-4 py-3 whitespace-nowrap text-slate-600">{record.date}</td>
-                             <td className="px-4 py-3 text-slate-500 text-xs">{accName}</td>
-                             <td className="px-4 py-3 font-semibold text-slate-700">
-                                {record.type === 'TRANSACTION' ? (
-                                  <><span className="text-xs text-slate-400 mr-1">{record.market}</span>{record.ticker}</>
-                                ) : (
-                                  <span className="text-slate-600">
-                                    {record.description}
-                                    {targetAccName && record.subType === 'TRANSFER' && <span className="text-xs text-slate-400 ml-1">→ {targetAccName}</span>}
-                                    {targetAccName && record.subType === 'TRANSFER_IN' && <span className="text-xs text-slate-400 ml-1">← {targetAccName}</span>}
+                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-slate-600 text-xs md:text-sm">{record.date}</td>
+                             <td className="px-2 md:px-4 py-2 md:py-3 text-slate-500 text-xs hidden sm:table-cell">{accName}</td>
+                             <td className="px-2 md:px-4 py-2 md:py-3 font-semibold text-slate-700">
+                                <div className="flex flex-col">
+                                  {record.type === 'TRANSACTION' ? (
+                                    <>
+                                      <span className="text-xs md:text-sm"><span className="text-xs text-slate-400 mr-1">{record.market}</span>{record.ticker}</span>
+                                      <span className="text-xs text-slate-500 sm:hidden">{accName}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-slate-600 text-xs md:text-sm">
+                                        {record.description}
+                                        {targetAccName && record.subType === 'TRANSFER' && <span className="text-xs text-slate-400 ml-1">→ {targetAccName}</span>}
+                                        {targetAccName && record.subType === 'TRANSFER_IN' && <span className="text-xs text-slate-400 ml-1">← {targetAccName}</span>}
+                                      </span>
+                                      <span className="text-xs text-slate-500 sm:hidden">{accName}</span>
+                                    </>
+                                  )}
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeColor} md:hidden mt-1 inline-block w-fit`}>
+                                    {displayType}
                                   </span>
-                                )}
+                                </div>
                              </td>
-                             <td className="px-4 py-3">
+                             <td className="px-2 md:px-4 py-2 md:py-3 hidden md:table-cell">
                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badgeColor}`}>
                                  {displayType}
                                </span>
                              </td>
-                             <td className="px-4 py-3 text-right font-mono text-slate-600">
+                             <td className="px-2 md:px-4 py-2 md:py-3 text-right font-mono text-slate-600 hidden lg:table-cell">
                                {record.type === 'TRANSACTION' ? formatNumber(record.price) : 
                                 record.type === 'CASHFLOW' && record.exchangeRate ? record.exchangeRate : '-'}
                              </td>
-                             <td className="px-4 py-3 text-right font-mono text-slate-600">
+                             <td className="px-2 md:px-4 py-2 md:py-3 text-right font-mono text-slate-600 hidden lg:table-cell">
                                {record.type === 'TRANSACTION' ? formatNumber(record.quantity) : '-'}
                              </td>
-                             <td className="px-4 py-3 text-right font-bold font-mono text-slate-700">
+                             <td className="px-2 md:px-4 py-2 md:py-3 text-right font-bold font-mono text-slate-700 text-xs md:text-sm">
                                {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
                              </td>
-                             <td className="px-4 py-3 text-right">
+                             <td className="px-2 md:px-4 py-2 md:py-3 text-right hidden md:table-cell">
                                 <div className="flex flex-col items-end">
-                                  <span className={`font-medium ${
+                                  <span className={`font-medium text-xs md:text-sm ${
                                     (record as any).balance >= 0 ? 'text-green-600' : 'text-red-600'
                                   }`}>
                                     {(record as any).balance?.toFixed(2) || '0.00'}
@@ -1335,9 +1346,9 @@ const App: React.FC = () => {
                                   </span>
                                 </div>
                              </td>
-                             <td className="px-4 py-3 text-right">
+                             <td className="px-2 md:px-4 py-2 md:py-3 text-right">
                                 {!(record.type === 'CASHFLOW' && (record as any).isTargetRecord) && (
-                                  <div className="flex gap-2 justify-end">
+                                  <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 justify-end items-end sm:items-center">
                                     {record.type === 'TRANSACTION' && (
                                       <button 
                                         onClick={() => {
@@ -1347,7 +1358,7 @@ const App: React.FC = () => {
                                             setIsFormOpen(true);
                                           }
                                         }} 
-                                        className="text-blue-400 hover:text-blue-600 text-xs px-2 py-1 border border-blue-100 rounded hover:bg-blue-50"
+                                        className="text-blue-400 hover:text-blue-600 text-xs px-2 py-1 border border-blue-100 rounded hover:bg-blue-50 whitespace-nowrap"
                                       >
                                         編輯
                                       </button>
@@ -1359,7 +1370,7 @@ const App: React.FC = () => {
                                         const originalId = (record as any).isSourceRecord ? record.id : record.id.replace('-target', '');
                                         removeCashFlow(originalId);
                                       }
-                                    }} className="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-100 rounded hover:bg-red-50">刪除</button>
+                                    }} className="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-100 rounded hover:bg-red-50 whitespace-nowrap">刪除</button>
                                   </div>
                                 )}
                              </td>
@@ -1590,3 +1601,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+
