@@ -53,6 +53,70 @@ export interface Translations {
     annualizedReturn: string;
     detail: string;
     includeCash: string;
+    detailedStatistics: string;
+    totalCost: string;
+    totalPLAmount: string;
+    accumulatedCashDividends: string;
+    accumulatedStockDividends: string;
+    annualizedReturnRate: string;
+    avgExchangeRate: string;
+    currentExchangeRate: string;
+    totalReturnRate: string;
+    assetVsCostTrend: string;
+    aiCorrectHistory: string;
+    allocation: string;
+    annualPerformance: string;
+    year: string;
+    startAssets: string;
+    annualNetInflow: string;
+    endAssets: string;
+    annualProfit: string;
+    annualROI: string;
+    brokerageAccounts: string;
+    accountName: string;
+    totalAssetsNT: string;
+    marketValueNT: string;
+    balanceNT: string;
+    profitNT: string;
+    annualizedROI: string;
+    portfolioHoldings: string;
+    mergedDisplay: string;
+    detailedDisplay: string;
+    aiUpdatePrices: string;
+    estimatedGrowth8: string;
+    chartLoading: string;
+    noChartData: string;
+    noHoldings: string;
+    noAccounts: string;
+    costBreakdown: string;
+    netInvestedBreakdown: string;
+    calculationFormula: string;
+    formulaNote: string;
+    attention: string;
+    date: string;
+    category: string;
+    originalAmount: string;
+    twdCost: string;
+    totalNetInvested: string;
+    deposit: string;
+    withdraw: string;
+    fixedTWD: string;
+    historicalRate: string;
+    currentRate: string;
+    taiwanDollar: string;
+    chartLabels: {
+      investmentCost: string;
+      accumulatedPL: string;
+      estimatedAssets: string;
+      totalAssets: string;
+      realData: string;
+      estimated: string;
+    };
+    aiAdvisor: string;
+    aiAdvisorDesc: string;
+    startAnalysis: string;
+    analyzing: string;
+    viewCalculationDetails: string;
   };
   // 資金管理
   funds: {
@@ -160,6 +224,70 @@ const zhTW: Translations = {
     annualizedReturn: '真實年化 (CAGR)',
     detail: '明細',
     includeCash: '含現金',
+    detailedStatistics: '詳細統計數據',
+    totalCost: '總投資成本',
+    totalPLAmount: '總損益金額',
+    accumulatedCashDividends: '累積配息現金',
+    accumulatedStockDividends: '累積股息再投入',
+    annualizedReturnRate: '總市值年化報酬率',
+    avgExchangeRate: '平均換匯成本 (TWD/USD)',
+    currentExchangeRate: '目前匯率',
+    totalReturnRate: '累積總報酬率',
+    assetVsCostTrend: '資產與成本趨勢',
+    aiCorrectHistory: 'AI 校正歷史資產',
+    allocation: '資產配置',
+    annualPerformance: '年度績效表',
+    year: '年份',
+    startAssets: '期初資產',
+    annualNetInflow: '年度淨投入',
+    endAssets: '期末資產',
+    annualProfit: '年度損益',
+    annualROI: '年度報酬率',
+    brokerageAccounts: '證券戶列表',
+    accountName: '證券名稱',
+    totalAssetsNT: '總資產 (NT$)',
+    marketValueNT: '市值 (NT$)',
+    balanceNT: '餘額 (NT$)',
+    profitNT: '損益 (NT$)',
+    annualizedROI: '年化報酬率',
+    portfolioHoldings: '資產配置明細',
+    mergedDisplay: '合併顯示 (依標的)',
+    detailedDisplay: '明細顯示 (依帳戶)',
+    aiUpdatePrices: 'AI 聯網更新股價 & 匯率',
+    estimatedGrowth8: '預估 8% 成長',
+    chartLoading: '圖表載入中...',
+    noChartData: '請先新增資金匯入與交易紀錄',
+    noHoldings: '無持倉',
+    noAccounts: '尚無證券戶，請至「證券戶管理」新增。',
+    costBreakdown: '淨投入成本計算明細',
+    netInvestedBreakdown: '淨投入成本計算明細 (Net Invested Breakdown)',
+    calculationFormula: '計算公式：淨投入 = 匯入資金 (Deposit) - 匯出資金 (Withdraw)',
+    formulaNote: '注意：美金帳戶若有「歷史匯率」則優先使用，否則使用「目前右上角設定匯率」。轉帳 (Transfer) 與利息 (Interest) 不計入成本。',
+    attention: '注意',
+    date: '日期',
+    category: '類別',
+    originalAmount: '原始金額',
+    twdCost: '台幣成本 (TWD)',
+    totalNetInvested: '總計 (Total Net Invested)',
+    deposit: '匯入 (+)',
+    withdraw: '匯出 (-)',
+    fixedTWD: '指定台幣金額 (Fixed TWD)',
+    historicalRate: '歷史匯率',
+    currentRate: '目前匯率',
+    taiwanDollar: '台幣',
+    chartLabels: {
+      investmentCost: '投資成本',
+      accumulatedPL: '累積損益',
+      estimatedAssets: '預估總資產 (8%)',
+      totalAssets: '總資產',
+      realData: ' (真實股價)',
+      estimated: ' (估算)',
+    },
+    aiAdvisor: 'Gemini AI 投資顧問',
+    aiAdvisorDesc: '分析您的投資組合配置、風險與潛在機會。',
+    startAnalysis: '開始分析',
+    analyzing: '分析中...',
+    viewCalculationDetails: '查看計算明細',
   },
   funds: {
     title: '資金管理',
@@ -264,6 +392,70 @@ const en: Translations = {
     annualizedReturn: 'Annualized Return (CAGR)',
     detail: 'Detail',
     includeCash: 'Incl. Cash',
+    detailedStatistics: 'Detailed Statistics',
+    totalCost: 'Total Cost',
+    totalPLAmount: 'Total P/L Amount',
+    accumulatedCashDividends: 'Accumulated Cash Dividends',
+    accumulatedStockDividends: 'Accumulated Stock Dividends',
+    annualizedReturnRate: 'Annualized Return Rate',
+    avgExchangeRate: 'Avg Exchange Rate (TWD/USD)',
+    currentExchangeRate: 'Current Exchange Rate',
+    totalReturnRate: 'Total Return Rate',
+    assetVsCostTrend: 'Asset vs Cost Trend',
+    aiCorrectHistory: 'AI Correct Historical Assets',
+    allocation: 'Allocation',
+    annualPerformance: 'Annual Performance',
+    year: 'Year',
+    startAssets: 'Start Assets',
+    annualNetInflow: 'Annual Net Inflow',
+    endAssets: 'End Assets',
+    annualProfit: 'Annual Profit',
+    annualROI: 'Annual ROI',
+    brokerageAccounts: 'Brokerage Accounts',
+    accountName: 'Account Name',
+    totalAssetsNT: 'Total Assets (NT$)',
+    marketValueNT: 'Market Value (NT$)',
+    balanceNT: 'Balance (NT$)',
+    profitNT: 'Profit (NT$)',
+    annualizedROI: 'Annualized ROI',
+    portfolioHoldings: 'Portfolio Holdings',
+    mergedDisplay: 'Merged (By Symbol)',
+    detailedDisplay: 'Detailed (By Account)',
+    aiUpdatePrices: 'AI Update Prices & Exchange Rates',
+    estimatedGrowth8: 'Est. 8% Growth',
+    chartLoading: 'Loading chart...',
+    noChartData: 'Please add fund deposits and transactions first',
+    noHoldings: 'No holdings',
+    noAccounts: 'No brokerage accounts. Please add accounts in Account Management.',
+    costBreakdown: 'Net Invested Cost Breakdown',
+    netInvestedBreakdown: 'Net Invested Breakdown',
+    calculationFormula: 'Formula: Net Invested = Deposits - Withdrawals',
+    formulaNote: 'Note: For USD accounts, historical exchange rate is used if available, otherwise current rate from settings. Transfers and interest are not included in cost.',
+    attention: 'Attention',
+    date: 'Date',
+    category: 'Category',
+    originalAmount: 'Original Amount',
+    twdCost: 'TWD Cost',
+    totalNetInvested: 'Total (Net Invested)',
+    deposit: 'Deposit (+)',
+    withdraw: 'Withdraw (-)',
+    fixedTWD: 'Fixed TWD Amount',
+    historicalRate: 'Historical Rate',
+    currentRate: 'Current Rate',
+    taiwanDollar: 'TWD',
+    chartLabels: {
+      investmentCost: 'Investment Cost',
+      accumulatedPL: 'Accumulated P/L',
+      estimatedAssets: 'Est. Total Assets (8%)',
+      totalAssets: 'Total Assets',
+      realData: ' (Real Price)',
+      estimated: ' (Estimated)',
+    },
+    aiAdvisor: 'Gemini AI Investment Advisor',
+    aiAdvisorDesc: 'Analyze your portfolio allocation, risks, and potential opportunities.',
+    startAnalysis: 'Start Analysis',
+    analyzing: 'Analyzing...',
+    viewCalculationDetails: 'View Details',
   },
   funds: {
     title: 'Fund Management',
