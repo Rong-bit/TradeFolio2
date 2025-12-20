@@ -448,6 +448,7 @@ const Dashboard: React.FC<Props> = ({
         accounts={accounts}
         onUpdatePrice={onUpdatePrice}
         onAutoUpdate={onAutoUpdate}
+        language={language}
       />
 
        {/* AI Advisor Section - Only shown if NOT guest */}
