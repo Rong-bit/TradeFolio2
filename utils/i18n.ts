@@ -175,6 +175,26 @@ export interface Translations {
     description: string;
     note: string;
   };
+  // 持倉明細表
+  holdings: {
+    portfolioHoldings: string;
+    mergedDisplay: string;
+    detailedDisplay: string;
+    aiUpdatePrices: string;
+    aiSearching: string;
+    market: string;
+    ticker: string;
+    quantity: string;
+    currentPrice: string;
+    weight: string;
+    cost: string;
+    marketValue: string;
+    profitLoss: string;
+    annualizedROI: string;
+    dailyChange: string;
+    avgPrice: string;
+    noHoldings: string;
+  };
 }
 
 // 繁體中文翻譯
@@ -343,6 +363,25 @@ const zhTW: Translations = {
     description: '標的/描述',
     note: '備註',
   },
+  holdings: {
+    portfolioHoldings: '資產配置明細',
+    mergedDisplay: '合併顯示 (依標的)',
+    detailedDisplay: '明細顯示 (依帳戶)',
+    aiUpdatePrices: 'AI 聯網更新股價 & 匯率',
+    aiSearching: 'AI 搜尋中...',
+    market: '市場',
+    ticker: '代號',
+    quantity: '數量',
+    currentPrice: '現價',
+    weight: '比重',
+    cost: '總成本',
+    marketValue: '市值',
+    profitLoss: '損益',
+    annualizedROI: '年化',
+    dailyChange: '今日漲跌',
+    avgPrice: '均價',
+    noHoldings: '尚無持倉資料，請新增交易。',
+  },
 };
 
 // 英文翻譯
@@ -510,6 +549,25 @@ const en: Translations = {
     category: 'Category',
     description: 'Symbol/Description',
     note: 'Note',
+  },
+  holdings: {
+    portfolioHoldings: 'Portfolio Holdings',
+    mergedDisplay: 'Merged by Symbol',
+    detailedDisplay: 'Detailed by Account',
+    aiUpdatePrices: 'AI Update Prices & Exchange Rates',
+    aiSearching: 'AI Searching...',
+    market: 'Market',
+    ticker: 'Ticker',
+    quantity: 'Quantity',
+    currentPrice: 'Current Price',
+    weight: 'Weight',
+    cost: 'Total Cost',
+    marketValue: 'Market Value',
+    profitLoss: 'P/L',
+    annualizedROI: 'Annualized ROI',
+    dailyChange: 'Daily Change',
+    avgPrice: 'Avg Price',
+    noHoldings: 'No holdings. Please add transactions.',
   },
 };
 
