@@ -156,6 +156,20 @@ export interface Translations {
     dateTo: string;
     includeCashFlow: string;
     clearFilters: string;
+    showingRecords: string;
+    totalRecords: string;
+    last30Days: string;
+    thisYear: string;
+    noTransactions: string;
+    noMatchingTransactions: string;
+    edit: string;
+    delete: string;
+    includeCashFlowDesc: string;
+    hiddenCashFlowRecords: string;
+    cashFlowDeposit: string;
+    cashFlowWithdraw: string;
+    cashFlowTransfer: string;
+    cashFlowTransferIn: string;
   };
   // 其他常用文字
   labels: {
@@ -339,12 +353,26 @@ const zhTW: Translations = {
     batchImport: '批次匯入',
     addRecord: '記一筆',
     filter: '查詢/篩選',
-    accountFilter: '帳戶篩選 (Filter by Account)',
-    tickerFilter: '股票代號篩選 (以股票代號篩選)',
-    dateFrom: '開始日期 (依日期篩選)',
+    accountFilter: '帳戶篩選',
+    tickerFilter: '股票代號篩選',
+    dateFrom: '開始日期',
     dateTo: '結束日期',
-    includeCashFlow: '包含現金流記錄 (資金管理)',
+    includeCashFlow: '包含現金流記錄',
     clearFilters: '清除所有篩選',
+    showingRecords: '顯示 {count} 筆記錄',
+    totalRecords: '共 {total} 筆：{transactionCount} 筆交易{hasCashFlow}',
+    last30Days: '最近30天',
+    thisYear: '今年',
+    noTransactions: '尚無交易記錄',
+    noMatchingTransactions: '找不到符合條件的交易',
+    edit: '編輯',
+    delete: '刪除',
+    includeCashFlowDesc: '勾選後會顯示資金匯入、提取、轉帳等記錄，方便查看餘額變化',
+    hiddenCashFlowRecords: '已隱藏 {count} 筆現金流記錄',
+    cashFlowDeposit: '資金匯入',
+    cashFlowWithdraw: '資金提取',
+    cashFlowTransfer: '帳戶轉出',
+    cashFlowTransferIn: '帳戶轉入',
   },
   labels: {
     date: '日期',
@@ -532,6 +560,20 @@ const en: Translations = {
     dateTo: 'To Date',
     includeCashFlow: 'Include Cash Flow Records',
     clearFilters: 'Clear All Filters',
+    showingRecords: 'Showing {count} records',
+    totalRecords: 'Total {total}: {transactionCount} transactions{hasCashFlow}',
+    last30Days: 'Last 30 Days',
+    thisYear: 'This Year',
+    noTransactions: 'No transactions',
+    noMatchingTransactions: 'No matching transactions found',
+    edit: 'Edit',
+    delete: 'Delete',
+    includeCashFlowDesc: 'Check to show deposits, withdrawals, transfers, etc. for viewing balance changes',
+    hiddenCashFlowRecords: '{count} cash flow records hidden',
+    cashFlowDeposit: 'Deposit',
+    cashFlowWithdraw: 'Withdrawal',
+    cashFlowTransfer: 'Transfer Out',
+    cashFlowTransferIn: 'Transfer In',
   },
   labels: {
     date: 'Date',
