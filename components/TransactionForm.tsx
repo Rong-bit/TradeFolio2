@@ -6,9 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 interface Props {
   accounts: Account[];
   onAdd: (tx: Transaction) => void;
-  onUpdate?: (tx: Transaction) => void;
+  onUpdate: (tx: Transaction) => void;
   onClose: () => void;
-  editingTransaction?: Transaction | null;
+  editingTransaction: Transaction | null;
 }
 
 const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, editingTransaction }) => {
@@ -104,7 +104,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, 
       amount: finalAmount // 儲存計算後的總金額
     };
     
-    if (isEditing && onUpdate) {
+    if (isEditing) {
       onUpdate(newTx);
     } else {
       onAdd(newTx);
