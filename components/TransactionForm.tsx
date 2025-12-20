@@ -56,12 +56,20 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, 
     }
   }, [editingTransaction, accounts]);
 
+  // 當交易類型變更為現金股息時，自動將數量設為 1
+  useEffect(() => {
+    if (formData.type === TransactionType.CASH_DIVIDEND && formData.quantity !== '1' && !editingTransaction) {
+      setFormData(prev => ({ ...prev, quantity: '1' }));
+    }
+  }, [formData.type, editingTransaction]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.accountId) return alert("請先建立並選擇證券帳戶");
 
     const price = parseFloat(formData.price);
-    const quantity = parseFloat(formData.quantity);
+    // 現金股息時，數量固定為 1
+    const quantity = formData.type === TransactionType.CASH_DIVIDEND ? 1 : parseFloat(formData.quantity);
     const fees = parseFloat(formData.fees) || 0;
     
     // 計算總金額邏輯
@@ -113,7 +121,14 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, 
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const newFormData = { ...formData, [e.target.name]: e.target.value };
+    
+    // 當交易類型變為現金股息時，自動將數量設為 1
+    if (e.target.name === 'type' && e.target.value === TransactionType.CASH_DIVIDEND) {
+      newFormData.quantity = '1';
+    }
+    
+    setFormData(newFormData);
   };
 
   return (
@@ -207,12 +222,14 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, 
           <div className="grid grid-cols-2 gap-4">
              <div>
               <label className="block text-sm font-medium text-slate-700">
-                {formData.type === TransactionType.CASH_DIVIDEND ? '設為 1' : '數量 (股)'}
+                {formData.type === TransactionType.CASH_DIVIDEND ? '數量 (固定為 1)' : '數量 (股)'}
               </label>
               <input 
                 type="number" name="quantity" required step="any" min="0"
-                value={formData.quantity} onChange={handleChange}
-                className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                value={formData.type === TransactionType.CASH_DIVIDEND ? '1' : formData.quantity}
+                onChange={handleChange}
+                disabled={formData.type === TransactionType.CASH_DIVIDEND}
+                className={`mt-1 w-full border border-slate-300 rounded-md p-2 ${formData.type === TransactionType.CASH_DIVIDEND ? 'bg-slate-100 cursor-not-allowed' : ''}`}
               />
             </div>
              <div>
