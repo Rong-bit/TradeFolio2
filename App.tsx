@@ -1312,8 +1312,8 @@ const App: React.FC = () => {
                          <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden sm:table-cell">{t(language).labels.account}</th>
                          <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">{t(language).labels.description}</th>
                          <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden md:table-cell">{t(language).labels.category}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap hidden lg:table-cell">{t(language).labels.price}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap hidden lg:table-cell">{t(language).labels.quantity}</th>
+                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.price}</th>
+                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.quantity}</th>
                          <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.amount}</th>
                          <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap hidden md:table-cell">{t(language).labels.balance}</th>
                          <th className="px-2 sm:px-4 py-2 sm:py-3 text-center whitespace-nowrap">{t(language).labels.action}</th>
@@ -1382,11 +1382,11 @@ const App: React.FC = () => {
                                  {displayType}
                                </span>
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs hidden lg:table-cell">
+                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' ? formatNumber(record.price) : 
                                 record.type === 'CASHFLOW' && record.exchangeRate ? record.exchangeRate : '-'}
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs hidden lg:table-cell">
+                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' ? formatNumber(record.quantity) : '-'}
                              </td>
                              <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold font-mono text-slate-700 text-xs sm:text-sm">
