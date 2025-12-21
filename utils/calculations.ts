@@ -302,27 +302,9 @@ export const generateAdvancedChartData = (
       else if (cf.type === CashFlowType.WITHDRAW) cumulativeNetInvestedTWD -= amountTWD;
     });
 
-    txsInYear.forEach(tx => {
-        if (tx.type === TransactionType.TRANSFER_IN || tx.type === TransactionType.TRANSFER_OUT) {
-             let baseVal = tx.price * tx.quantity;
-             if (tx.market === Market.TW) baseVal = Math.floor(baseVal);
-             
-            const val = tx.amount !== undefined ? tx.amount : baseVal;
-            let valTWD = 0;
-            // 根據市場類型使用對應的匯率
-            if (tx.market === Market.US || tx.market === Market.UK) {
-              valTWD = val * exchangeRate;
-            } else if (tx.market === Market.JP) {
-              // 日本市場使用日幣匯率
-              valTWD = jpyExchangeRate ? val * jpyExchangeRate : val * exchangeRate; // 如果沒有日幣匯率，回退到美元匯率
-            } else {
-              valTWD = val;
-            }
-             
-             if (tx.type === TransactionType.TRANSFER_IN) cumulativeNetInvestedTWD += valTWD;
-             else cumulativeNetInvestedTWD -= valTWD;
-        }
-    });
+    // 注意：不處理 TRANSFER_IN 和 TRANSFER_OUT
+    // 因為這些只是帳戶間股票轉移，不影響淨投入成本
+    // 如果一個轉入和一個轉出配對，成本應該不變
 
     // Net Inflow for Estimate
     const netInflowThisYear = cumulativeNetInvestedTWD - prevCost;
