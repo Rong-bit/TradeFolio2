@@ -11,15 +11,17 @@ interface Props {
   jpyExchangeRate?: number;
   targets: Record<string, number>;
   onUpdateTargets: (targets: Record<string, number>) => void;
+  enabledItems: string[];
+  onUpdateEnabledItems: (items: string[]) => void;
   language: Language;
 }
 
-const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyExchangeRate, targets, onUpdateTargets, language }) => {
+const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyExchangeRate, targets, onUpdateTargets, enabledItems: enabledItemsArray, onUpdateEnabledItems, language }) => {
   const translations = t(language);
   const totalPortfolioValue = summary.totalValueTWD + summary.cashBalanceTWD;
   
-  // 追蹤哪些項目需要再平衡（包括現金）
-  const [enabledItems, setEnabledItems] = useState<Set<string>>(new Set());
+  // 追蹤哪些項目需要再平衡（包括現金）- 轉換為 Set 以便使用
+  const enabledItems = useMemo(() => new Set(enabledItemsArray), [enabledItemsArray]);
   // 貨幣切換：false=台幣, true=美金
   const [showInUSD, setShowInUSD] = useState(false);
   
@@ -121,20 +123,20 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
   
   // 初始化：預設所有項目都啟用（使用合併後的 key）
   useEffect(() => {
-    if (enabledItems.size === 0 && holdings.length > 0) {
-      const initialEnabled = new Set<string>();
+    if (enabledItemsArray.length === 0 && holdings.length > 0) {
+      const initialEnabled: string[] = [];
       const mergedKeys = new Set<string>();
       holdings.forEach(h => {
         const mergedKey = `${h.market}-${h.ticker}`;
         if (!mergedKeys.has(mergedKey)) {
-          initialEnabled.add(mergedKey);
+          initialEnabled.push(mergedKey);
           mergedKeys.add(mergedKey);
         }
       });
-      initialEnabled.add('cash'); // 預設現金也啟用
-      setEnabledItems(initialEnabled);
+      initialEnabled.push('cash'); // 預設現金也啟用
+      onUpdateEnabledItems(initialEnabled);
     }
-  }, [holdings.length, enabledItems.size]);
+  }, [holdings.length, enabledItemsArray.length, onUpdateEnabledItems]);
 
   // If targets are completely empty, auto-populate with current weights once
   useEffect(() => {
@@ -145,15 +147,14 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
   }, [holdings.length]); // Only check when holdings loaded/changed length, avoid loop
 
   const handleToggleItem = (key: string) => {
-    setEnabledItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
-      return newSet;
-    });
+    const newArray = [...enabledItemsArray];
+    const index = newArray.indexOf(key);
+    if (index > -1) {
+      newArray.splice(index, 1);
+    } else {
+      newArray.push(key);
+    }
+    onUpdateEnabledItems(newArray);
   };
 
   const rebalanceRows = useMemo(() => {
