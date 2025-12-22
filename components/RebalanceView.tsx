@@ -97,25 +97,38 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
       merged.totalValTwd += valTwd;
     });
     
-    // 設置目標佔比
+    // 計算參與平衡的總價值（只包括啟用的項目）
+    const isCashEnabled = enabledItems.has('cash');
+    const enabledTotalValue = Array.from(mergedMap.entries())
+      .filter(([mergedKey]) => enabledItems.has(mergedKey))
+      .reduce((sum, [, merged]) => sum + merged.totalValTwd, 0) + (isCashEnabled ? summary.cashBalanceTWD : 0);
+    
+    // 設置目標佔比（基於參與平衡的總價值）
     mergedMap.forEach((merged, mergedKey) => {
-      const pct = totalPortfolioValue > 0 ? (merged.totalValTwd / totalPortfolioValue) * 100 : 0;
-      newTargets[mergedKey] = parseFloat(pct.toFixed(1));
+      const isEnabled = enabledItems.has(mergedKey);
+      // 如果是啟用的項目，使用參與平衡內的百分比；否則使用總資產百分比
+      const pct = isEnabled && enabledTotalValue > 0
+        ? (merged.totalValTwd / enabledTotalValue) * 100
+        : (totalPortfolioValue > 0 ? (merged.totalValTwd / totalPortfolioValue) * 100 : 0);
       
-      // 按現值比例分配給各個帳戶
-      merged.holdings.forEach(h => {
-        let valTwd: number;
-      if (h.market === Market.US || h.market === Market.UK) {
-        valTwd = h.currentValue * exchangeRate;
-      } else if (h.market === Market.JP) {
-        valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
-      } else {
-        valTwd = h.currentValue;
+      if (isEnabled) {
+        newTargets[mergedKey] = parseFloat(pct.toFixed(1));
+        
+        // 按現值比例分配給各個帳戶
+        merged.holdings.forEach(h => {
+          let valTwd: number;
+          if (h.market === Market.US || h.market === Market.UK) {
+            valTwd = h.currentValue * exchangeRate;
+          } else if (h.market === Market.JP) {
+            valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
+          } else {
+            valTwd = h.currentValue;
+          }
+          const ratio = merged.totalValTwd > 0 ? valTwd / merged.totalValTwd : 0;
+          const oldKey = `${h.accountId}-${h.ticker}`;
+          newTargets[oldKey] = parseFloat((pct * ratio).toFixed(1));
+        });
       }
-      const ratio = merged.totalValTwd > 0 ? valTwd / merged.totalValTwd : 0;
-        const oldKey = `${h.accountId}-${h.ticker}`;
-        newTargets[oldKey] = parseFloat((pct * ratio).toFixed(1));
-      });
     });
     
     onUpdateTargets(newTargets);
@@ -204,9 +217,20 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
       }
     });
     
+    // 計算參與平衡的總價值（包括啟用的股票和現金）
+    const isCashEnabled = enabledItems.has('cash');
+    const enabledTotalValue = Array.from(mergedMap.entries())
+      .filter(([mergedKey]) => enabledItems.has(mergedKey))
+      .reduce((sum, [, merged]) => sum + merged.totalValTwd, 0) + (isCashEnabled ? summary.cashBalanceTWD : 0);
+    
     // 轉換為行數據
     return Array.from(mergedMap.entries()).map(([mergedKey, merged]) => {
-      const currentPct = totalPortfolioValue > 0 ? (merged.totalValTwd / totalPortfolioValue) * 100 : 0;
+      // 當前百分比：相對於總資產
+      const currentPctTotal = totalPortfolioValue > 0 ? (merged.totalValTwd / totalPortfolioValue) * 100 : 0;
+      // 當前百分比（參與平衡內）：相對於參與平衡的總價值
+      const currentPct = enabledTotalValue > 0 && enabledItems.has(mergedKey) 
+        ? (merged.totalValTwd / enabledTotalValue) * 100 
+        : currentPctTotal;
       const isEnabled = enabledItems.has(mergedKey);
       
       // 計算加權平均價格（按現值加權，因為不同帳戶可能有不同價格）
@@ -231,7 +255,10 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
         }, 0);
       }
       
-      const targetValTwd = totalPortfolioValue * (targetPct / 100);
+      // 目標價值：基於參與平衡的總價值計算
+      const targetValTwd = enabledTotalValue > 0 && isEnabled 
+        ? enabledTotalValue * (targetPct / 100) 
+        : (isEnabled ? totalPortfolioValue * (targetPct / 100) : merged.totalValTwd);
       const diffValTwd = targetValTwd - merged.totalValTwd;
       
       let diffShares = 0;
@@ -263,15 +290,27 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
         holdings: merged.holdings // 保留原始 holdings 用於顯示帳戶資訊
       };
     });
-  }, [holdings, targets, totalPortfolioValue, exchangeRate, jpyExchangeRate, enabledItems]);
+  }, [holdings, targets, totalPortfolioValue, exchangeRate, jpyExchangeRate, enabledItems, summary.cashBalanceTWD]);
 
   // Calculate totals - 只計算啟用的項目
   const enabledRows = rebalanceRows.filter(row => row.isEnabled);
-  const totalTargetPct = enabledRows.reduce((acc, row) => acc + row.targetPct, 0);
   const isCashEnabled = enabledItems.has('cash');
+  
+  // 計算參與平衡的總價值（用於計算現金百分比）
+  const enabledTotalValue = enabledRows.reduce((sum, row) => sum + row.valTwd, 0) + (isCashEnabled ? summary.cashBalanceTWD : 0);
+  
+  const totalTargetPct = enabledRows.reduce((acc, row) => acc + row.targetPct, 0);
   const cashTargetPct = isCashEnabled ? (100 - totalTargetPct) : 0;
-  const targetCashTwd = isCashEnabled ? (totalPortfolioValue * (cashTargetPct / 100)) : summary.cashBalanceTWD;
+  // 現金目標價值：基於參與平衡的總價值計算
+  const targetCashTwd = isCashEnabled && enabledTotalValue > 0
+    ? enabledTotalValue * (cashTargetPct / 100)
+    : summary.cashBalanceTWD;
   const diffCashTwd = isCashEnabled ? (targetCashTwd - summary.cashBalanceTWD) : 0;
+  
+  // 現金當前百分比（參與平衡內）
+  const cashCurrentPctEnabled = isCashEnabled && enabledTotalValue > 0
+    ? (summary.cashBalanceTWD / enabledTotalValue) * 100
+    : (totalPortfolioValue > 0 ? (summary.cashBalanceTWD / totalPortfolioValue) * 100 : 0);
 
   return (
     <div className="space-y-6">
@@ -431,7 +470,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
                 <td className="px-4 py-3 text-right font-mono">
                   {formatCurrency(showInUSD ? summary.cashBalanceTWD / summary.exchangeRateUsdToTwd : summary.cashBalanceTWD, showInUSD ? 'USD' : 'TWD')}
                 </td>
-                <td className="px-4 py-3 text-right">{((summary.cashBalanceTWD / totalPortfolioValue) * 100).toFixed(1)}%</td>
+                <td className="px-4 py-3 text-right">{cashCurrentPctEnabled.toFixed(1)}%</td>
                 <td className={`px-4 py-3 text-right font-bold ${isCashEnabled ? (cashTargetPct < 0 ? 'text-red-500' : 'text-slate-700') : 'text-slate-300'}`}>
                   {isCashEnabled ? cashTargetPct.toFixed(1) : '0.0'}%
                 </td>
