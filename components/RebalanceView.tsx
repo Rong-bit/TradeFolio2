@@ -8,12 +8,13 @@ interface Props {
   summary: PortfolioSummary;
   holdings: Holding[];
   exchangeRate: number;
+  jpyExchangeRate?: number;
   targets: Record<string, number>;
   onUpdateTargets: (targets: Record<string, number>) => void;
   language: Language;
 }
 
-const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targets, onUpdateTargets, language }) => {
+const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyExchangeRate, targets, onUpdateTargets, language }) => {
   const translations = t(language);
   const totalPortfolioValue = summary.totalValueTWD + summary.cashBalanceTWD;
   
@@ -39,13 +40,27 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
         accountIds.includes(h.accountId) && h.ticker === ticker
       );
       const totalValTwd = mergedHolding.reduce((sum, h) => {
-        const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
+        let valTwd: number;
+        if (h.market === Market.US || h.market === Market.UK) {
+          valTwd = h.currentValue * exchangeRate;
+        } else if (h.market === Market.JP) {
+          valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
+        } else {
+          valTwd = h.currentValue;
+        }
         return sum + valTwd;
       }, 0);
       
       if (totalValTwd > 0) {
         mergedHolding.forEach(h => {
-          const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
+          let valTwd: number;
+          if (h.market === Market.US || h.market === Market.UK) {
+            valTwd = h.currentValue * exchangeRate;
+          } else if (h.market === Market.JP) {
+            valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
+          } else {
+            valTwd = h.currentValue;
+          }
           const ratio = valTwd / totalValTwd;
           const oldKey = `${h.accountId}-${h.ticker}`;
           newTargets[oldKey] = parseFloat((num * ratio).toFixed(1));
@@ -64,7 +79,14 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
     const mergedMap = new Map<string, { holdings: Holding[], totalValTwd: number }>();
     holdings.forEach(h => {
       const mergedKey = `${h.market}-${h.ticker}`;
-      const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
+      let valTwd: number;
+      if (h.market === Market.US || h.market === Market.UK) {
+        valTwd = h.currentValue * exchangeRate;
+      } else if (h.market === Market.JP) {
+        valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
+      } else {
+        valTwd = h.currentValue;
+      }
       if (!mergedMap.has(mergedKey)) {
         mergedMap.set(mergedKey, { holdings: [], totalValTwd: 0 });
       }
@@ -80,8 +102,15 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
       
       // 按現值比例分配給各個帳戶
       merged.holdings.forEach(h => {
-        const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
-        const ratio = merged.totalValTwd > 0 ? valTwd / merged.totalValTwd : 0;
+        let valTwd: number;
+      if (h.market === Market.US || h.market === Market.UK) {
+        valTwd = h.currentValue * exchangeRate;
+      } else if (h.market === Market.JP) {
+        valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
+      } else {
+        valTwd = h.currentValue;
+      }
+      const ratio = merged.totalValTwd > 0 ? valTwd / merged.totalValTwd : 0;
         const oldKey = `${h.accountId}-${h.ticker}`;
         newTargets[oldKey] = parseFloat((pct * ratio).toFixed(1));
       });
@@ -199,8 +228,11 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
       
       let diffShares = 0;
       if (avgPrice > 0 && isEnabled) {
-        if (merged.market === Market.US) {
+        if (merged.market === Market.US || merged.market === Market.UK) {
            diffShares = diffValTwd / exchangeRate / avgPrice;
+        } else if (merged.market === Market.JP) {
+           const rate = jpyExchangeRate || exchangeRate;
+           diffShares = diffValTwd / rate / avgPrice;
         } else {
            diffShares = diffValTwd / avgPrice;
         }
@@ -223,7 +255,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, targe
         holdings: merged.holdings // 保留原始 holdings 用於顯示帳戶資訊
       };
     });
-  }, [holdings, targets, totalPortfolioValue, exchangeRate, enabledItems]);
+  }, [holdings, targets, totalPortfolioValue, exchangeRate, jpyExchangeRate, enabledItems]);
 
   // Calculate totals - 只計算啟用的項目
   const enabledRows = rebalanceRows.filter(row => row.isEnabled);
