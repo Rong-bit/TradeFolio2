@@ -172,7 +172,14 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
     
     holdings.forEach(h => {
       const mergedKey = `${h.market}-${h.ticker}`;
-      const valTwd = h.market === Market.US ? h.currentValue * exchangeRate : h.currentValue;
+      let valTwd: number;
+      if (h.market === Market.US || h.market === Market.UK) {
+        valTwd = h.currentValue * exchangeRate;
+      } else if (h.market === Market.JP) {
+        valTwd = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
+      } else {
+        valTwd = h.currentValue;
+      }
       
       if (!mergedMap.has(mergedKey)) {
         mergedMap.set(mergedKey, {
