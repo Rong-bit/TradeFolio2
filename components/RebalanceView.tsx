@@ -352,7 +352,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
                <div>
                  <p className="text-xs text-slate-500 text-right">{translations.rebalance.totalAssets}</p>
                  <p className="text-xl font-bold font-mono text-slate-800">
-                   {formatCurrency(showInUSD ? totalPortfolioValue / summary.exchangeRateUsdToTwd : totalPortfolioValue, showInUSD ? 'USD' : 'TWD')}
+                   {formatCurrency(showInUSD ? enabledTotalValue / summary.exchangeRateUsdToTwd : enabledTotalValue, showInUSD ? 'USD' : 'TWD')}
                  </p>
                </div>
              </div>
