@@ -31,9 +31,11 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
     
     // 如果是現金目標
     if (mergedKey === 'cash') {
-      if (isNaN(num) || num === 0) {
+      if (val === '' || isNaN(num)) {
+        // 只有當輸入為空或無效時才刪除
         delete newTargets['cash'];
       } else {
+        // 允許設置為0
         newTargets['cash'] = num;
       }
       onUpdateTargets(newTargets);
