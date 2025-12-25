@@ -29,6 +29,17 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
     const num = parseFloat(val);
     const newTargets = { ...targets };
     
+    // 如果是現金目標
+    if (mergedKey === 'cash') {
+      if (isNaN(num) || num === 0) {
+        delete newTargets['cash'];
+      } else {
+        newTargets['cash'] = num;
+      }
+      onUpdateTargets(newTargets);
+      return;
+    }
+    
     if (isNaN(num) || num === 0) {
       // 清除所有相關帳戶的目標
       accountIds.forEach(accountId => {
@@ -130,6 +141,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
         });
       }
     });
+    
+    // 設置現金目標佔比
+    if (isCashEnabled && enabledTotalValue > 0) {
+      const cashPct = (summary.cashBalanceTWD / enabledTotalValue) * 100;
+      newTargets['cash'] = parseFloat(cashPct.toFixed(1));
+    }
     
     onUpdateTargets(newTargets);
   };
@@ -300,7 +317,10 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
   const enabledTotalValue = enabledRows.reduce((sum, row) => sum + row.valTwd, 0) + (isCashEnabled ? summary.cashBalanceTWD : 0);
   
   const totalTargetPct = enabledRows.reduce((acc, row) => acc + row.targetPct, 0);
-  const cashTargetPct = isCashEnabled ? (100 - totalTargetPct) : 0;
+  // 如果有手動設置的現金目標，使用該值；否則使用自動計算的值（100 - totalTargetPct）
+  const cashTargetPct = isCashEnabled 
+    ? (targets['cash'] !== undefined ? targets['cash'] : (100 - totalTargetPct))
+    : 0;
   // 現金目標價值：基於參與平衡的總價值計算
   const targetCashTwd = isCashEnabled && enabledTotalValue > 0
     ? enabledTotalValue * (cashTargetPct / 100)
@@ -471,8 +491,23 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
                   {formatCurrency(showInUSD ? summary.cashBalanceTWD / summary.exchangeRateUsdToTwd : summary.cashBalanceTWD, showInUSD ? 'USD' : 'TWD')}
                 </td>
                 <td className="px-4 py-3 text-right">{cashCurrentPctEnabled.toFixed(1)}%</td>
-                <td className={`px-4 py-3 text-right font-bold ${isCashEnabled ? (cashTargetPct < 0 ? 'text-red-500' : 'text-slate-700') : 'text-slate-300'}`}>
-                  {isCashEnabled ? cashTargetPct.toFixed(1) : '0.0'}%
+                <td className="px-4 py-3 text-right">
+                  <div className="flex justify-end items-center">
+                    <input 
+                      type="number" 
+                      className={`w-24 text-right border-2 rounded px-2 py-1 focus:ring-2 focus:ring-accent focus:border-accent font-bold ${
+                        isCashEnabled 
+                          ? (cashTargetPct < 0 ? 'border-red-300 text-red-600 bg-red-50' : 'border-indigo-100 text-slate-700 bg-white') 
+                          : 'border-slate-200 text-slate-400 bg-slate-50'
+                      }`}
+                      value={isCashEnabled ? cashTargetPct : 0}
+                      onChange={(e) => handleTargetChange('cash', e.target.value, [], '')}
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      disabled={!isCashEnabled}
+                    />
+                  </div>
                 </td>
                 <td className={`px-4 py-3 text-right ${isCashEnabled ? '' : 'text-slate-300'}`}>
                   {formatCurrency(showInUSD ? targetCashTwd / summary.exchangeRateUsdToTwd : targetCashTwd, showInUSD ? 'USD' : 'TWD')}
