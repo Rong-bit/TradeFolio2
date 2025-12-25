@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Market, Transaction, TransactionType, Account } from '../types';
+import { Market, Transaction, TransactionType, Account, Holding } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Props {
   accounts: Account[];
+  holdings?: Holding[]; // 資產配置明細，用於自動判斷市場
   onAdd: (tx: Transaction) => void;
   onUpdate: (tx: Transaction) => void;
   onClose: () => void;
   editingTransaction: Transaction | null;
 }
 
-const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, editingTransaction }) => {
+const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUpdate, onClose, editingTransaction }) => {
   const isEditing = !!editingTransaction;
   
   const [formData, setFormData] = useState({
@@ -120,12 +121,38 @@ const TransactionForm: React.FC<Props> = ({ accounts, onAdd, onUpdate, onClose, 
     onClose();
   };
 
+  // 從 holdings 中根據 ticker 查找對應的市場
+  const findMarketFromHoldings = (ticker: string): Market | null => {
+    if (!ticker || !holdings || holdings.length === 0) return null;
+    
+    const upperTicker = ticker.toUpperCase().trim();
+    
+    // 在 holdings 中查找匹配的 ticker
+    const matchedHolding = holdings.find((h: Holding) => {
+      const holdingTicker = h.ticker.toUpperCase().trim();
+      // 支援完全匹配或移除前綴後匹配（如 TPE:2330 匹配 2330）
+      return holdingTicker === upperTicker || 
+             holdingTicker.replace(/^(TPE:|TW|US|LON|TYO)/i, '') === upperTicker ||
+             upperTicker.replace(/^(TPE:|TW|US|LON|TYO)/i, '') === holdingTicker;
+    });
+    
+    return matchedHolding ? matchedHolding.market : null;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const newFormData = { ...formData, [e.target.name]: e.target.value };
     
     // 當交易類型變為現金股息時，自動將數量設為 1
     if (e.target.name === 'type' && e.target.value === TransactionType.CASH_DIVIDEND) {
       newFormData.quantity = '1';
+    }
+    
+    // 當輸入代號時，從 holdings 中自動判斷市場
+    if (e.target.name === 'ticker' && e.target.value) {
+      const detectedMarket = findMarketFromHoldings(e.target.value);
+      if (detectedMarket) {
+        newFormData.market = detectedMarket;
+      }
     }
     
     setFormData(newFormData);
