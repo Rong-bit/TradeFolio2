@@ -158,11 +158,45 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
     setFormData(newFormData);
   };
 
+  // 計算手續費（僅對台股買入交易）
+  const calculateFees = (): number => {
+    // 僅對台股買入交易計算手續費
+    if (formData.market === Market.TW && formData.type === TransactionType.BUY) {
+      const price = parseFloat(formData.price) || 0;
+      const quantity = parseFloat(formData.quantity) || 0;
+      
+      if (price === 0 || quantity === 0) {
+        return 0;
+      }
+      
+      // 檢查是否為定期定額（透過備註判斷）
+      const isRegularInvestment = formData.note && (
+        formData.note.includes('定期定額') || 
+        formData.note.includes('定期定额') ||
+        formData.note.toLowerCase().includes('dca') ||
+        formData.note.toLowerCase().includes('regular')
+      );
+      
+      if (isRegularInvestment) {
+        // 定期定額：1元
+        return 1;
+      } else {
+        // 單筆買入：股數 * 股價 * 0.001425 * 0.6
+        const baseAmount = price * quantity;
+        return baseAmount * 0.001425 * 0.6;
+      }
+    }
+    
+    // 其他情況不自動計算
+    return 0;
+  };
+
   // 計算預覽金額
   const calculatePreviewAmount = (): number => {
     const price = parseFloat(formData.price) || 0;
     const quantity = formData.type === TransactionType.CASH_DIVIDEND ? 1 : (parseFloat(formData.quantity) || 0);
-    const fees = parseFloat(formData.fees) || 0;
+    // 使用計算出的手續費或手動輸入的手續費
+    const fees = parseFloat(formData.fees) || (formData.market === Market.TW && formData.type === TransactionType.BUY ? calculateFees() : 0);
     
     if (formData.type === TransactionType.BUY || formData.type === TransactionType.SELL) {
       let baseAmount = price * quantity;
@@ -310,8 +344,27 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 計算公式：{formData.price} × {formData.quantity} 
                 {formData.market === Market.TW ? ' (台股向下取整)' : ''} 
                 {formData.type === TransactionType.BUY ? ' + ' : formData.type === TransactionType.SELL ? ' - ' : ''}
-                {formData.fees || 0} (手續費)
+                {(() => {
+                  const calculatedFees = formData.market === Market.TW && formData.type === TransactionType.BUY ? calculateFees() : 0;
+                  const displayFees = parseFloat(formData.fees) || calculatedFees;
+                  return displayFees.toFixed(2);
+                })()} (手續費)
               </div>
+              {/* 顯示手續費明細（僅台股買入） */}
+              {formData.market === Market.TW && formData.type === TransactionType.BUY && (
+                <div className="text-xs text-slate-400 mt-1 pt-1 border-t border-slate-200">
+                  {formData.fees ? (
+                    <span>手續費：{parseFloat(formData.fees).toFixed(2)} 元 (手動輸入)</span>
+                  ) : (
+                    <span>
+                      手續費：{calculateFees().toFixed(2)} 元
+                      {formData.note && (formData.note.includes('定期定額') || formData.note.includes('定期定额') || formData.note.toLowerCase().includes('dca') || formData.note.toLowerCase().includes('regular')) 
+                        ? ' (定期定額)' 
+                        : ' (單筆買入: 股數×股價×0.001425×0.6)'}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
