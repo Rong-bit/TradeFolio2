@@ -12,6 +12,7 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
   const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id || '');
   const [inputText, setInputText] = useState(''); // New state for text area
   const [previewData, setPreviewData] = useState<Transaction[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); // 追蹤選中的交易 ID
   const [failCount, setFailCount] = useState(0); // Track failed lines
   const [errorMsg, setErrorMsg] = useState('');
   const [activeTab, setActiveTab] = useState<'file' | 'paste'>('paste'); // Default to paste for ease
@@ -273,6 +274,8 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
         }
       } else {
         setPreviewData(transactions);
+        // 預設全選所有解析成功的交易
+        setSelectedIds(new Set(transactions.map(t => t.id)));
       }
 
     } catch (err) {
@@ -311,9 +314,41 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
       return;
     }
     
-    const finalData = previewData.map(t => ({...t, accountId: selectedAccountId}));
+    // 只匯入選中的交易
+    const selectedTransactions = previewData.filter(t => selectedIds.has(t.id));
+    
+    if (selectedTransactions.length === 0) {
+      alert("❌ 請至少選擇一筆交易進行匯入");
+      return;
+    }
+    
+    const finalData = selectedTransactions.map(t => ({...t, accountId: selectedAccountId}));
     onImport(finalData);
     onClose();
+  };
+
+  // 切換單筆選擇
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  // 全選/取消全選
+  const toggleSelectAll = () => {
+    if (selectedIds.size === previewData.length) {
+      // 全部已選中，取消全選
+      setSelectedIds(new Set());
+    } else {
+      // 全選
+      setSelectedIds(new Set(previewData.map(t => t.id)));
+    }
   };
 
   return (
@@ -424,18 +459,40 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
                     <span className="ml-2 font-normal text-sm bg-slate-100 px-2 py-0.5 rounded text-slate-600">
                         成功: <span className="text-green-600 font-bold">{previewData.length}</span>
                     </span>
+                    <span className="ml-2 font-normal text-sm bg-blue-100 px-2 py-0.5 rounded text-blue-600 border border-blue-200">
+                        已選: <span className="text-blue-700 font-bold">{selectedIds.size}</span> 筆
+                    </span>
                     {failCount > 0 && (
                         <span className="ml-2 font-normal text-sm bg-red-50 px-2 py-0.5 rounded text-red-600 border border-red-100">
                             未成功: <strong>{failCount}</strong> 筆
                         </span>
                     )}
                 </span>
-                <span className="text-xs font-normal text-slate-500">請確認資料無誤後再匯入</span>
+                <span className="text-xs font-normal text-slate-500">請選擇要匯入的交易</span>
               </h3>
+              <div className="mb-2 flex items-center gap-2">
+                <button
+                  onClick={toggleSelectAll}
+                  className="text-xs px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 transition"
+                >
+                  {selectedIds.size === previewData.length ? '取消全選' : '全選'}
+                </button>
+                <span className="text-xs text-slate-500">
+                  {selectedIds.size === previewData.length ? '已全選' : `已選擇 ${selectedIds.size} / ${previewData.length} 筆`}
+                </span>
+              </div>
               <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto">
                 <table className="min-w-full text-sm text-left">
                   <thead className="bg-slate-100 sticky top-0">
                     <tr>
+                      <th className="px-4 py-2 w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.size === previewData.length && previewData.length > 0}
+                          onChange={toggleSelectAll}
+                          className="cursor-pointer"
+                        />
+                      </th>
                       <th className="px-4 py-2">Date</th>
                       <th className="px-4 py-2">Action</th>
                       <th className="px-4 py-2">Market</th>
@@ -447,34 +504,48 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {previewData.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="px-4 py-2 whitespace-nowrap">{row.date}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                           <span className={`px-2 py-0.5 rounded text-xs ${
-                             row.type === TransactionType.BUY ? 'bg-red-100 text-red-700' : 
-                             row.type === TransactionType.SELL ? 'bg-green-100 text-green-700' :
-                             row.type === TransactionType.TRANSFER_IN ? 'bg-blue-100 text-blue-700' :
-                             row.type === TransactionType.TRANSFER_OUT ? 'bg-orange-100 text-orange-700' :
-                             'bg-yellow-100 text-yellow-700'
-                           }`}>
-                             {row.type}
-                           </span>
-                        </td>
-                        <td className="px-4 py-2">
-                           <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.market === Market.TW ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                             {row.market}
-                           </span>
-                        </td>
-                        <td className="px-4 py-2 font-mono">{row.ticker}</td>
-                        <td className="px-4 py-2 text-right font-mono">{row.quantity}</td>
-                        <td className="px-4 py-2 text-right font-mono">{row.price.toFixed(2)}</td>
-                         <td className="px-4 py-2 text-right text-slate-400">{row.fees}</td>
-                         <td className="px-4 py-2 text-right font-mono font-semibold text-slate-800">
-                           {(row as any).amount ? ((row as any).amount % 1 === 0 ? Math.abs((row as any).amount).toString() : Math.abs((row as any).amount).toFixed(2)) : '-'}
-                         </td>
-                       </tr>
-                     ))}
+                    {previewData.map((row, idx) => {
+                      const isSelected = selectedIds.has(row.id);
+                      return (
+                        <tr 
+                          key={row.id} 
+                          className={`hover:bg-slate-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                        >
+                          <td className="px-4 py-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelection(row.id)}
+                              className="cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap">{row.date}</td>
+                          <td className="px-4 py-2 whitespace-nowrap">
+                             <span className={`px-2 py-0.5 rounded text-xs ${
+                               row.type === TransactionType.BUY ? 'bg-red-100 text-red-700' : 
+                               row.type === TransactionType.SELL ? 'bg-green-100 text-green-700' :
+                               row.type === TransactionType.TRANSFER_IN ? 'bg-blue-100 text-blue-700' :
+                               row.type === TransactionType.TRANSFER_OUT ? 'bg-orange-100 text-orange-700' :
+                               'bg-yellow-100 text-yellow-700'
+                             }`}>
+                               {row.type}
+                             </span>
+                          </td>
+                          <td className="px-4 py-2">
+                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.market === Market.TW ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                               {row.market}
+                             </span>
+                          </td>
+                          <td className="px-4 py-2 font-mono">{row.ticker}</td>
+                          <td className="px-4 py-2 text-right font-mono">{row.quantity}</td>
+                          <td className="px-4 py-2 text-right font-mono">{row.price.toFixed(2)}</td>
+                           <td className="px-4 py-2 text-right text-slate-400">{row.fees}</td>
+                           <td className="px-4 py-2 text-right font-mono font-semibold text-slate-800">
+                             {(row as any).amount ? ((row as any).amount % 1 === 0 ? Math.abs((row as any).amount).toString() : Math.abs((row as any).amount).toFixed(2)) : '-'}
+                           </td>
+                         </tr>
+                       );
+                     })}
                     </tbody>
                 </table>
               </div>
@@ -503,10 +574,11 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
               accounts.length === 0 ? "沒有帳戶，無法匯入" :
               !selectedAccountId ? "請先選擇帳戶" :
               previewData.length === 0 ? "請先解析資料" : 
-              `匯入 ${previewData.length} 筆交易到 ${accounts.find(a => a.id === selectedAccountId)?.name}`
+              selectedIds.size === 0 ? "請至少選擇一筆交易" :
+              `匯入 ${selectedIds.size} 筆交易到 ${accounts.find(a => a.id === selectedAccountId)?.name}`
             }
           >
-            確認匯入 {previewData.length > 0 ? `(${previewData.length} 筆)` : ''}
+            確認匯入 {selectedIds.size > 0 ? `(${selectedIds.size} 筆)` : previewData.length > 0 ? `(${previewData.length} 筆)` : ''}
           </button>
         </div>
 
