@@ -24,7 +24,8 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
     quantity: '',
     fees: '0',
     accountId: accounts[0]?.id || '',
-    note: ''
+    note: '',
+    isRegularInvestment: false // 是否為定期定額
   });
 
   // 當進入編輯模式時，載入現有交易資料
@@ -39,7 +40,8 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
         quantity: editingTransaction.quantity.toString(),
         fees: editingTransaction.fees.toString(),
         accountId: editingTransaction.accountId,
-        note: editingTransaction.note || ''
+        note: editingTransaction.note || '',
+        isRegularInvestment: false // 從備註判斷是否為定期定額，或保留用戶輸入
       });
     } else {
       // 重置為預設值
@@ -52,7 +54,8 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
         quantity: '',
         fees: '0',
         accountId: accounts[0]?.id || '',
-        note: ''
+        note: '',
+        isRegularInvestment: false
       });
     }
   }, [editingTransaction, accounts]);
@@ -147,6 +150,11 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
       newFormData.quantity = '1';
     }
     
+    // 當交易類型改變時，如果不是買入則取消定期定額標記
+    if (e.target.name === 'type' && e.target.value !== TransactionType.BUY) {
+      newFormData.isRegularInvestment = false;
+    }
+    
     // 當輸入代號時，從 holdings 中自動判斷市場
     if (e.target.name === 'ticker' && e.target.value) {
       const detectedMarket = findMarketFromHoldings(e.target.value);
@@ -158,36 +166,45 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
     setFormData(newFormData);
   };
 
-  // 計算手續費（僅對台股買入交易）
+  // 計算手續費
   const calculateFees = (): number => {
-    // 僅對台股買入交易計算手續費
-    if (formData.market === Market.TW && formData.type === TransactionType.BUY) {
-      const price = parseFloat(formData.price) || 0;
-      const quantity = parseFloat(formData.quantity) || 0;
-      
-      if (price === 0 || quantity === 0) {
-        return 0;
+    const price = parseFloat(formData.price) || 0;
+    const quantity = formData.type === TransactionType.CASH_DIVIDEND ? 1 : (parseFloat(formData.quantity) || 0);
+    
+    // 只對買入和賣出計算手續費
+    if (formData.type !== TransactionType.BUY && formData.type !== TransactionType.SELL) {
+      return 0;
+    }
+    
+    if (formData.market === Market.TW) {
+      // 台股手續費計算
+      if (formData.type === TransactionType.BUY) {
+        // 買入：定期定額 1元，單筆買入 = 股數 × 股價 × 0.001425 × 0.6（四捨五入），不足20元收20元
+        if (formData.isRegularInvestment) {
+          return 1;
+        } else {
+          let baseAmount = price * quantity;
+          baseAmount = Math.floor(baseAmount); // 台股先向下取整
+          let fee = Math.round(baseAmount * 0.001425 * 0.6);
+          return fee < 20 ? 20 : fee;
+        }
+      } else if (formData.type === TransactionType.SELL) {
+        // 賣出：手續費 = 交易金額 × 0.001425 × 0.6（四捨五入）+ 交易稅 = 交易金額 × 0.30%
+        let baseAmount = price * quantity;
+        baseAmount = Math.floor(baseAmount); // 台股先向下取整
+        let commission = Math.round(baseAmount * 0.001425 * 0.6);
+        let tax = Math.round(baseAmount * 0.003); // 0.30% = 0.003
+        return commission + tax;
       }
-      
-      // 檢查是否為定期定額（透過備註判斷）
-      const isRegularInvestment = formData.note && (
-        formData.note.includes('定期定額') || 
-        formData.note.includes('定期定额') ||
-        formData.note.toLowerCase().includes('dca') ||
-        formData.note.toLowerCase().includes('regular')
-      );
-      
-      if (isRegularInvestment) {
-        // 定期定額：1元
-        return 1;
-      } else {
-        // 單筆買入：股數 * 股價 * 0.001425 * 0.6
-        const baseAmount = price * quantity;
-        return baseAmount * 0.001425 * 0.6;
+    } else if (formData.market === Market.US) {
+      // 美股手續費計算
+      if (formData.type === TransactionType.BUY) {
+        return formData.isRegularInvestment ? 0.1 : 3;
+      } else if (formData.type === TransactionType.SELL) {
+        return 3;
       }
     }
     
-    // 其他情況不自動計算
     return 0;
   };
 
@@ -195,8 +212,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
   const calculatePreviewAmount = (): number => {
     const price = parseFloat(formData.price) || 0;
     const quantity = formData.type === TransactionType.CASH_DIVIDEND ? 1 : (parseFloat(formData.quantity) || 0);
-    // 使用計算出的手續費或手動輸入的手續費
-    const fees = parseFloat(formData.fees) || (formData.market === Market.TW && formData.type === TransactionType.BUY ? calculateFees() : 0);
+    const fees = parseFloat(formData.fees) || 0;
     
     if (formData.type === TransactionType.BUY || formData.type === TransactionType.SELL) {
       let baseAmount = price * quantity;
@@ -209,6 +225,11 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
     }
     return price * quantity;
   };
+
+  // 當價格、數量、市場、類型或定期定額標記改變時，自動計算手續費（如果用戶未手動修改）
+  const calculatedFees = calculateFees();
+  const shouldAutoFillFees = formData.price && formData.quantity && 
+    (formData.type === TransactionType.BUY || formData.type === TransactionType.SELL);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
@@ -318,7 +339,38 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 value={formData.fees} onChange={handleChange}
                 className="mt-1 w-full border border-slate-300 rounded-md p-2"
               />
+              {/* 手續費預覽 */}
+              {shouldAutoFillFees && (
+                <div className="mt-2 text-xs text-slate-600">
+                  <div>計算手續費：{calculatedFees.toFixed(calculatedFees % 1 === 0 ? 0 : 2)} 
+                    <span className="ml-1 text-slate-500">
+                      ({formData.market === Market.TW ? 'TWD' : 'USD'})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, fees: calculatedFees.toString() }))}
+                    className="mt-1 text-blue-600 hover:text-blue-800 underline text-xs"
+                  >
+                    使用計算值
+                  </button>
+                </div>
+              )}
             </div>
+            {/* 定期定額選項（僅在買入時顯示） */}
+            {formData.type === TransactionType.BUY && (
+              <div className="flex items-end">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isRegularInvestment}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isRegularInvestment: e.target.checked }))}
+                    className="mr-2 w-4 h-4"
+                  />
+                  <span className="text-sm font-medium text-slate-700">定期定額</span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div>
@@ -344,24 +396,31 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 計算公式：{formData.price} × {formData.quantity} 
                 {formData.market === Market.TW ? ' (台股向下取整)' : ''} 
                 {formData.type === TransactionType.BUY ? ' + ' : formData.type === TransactionType.SELL ? ' - ' : ''}
-                {(() => {
-                  const calculatedFees = formData.market === Market.TW && formData.type === TransactionType.BUY ? calculateFees() : 0;
-                  const displayFees = parseFloat(formData.fees) || calculatedFees;
-                  return displayFees.toFixed(2);
-                })()} (手續費)
+                {formData.fees || 0} (手續費)
               </div>
-              {/* 顯示手續費明細（僅台股買入） */}
-              {formData.market === Market.TW && formData.type === TransactionType.BUY && (
-                <div className="text-xs text-slate-400 mt-1 pt-1 border-t border-slate-200">
-                  {formData.fees ? (
-                    <span>手續費：{parseFloat(formData.fees).toFixed(2)} 元 (手動輸入)</span>
-                  ) : (
-                    <span>
-                      手續費：{calculateFees().toFixed(2)} 元
-                      {formData.note && (formData.note.includes('定期定額') || formData.note.includes('定期定额') || formData.note.toLowerCase().includes('dca') || formData.note.toLowerCase().includes('regular')) 
-                        ? ' (定期定額)' 
-                        : ' (單筆買入: 股數×股價×0.001425×0.6)'}
-                    </span>
+              {/* 手續費計算詳情 */}
+              {shouldAutoFillFees && calculatedFees > 0 && (
+                <div className="text-xs text-slate-500 mt-1 pt-1 border-t border-slate-200">
+                  <div>手續費計算：{calculatedFees.toFixed(calculatedFees % 1 === 0 ? 0 : 2)} 
+                    {formData.market === Market.TW ? ' TWD' : formData.market === Market.US ? ' USD' : ''}
+                  </div>
+                  {formData.market === Market.TW && formData.type === TransactionType.BUY && !formData.isRegularInvestment && (
+                    <div className="mt-0.5 text-slate-400">單筆買入：交易金額 × 0.1425% × 60% (最低20元)</div>
+                  )}
+                  {formData.market === Market.TW && formData.type === TransactionType.SELL && (
+                    <div className="mt-0.5 text-slate-400">賣出：手續費(交易金額×0.1425%×60%) + 交易稅(0.3%)</div>
+                  )}
+                  {formData.market === Market.TW && formData.type === TransactionType.BUY && formData.isRegularInvestment && (
+                    <div className="mt-0.5 text-slate-400">定期定額：固定1元</div>
+                  )}
+                  {formData.market === Market.US && formData.type === TransactionType.BUY && !formData.isRegularInvestment && (
+                    <div className="mt-0.5 text-slate-400">單筆買入：固定3美元</div>
+                  )}
+                  {formData.market === Market.US && formData.type === TransactionType.BUY && formData.isRegularInvestment && (
+                    <div className="mt-0.5 text-slate-400">定期定額：固定0.1美元</div>
+                  )}
+                  {formData.market === Market.US && formData.type === TransactionType.SELL && (
+                    <div className="mt-0.5 text-slate-400">賣出：固定3美元</div>
                   )}
                 </div>
               )}
