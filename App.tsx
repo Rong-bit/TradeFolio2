@@ -681,7 +681,7 @@ const App: React.FC = () => {
         price: 0,
         quantity: 0,
         amount: cf.amount,
-        fees: 0,
+        fees: cf.fee || 0, // 顯示手續費
         description: cf.note || cf.type,
         originalRecord: cf,
         targetAccountId: cf.targetAccountId,
@@ -702,7 +702,7 @@ const App: React.FC = () => {
           price: 0,
           quantity: 0,
           amount: targetAmount,
-          fees: 0,
+          fees: 0, // 轉入記錄不顯示手續費（手續費已從轉出帳戶扣除）
           description: `轉入自 ${accounts.find(a => a.id === cf.accountId)?.name || '未知帳戶'}`,
           originalRecord: cf,
           sourceAccountId: cf.accountId,
@@ -761,7 +761,7 @@ const App: React.FC = () => {
       } else if (record.type === 'CASHFLOW') {
         if (record.subType === 'DEPOSIT') balanceChange = record.amount;
         else if (record.subType === 'WITHDRAW') balanceChange = -record.amount;
-        else if (record.subType === 'TRANSFER') balanceChange = -record.amount;
+        else if (record.subType === 'TRANSFER') balanceChange = -record.amount - (record.fees || 0); // 扣除手續費
         else if (record.subType === 'TRANSFER_IN') balanceChange = record.amount;
         else if (record.subType === 'INTEREST') balanceChange = record.amount;
       }
@@ -1399,9 +1399,9 @@ const App: React.FC = () => {
                              <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' ? formatNumber(record.quantity) : '-'}
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
-                               {record.type === 'TRANSACTION' && (record as any).fees > 0 ? formatNumber((record as any).fees) : '-'}
-                             </td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
+                              {(record as any).fees > 0 ? formatNumber((record as any).fees) : '-'}
+                            </td>
                              <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold font-mono text-slate-700 text-xs sm:text-sm">
                                {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
                                <div className="md:hidden mt-0.5">
