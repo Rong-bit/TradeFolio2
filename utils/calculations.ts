@@ -147,9 +147,26 @@ export const calculateAccountBalances = (accounts: Account[], cashFlows: CashFlo
       } else if (cf.type === CashFlowType.WITHDRAW) {
         balMap[cf.accountId] = (balMap[cf.accountId] || 0) - cf.amount;
       } else if (cf.type === CashFlowType.TRANSFER) {
-        balMap[cf.accountId] = (balMap[cf.accountId] || 0) - cf.amount;
+        const sourceAcc = accounts.find(a => a.id === cf.accountId);
+        // 內部轉帳：從來源帳戶扣除金額和手續費
+        let feeAmount = cf.fee || 0;
+        // 如果手續費是 TWD 但來源帳戶不是 TWD，需要轉換
+        if (feeAmount > 0 && sourceAcc && sourceAcc.currency !== Currency.TWD) {
+          // 使用轉帳匯率轉換手續費（如果有的話，且匯率不是 1）
+          // 匯率為 1 表示同幣種轉帳，此時手續費應該已經是帳戶幣種
+          if (cf.exchangeRate && cf.exchangeRate > 0 && cf.exchangeRate !== 1) {
+            if (sourceAcc.currency === Currency.USD) {
+              // TWD 手續費轉換為 USD：feeTWD / exchangeRate (exchangeRate 是 TWD/USD)
+              feeAmount = feeAmount / cf.exchangeRate;
+            } else if (sourceAcc.currency === Currency.JPY) {
+              // TWD 手續費轉換為 JPY：feeTWD / exchangeRate (exchangeRate 是 TWD/JPY)
+              feeAmount = feeAmount / cf.exchangeRate;
+            }
+          }
+          // 如果匯率是 1 或不存在（同幣種轉帳），假設手續費已經是帳戶幣種（保持原值）
+        }
+        balMap[cf.accountId] = (balMap[cf.accountId] || 0) - cf.amount - feeAmount;
         if (cf.targetAccountId) {
-             const sourceAcc = accounts.find(a => a.id === cf.accountId);
              const targetAcc = accounts.find(a => a.id === cf.targetAccountId);
              if (sourceAcc && targetAcc) {
                 let inAmount = cf.amount;
@@ -209,12 +226,29 @@ export const getPortfolioStateAtDate = (
         } else if (cf.type === CashFlowType.WITHDRAW) {
             cashBalances[cf.accountId] = (cashBalances[cf.accountId] || 0) - cf.amount;
         } else if (cf.type === CashFlowType.TRANSFER) {
-            cashBalances[cf.accountId] = (cashBalances[cf.accountId] || 0) - cf.amount;
+            const sourceAcc = accounts.find(a => a.id === cf.accountId);
+            // 內部轉帳：從來源帳戶扣除金額和手續費
+            let feeAmount = cf.fee || 0;
+            // 如果手續費是 TWD 但來源帳戶不是 TWD，需要轉換
+            if (feeAmount > 0 && sourceAcc && sourceAcc.currency !== Currency.TWD) {
+              // 使用轉帳匯率轉換手續費（如果有的話，且匯率不是 1）
+              // 匯率為 1 表示同幣種轉帳，此時手續費應該已經是帳戶幣種
+              if (cf.exchangeRate && cf.exchangeRate > 0 && cf.exchangeRate !== 1) {
+                if (sourceAcc.currency === Currency.USD) {
+                  // TWD 手續費轉換為 USD：feeTWD / exchangeRate (exchangeRate 是 TWD/USD)
+                  feeAmount = feeAmount / cf.exchangeRate;
+                } else if (sourceAcc.currency === Currency.JPY) {
+                  // TWD 手續費轉換為 JPY：feeTWD / exchangeRate (exchangeRate 是 TWD/JPY)
+                  feeAmount = feeAmount / cf.exchangeRate;
+                }
+              }
+              // 如果匯率是 1 或不存在（同幣種轉帳），假設手續費已經是帳戶幣種（保持原值）
+            }
+            cashBalances[cf.accountId] = (cashBalances[cf.accountId] || 0) - cf.amount - feeAmount;
             if (cf.targetAccountId) {
                 // Simplified transfer logic for historical estimate
                 let inAmount = cf.amount;
                 if (cf.exchangeRate && cf.exchangeRate > 0) {
-                     const sourceAcc = accounts.find(a => a.id === cf.accountId);
                      const targetAcc = accounts.find(a => a.id === cf.targetAccountId);
                      if (sourceAcc?.currency === Currency.USD && targetAcc?.currency === Currency.TWD) inAmount = cf.amount * cf.exchangeRate;
                      else if (sourceAcc?.currency === Currency.TWD && targetAcc?.currency === Currency.USD) inAmount = cf.amount / cf.exchangeRate;
