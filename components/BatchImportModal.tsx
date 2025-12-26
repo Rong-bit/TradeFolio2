@@ -22,25 +22,61 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
     try {
       if (!dateStr || !dateStr.trim()) return new Date().toISOString().split('T')[0];
       
-      // 處理 YYYY/M/D 或 YYYY/MM/DD 格式
-      const parts = dateStr.trim().split('/');
+      const trimmed = dateStr.trim();
+      const parts = trimmed.split('/');
+      
       if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-        const day = parseInt(parts[2], 10);
+        const part1 = parseInt(parts[0], 10);
+        const part2 = parseInt(parts[1], 10);
+        const part3 = parseInt(parts[2], 10);
         
-        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-          // 使用本地時間創建日期，避免時區問題
-          const date = new Date(year, month - 1, day);
-          const yearStr = date.getFullYear().toString();
-          const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
-          const dayStr = date.getDate().toString().padStart(2, '0');
-          return `${yearStr}-${monthStr}-${dayStr}`;
+        if (!isNaN(part1) && !isNaN(part2) && !isNaN(part3)) {
+          let year: number, month: number, day: number;
+          
+          // 判斷格式：MM/DD/YYYY 或 YYYY/MM/DD
+          // 如果第一個部分 > 12，肯定是年份（YYYY/MM/DD）
+          // 如果第三個部分有4位數字，那第三個部分是年份（MM/DD/YYYY）
+          // 如果第一個部分有4位數字，那第一個部分是年份（YYYY/MM/DD）
+          
+          if (part1 > 12 || parts[0].length === 4) {
+            // YYYY/MM/DD 格式
+            year = part1;
+            month = part2;
+            day = part3;
+          } else if (part3 > 12 || parts[2].length === 4) {
+            // MM/DD/YYYY 格式
+            year = part3;
+            month = part1;
+            day = part2;
+          } else {
+            // 無法確定，嘗試使用 Date 構造函數（會假設 MM/DD/YYYY）
+            const date = new Date(trimmed);
+            if (!isNaN(date.getTime())) {
+              year = date.getFullYear();
+              month = date.getMonth() + 1;
+              day = date.getDate();
+            } else {
+              // 預設使用 MM/DD/YYYY 格式
+              year = part3;
+              month = part1;
+              day = part2;
+            }
+          }
+          
+          // 驗證日期有效性
+          if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+            // 使用本地時間創建日期，避免時區問題
+            const date = new Date(year, month - 1, day);
+            const yearStr = date.getFullYear().toString();
+            const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
+            const dayStr = date.getDate().toString().padStart(2, '0');
+            return `${yearStr}-${monthStr}-${dayStr}`;
+          }
         }
       }
       
       // 如果格式不符合，嘗試使用 Date 構造函數
-      const date = new Date(dateStr);
+      const date = new Date(trimmed);
       if (isNaN(date.getTime())) return new Date().toISOString().split('T')[0];
       
       // 使用本地時間格式化，避免時區問題
