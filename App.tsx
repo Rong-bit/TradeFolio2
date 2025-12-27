@@ -1189,6 +1189,8 @@ const App: React.FC = () => {
                  isGuest={isGuest}
                  onUpdateHistorical={handleOpenHistoricalModal}
                  language={language}
+                 exchangeRate={exchangeRate}
+                 jpyExchangeRate={jpyExchangeRate}
                />
             )}
 
