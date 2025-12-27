@@ -71,6 +71,7 @@ export interface Transaction {
   accountId: string;
   note?: string;
   amount?: number;
+  category?: CashFlowCategory; // 股票用途類別
 }
 
 export interface Holding {
@@ -90,6 +91,7 @@ export interface Holding {
   dailyChange?: number; // Price change amount
   dailyChangePercent?: number; // Price change %
   firstBuyDate?: string; // Helper for ROI calc
+  category?: CashFlowCategory; // 股票用途類別
 }
 
 export interface PortfolioSummary {
