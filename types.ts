@@ -28,6 +28,15 @@ export enum CashFlowType {
   INTEREST = 'INTEREST' // Interest income
 }
 
+export enum CashFlowCategory {
+  INVESTMENT = 'INVESTMENT', // 投資
+  EDUCATION = 'EDUCATION', // 教育資金
+  TRAVEL = 'TRAVEL', // 旅遊
+  LIVING = 'LIVING', // 生活費
+  EMERGENCY = 'EMERGENCY', // 緊急預備金
+  OTHER = 'OTHER' // 其他
+}
+
 export interface Account {
   id: string;
   name: string;
@@ -47,6 +56,7 @@ export interface CashFlow {
   targetAccountId?: string; // Only for Transfer
   exchangeRate?: number; // If transferring between currencies
   note?: string;
+  category?: CashFlowCategory; // 資金用途類別
 }
 
 export interface Transaction {
