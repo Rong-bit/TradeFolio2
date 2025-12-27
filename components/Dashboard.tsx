@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChartDataPoint, PortfolioSummary, Holding, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlow, Account, CashFlowType, Currency, Market } from '../types';
-import { formatCurrency } from '../utils/calculations';
+import { formatCurrency, calculateAssetsByCategoryAndAccount } from '../utils/calculations';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { analyzePortfolio } from '../services/geminiService';
 import HoldingsTable from './HoldingsTable';
@@ -21,6 +21,8 @@ interface Props {
   isGuest?: boolean;
   onUpdateHistorical?: () => void; // Changed from Promise to void (opens modal)
   language: Language;
+  exchangeRate: number;
+  jpyExchangeRate?: number;
 }
 
 const Dashboard: React.FC<Props> = ({ 
@@ -36,7 +38,9 @@ const Dashboard: React.FC<Props> = ({
   onAutoUpdate,
   isGuest = false,
   onUpdateHistorical,
-  language
+  language,
+  exchangeRate,
+  jpyExchangeRate
 }) => {
   const translations = t(language);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -46,6 +50,7 @@ const Dashboard: React.FC<Props> = ({
   const [showCostDetailModal, setShowCostDetailModal] = useState(false);
   const [showAccountInUSD, setShowAccountInUSD] = useState(false); // 證券戶列表切換顯示幣種：false=台幣, true=美金
   const [showAnnualInUSD, setShowAnnualInUSD] = useState(false); // 年度績效表切換顯示幣種：false=台幣, true=美金
+  const [showAssetBreakdown, setShowAssetBreakdown] = useState(false); // 總資產分層顯示
 
 
   useEffect(() => {
@@ -110,6 +115,17 @@ const Dashboard: React.FC<Props> = ({
       return acc;
   }, 0);
 
+  // 計算分層總資產結構
+  const assetBreakdown = useMemo(() => {
+    return calculateAssetsByCategoryAndAccount(
+      holdings,
+      accounts,
+      summary.cashBalanceTWD,
+      exchangeRate,
+      jpyExchangeRate
+    );
+  }, [holdings, accounts, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate]);
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -130,14 +146,50 @@ const Dashboard: React.FC<Props> = ({
           </p>
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-green-500">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalAssets}</h4>
+          <div className="flex justify-between items-center">
+            <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalAssets}</h4>
+            <button
+              onClick={() => setShowAssetBreakdown(!showAssetBreakdown)}
+              className="text-indigo-600 hover:text-indigo-800 text-[10px] sm:text-xs bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"
+              title={language === 'zh-TW' ? '查看分層明細' : 'View Breakdown'}
+            >
+              {showAssetBreakdown ? '▲' : '▼'} {language === 'zh-TW' ? '分層' : 'Breakdown'}
+            </button>
+          </div>
           <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
             {formatCurrency(summary.totalValueTWD + summary.cashBalanceTWD, 'TWD')}
           </p>
           <div className="flex justify-between items-end mt-1">
              <p className="text-[10px] sm:text-xs text-slate-400">{translations.dashboard.includeCash}: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
-    
           </div>
+          
+          {/* 分層總資產顯示 */}
+          {showAssetBreakdown && assetBreakdown.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+              {assetBreakdown.map((categoryData) => (
+                <div key={categoryData.category} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h5 className="text-sm font-semibold text-slate-700">{categoryData.categoryName}</h5>
+                    <span className="text-sm font-bold text-slate-800">{formatCurrency(categoryData.totalValue, 'TWD')}</span>
+                  </div>
+                  <div className="ml-4 space-y-2">
+                    {categoryData.accounts.map((account) => (
+                      <div key={account.accountId} className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-600 font-medium">{account.accountName} ({account.currency})</span>
+                          <span className="font-semibold text-slate-700">{formatCurrency(account.totalValue, 'TWD')}</span>
+                        </div>
+                        <div className="ml-4 flex justify-between text-[10px] text-slate-500">
+                          <span>股票: {formatCurrency(account.stocks, 'TWD')}</span>
+                          <span>現金: {formatCurrency(account.cash, 'TWD')}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className={`bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 ${summary.totalPLTWD >= 0 ? 'border-success' : 'border-danger'}`}>
           <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalPL}</h4>
