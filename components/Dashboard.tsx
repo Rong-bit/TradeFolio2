@@ -234,19 +234,6 @@ const Dashboard: React.FC<Props> = ({
                 </button>
               )}
           </div>
-          <div className="mb-4">
-            <p className="text-xs text-slate-500 flex items-center gap-2">
-              <span className="text-slate-600 font-medium">{translations.dashboard.chartLabels.accumulatedPL}:</span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
-                <span>{language === 'zh-TW' ? '綠色=盈利' : 'Green=Profit'}</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span>
-                <span>{language === 'zh-TW' ? '紅色=虧損' : 'Red=Loss'}</span>
-              </span>
-            </p>
-          </div>
           
           <div className="w-full">
             <div className="w-full h-[300px] md:h-[450px]">
@@ -298,7 +285,7 @@ const Dashboard: React.FC<Props> = ({
                     </Bar>
 
                     {/* Lines */}
-                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                     <Line yAxisId="left" type="monotone" dataKey="totalAssets" name={translations.dashboard.chartLabels.totalAssets} stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -308,6 +295,19 @@ const Dashboard: React.FC<Props> = ({
                 </div>
               )}
             </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs text-slate-500 flex items-center gap-2 justify-center">
+              <span className="text-slate-600 font-medium">{translations.dashboard.chartLabels.accumulatedPL}:</span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
+                <span>{language === 'zh-TW' ? '綠色=盈利' : 'Green=Profit'}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span>
+                <span>{language === 'zh-TW' ? '紅色=虧損' : 'Red=Loss'}</span>
+              </span>
+            </p>
           </div>
         </div>
       )}
