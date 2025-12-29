@@ -18,14 +18,22 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
   const [years, setYears] = useState<number>(10); // 預設 10 年
   const [regularInvestment, setRegularInvestment] = useState<number>(0); // 定期定額金額
   const [regularFrequency, setRegularFrequency] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly'); // 定期定額頻率
-  const [newTicker, setNewTicker] = useState<string>('');
-  const [newMarket, setNewMarket] = useState<Market>(Market.TW);
-  const [newAnnualReturn, setNewAnnualReturn] = useState<number>(8);
-  const [newAllocation, setNewAllocation] = useState<number>(0);
+  // 多行輸入的臨時數據結構
+  interface TempInputRow {
+    id: string;
+    ticker: string;
+    market: Market;
+    annualReturn: number;
+    allocation: number;
+    loadingReturn?: boolean;
+  }
+
+  const [inputRows, setInputRows] = useState<TempInputRow[]>([
+    { id: uuidv4(), ticker: '', market: Market.TW, annualReturn: 8, allocation: 0 }
+  ]);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
-  const [loadingReturn, setLoadingReturn] = useState<boolean>(false);
-  const [loadingTicker, setLoadingTicker] = useState<string>(''); // 正在查詢的股票代號
+  const [loadingTickers, setLoadingTickers] = useState<Set<string>>(new Set()); // 正在查詢的股票代號集合
   const [dataWarning, setDataWarning] = useState<string>(''); // 數據不完整的警告訊息
 
 
@@ -136,35 +144,68 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
     };
   }, [assets, initialAmount, years, regularInvestment, regularFrequency]);
 
-  // 添加資產
-  const addAsset = () => {
+  // 添加新行
+  const addInputRow = () => {
+    setInputRows([...inputRows, { 
+      id: uuidv4(), 
+      ticker: '', 
+      market: Market.TW, 
+      annualReturn: 8, 
+      allocation: 0 
+    }]);
+  };
+
+  // 刪除輸入行
+  const removeInputRow = (id: string) => {
+    if (inputRows.length > 1) {
+      setInputRows(inputRows.filter(row => row.id !== id));
+    }
+  };
+
+  // 更新輸入行
+  const updateInputRow = (id: string, field: keyof TempInputRow, value: any) => {
+    setInputRows(inputRows.map(row => {
+      if (row.id === id) {
+        return { ...row, [field]: value };
+      }
+      return row;
+    }));
+  };
+
+  // 批量添加資產
+  const batchAddAssets = () => {
     setErrorMessage('');
-    if (!newTicker.trim()) {
+    
+    // 驗證所有行
+    const validRows = inputRows.filter(row => row.ticker.trim() && row.allocation > 0);
+    
+    if (validRows.length === 0) {
       setErrorMessage(translations.simulator.errorEnterTicker);
       return;
     }
-    if (newAllocation <= 0 || newAllocation > 100) {
-      setErrorMessage(translations.simulator.errorAllocationRange);
-      return;
-    }
 
+    // 檢查配置比例總和
+    const totalAllocation = validRows.reduce((sum, row) => sum + row.allocation, 0);
     const currentTotal = assets.reduce((sum, a) => sum + a.allocation, 0);
-    if (currentTotal + newAllocation > 100) {
+    
+    if (currentTotal + totalAllocation > 100) {
       setErrorMessage(translate('simulator.errorAllocationSum', language));
       return;
     }
 
-    const newAsset: AssetSimulationItem = {
+    // 添加所有有效行
+    const newAssets: AssetSimulationItem[] = validRows.map(row => ({
       id: uuidv4(),
-      ticker: newTicker.trim().toUpperCase(),
-      market: newMarket,
-      annualizedReturn: newAnnualReturn,
-      allocation: newAllocation
-    };
+      ticker: row.ticker.trim().toUpperCase(),
+      market: row.market,
+      annualizedReturn: row.annualReturn,
+      allocation: row.allocation
+    }));
 
-    setAssets([...assets, newAsset]);
-    setNewTicker('');
-    setNewAllocation(0);
+    setAssets([...assets, ...newAssets]);
+    
+    // 重置輸入行（保留一行空白）
+    setInputRows([{ id: uuidv4(), ticker: '', market: Market.TW, annualReturn: 8, allocation: 0 }]);
   };
 
 
@@ -187,7 +228,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
     setAssets([...assets, ...newAssets]);
   };
 
-  // 自動查詢年化報酬率
+  // 自動查詢年化報酬率（針對特定行）
   // 
   // 年化報酬率計算說明：
   // 系統會查詢股票上市以來的歷史數據，使用 CAGR (Compound Annual Growth Rate) 公式計算：
@@ -196,32 +237,38 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
   // 這表示如果從上市時買入並持有至今，每年的平均複合報酬率。
   // 例如：股票從 100 元漲到 200 元，經過 5 年，年化報酬率約為 14.87%
   //
-  const fetchReturnForTicker = async () => {
-    if (!newTicker.trim()) {
+  const fetchReturnForRow = async (rowId: string) => {
+    const row = inputRows.find(r => r.id === rowId);
+    if (!row || !row.ticker.trim()) {
       setErrorMessage(translations.simulator.errorEnterTickerFirst);
       return;
     }
 
     setErrorMessage('');
-    setLoadingReturn(true);
-    setLoadingTicker(newTicker.trim().toUpperCase());
+    const tickerUpper = row.ticker.trim().toUpperCase();
+    setLoadingTickers(prev => new Set([...prev, tickerUpper]));
+    updateInputRow(rowId, 'loadingReturn', true);
 
     try {
       // 查詢股票上市以來的年化報酬率（CAGR）
-      const annualReturn = await fetchAnnualizedReturn(newTicker.trim().toUpperCase(), newMarket);
+      const annualReturn = await fetchAnnualizedReturn(tickerUpper, row.market);
       
       if (annualReturn !== null) {
-        setNewAnnualReturn(annualReturn);
+        updateInputRow(rowId, 'annualReturn', annualReturn);
         setErrorMessage(''); // 清除錯誤訊息
       } else {
-        setErrorMessage(translate('simulator.errorCannotGetReturn', language, { ticker: newTicker.trim().toUpperCase() }));
+        setErrorMessage(translate('simulator.errorCannotGetReturn', language, { ticker: tickerUpper }));
       }
     } catch (error) {
       console.error('查詢年化報酬率時發生錯誤:', error);
       setErrorMessage(translations.simulator.errorQueryFailed);
     } finally {
-      setLoadingReturn(false);
-      setLoadingTicker('');
+      setLoadingTickers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tickerUpper);
+        return newSet;
+      });
+      updateInputRow(rowId, 'loadingReturn', false);
     }
   };
 
@@ -509,144 +556,163 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
 
       {/* 手動添加資產 */}
       <div className="bg-white p-6 rounded-xl shadow">
-        <h3 className="font-bold text-slate-800 text-lg mb-4">{translations.simulator.manualAdd}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">{translations.simulator.ticker}</label>
-            <input
-              type="text"
-              value={newTicker}
-              onChange={(e) => setNewTicker(e.target.value)}
-              placeholder={translations.simulator.tickerPlaceholder}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">{translations.simulator.market}</label>
-            <select
-              value={newMarket}
-              onChange={(e) => setNewMarket(e.target.value as Market)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={Market.TW}>{translations.simulator.marketTW} {language === 'zh-TW' ? '' : '(TW)'}</option>
-              <option value={Market.US}>{translations.simulator.marketUS} {language === 'zh-TW' ? '' : '(US)'}</option>
-              <option value={Market.UK}>{translations.simulator.marketUK} {language === 'zh-TW' ? '' : '(UK)'}</option>
-              <option value={Market.JP}>{translations.simulator.marketJP} {language === 'zh-TW' ? '' : '(JP)'}</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              {translations.simulator.annualReturn} {language === 'zh-TW' ? '' : '(%)'}
-              {newTicker.trim() && (
-                <button
-                  onClick={fetchReturnForTicker}
-                  disabled={loadingReturn}
-                  className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 active:bg-blue-200 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={translations.simulator.autoQueryTitle}
-                >
-                  {loadingReturn && loadingTicker === newTicker.trim().toUpperCase() ? (
-                    <span className="flex items-center gap-1">
-                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      {translations.simulator.querying}
-                    </span>
-                  ) : (
-                    translations.simulator.autoQuery
-                  )}
-                </button>
-              )}
-            </label>
-            <input
-              type="number"
-              value={newAnnualReturn}
-              onChange={(e) => setNewAnnualReturn(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              step="0.1"
-              min="0"
-              max="100"
-            />
-            {loadingReturn && loadingTicker === newTicker.trim().toUpperCase() && (
-              <p className="text-xs text-blue-600 mt-1">{translate('simulator.queryingReturn', language, { ticker: newTicker.trim().toUpperCase() })}</p>
-            )}
-            {dataWarning && (
-              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
-                <p className="font-semibold mb-1">{translations.simulator.dataWarning}</p>
-                <p>{dataWarning}</p>
-                <p className="mt-2 text-yellow-700">
-                  {translations.simulator.dataWarningDesc}
-                </p>
-              </div>
-            )}
-            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-              <p className="font-semibold mb-1">{translations.simulator.cagrExplanation}</p>
-              <p className="mb-1">
-                {translations.simulator.cagrFormulaDesc}
-              </p>
-              <p className="font-mono bg-white px-2 py-1 rounded mb-1 text-blue-900">
-                {translations.simulator.cagrFormula}
-              </p>
-              <p className="mb-1">
-                {translations.simulator.cagrExample}
-              </p>
-              <p className="text-blue-700">
-                {translations.simulator.cagrExampleValue}
-              </p>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">{translations.simulator.allocation} {language === 'zh-TW' ? '' : '(%)'}</label>
-            <input
-              type="number"
-              value={newAllocation === 0 ? '' : newAllocation}
-              onChange={(e) => {
-                const inputValue = e.target.value;
-                // 如果輸入為空，設為 0
-                if (inputValue === '' || inputValue === null || inputValue === undefined) {
-                  setNewAllocation(0);
-                  return;
-                }
-                // 移除前導零並轉換為數字
-                const numValue = parseFloat(inputValue);
-                // 如果轉換失敗或為 NaN，設為 0
-                if (isNaN(numValue)) {
-                  setNewAllocation(0);
-                  return;
-                }
-                // 確保值在有效範圍內
-                if (numValue < 0) {
-                  setNewAllocation(0);
-                } else if (numValue > 100) {
-                  setNewAllocation(100);
-                } else {
-                  setNewAllocation(numValue);
-                }
-              }}
-              onBlur={(e) => {
-                // 當失去焦點時，確保值正確格式化
-                const numValue = parseFloat(e.target.value);
-                if (isNaN(numValue) || numValue === 0) {
-                  setNewAllocation(0);
-                } else {
-                  setNewAllocation(numValue);
-                }
-              }}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              step="0.1"
-              min="0"
-              max="100"
-              placeholder="0"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={addAsset}
-              className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 active:bg-slate-950 active:scale-95 active:shadow-inner transition-all duration-150 font-medium shadow-md hover:shadow-lg"
-            >
-              {translations.simulator.add}
-            </button>
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-slate-800 text-lg">{translations.simulator.manualAdd}</h3>
+          <button
+            onClick={addInputRow}
+            className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 active:bg-green-200 active:scale-95 active:shadow-inner transition-all duration-150 text-sm font-medium border border-green-200 hover:border-green-300"
+          >
+            + {language === 'zh-TW' ? '添加行' : 'Add Row'}
+          </button>
+        </div>
+        
+        {/* 年化報酬率說明 */}
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+          <p className="font-semibold mb-1">{translations.simulator.cagrExplanation}</p>
+          <p className="mb-1">
+            {translations.simulator.cagrFormulaDesc}
+          </p>
+          <p className="font-mono bg-white px-2 py-1 rounded mb-1 text-blue-900">
+            {translations.simulator.cagrFormula}
+          </p>
+          <p className="mb-1">
+            {translations.simulator.cagrExample}
+          </p>
+          <p className="text-blue-700">
+            {translations.simulator.cagrExampleValue}
+          </p>
+        </div>
+
+        {/* 多行輸入表格 */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600 uppercase font-medium">
+              <tr>
+                <th className="px-4 py-3 text-left">{translations.simulator.ticker}</th>
+                <th className="px-4 py-3 text-left">{translations.simulator.market}</th>
+                <th className="px-4 py-3 text-left">{translations.simulator.annualReturn} {language === 'zh-TW' ? '' : '(%)'}</th>
+                <th className="px-4 py-3 text-left">{translations.simulator.allocation} {language === 'zh-TW' ? '' : '(%)'}</th>
+                <th className="px-4 py-3 text-center">{language === 'zh-TW' ? '操作' : 'Action'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {inputRows.map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      value={row.ticker}
+                      onChange={(e) => updateInputRow(row.id, 'ticker', e.target.value)}
+                      placeholder={translations.simulator.tickerPlaceholder}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={row.market}
+                      onChange={(e) => updateInputRow(row.id, 'market', e.target.value as Market)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value={Market.TW}>{translations.simulator.marketTW} {language === 'zh-TW' ? '' : '(TW)'}</option>
+                      <option value={Market.US}>{translations.simulator.marketUS} {language === 'zh-TW' ? '' : '(US)'}</option>
+                      <option value={Market.UK}>{translations.simulator.marketUK} {language === 'zh-TW' ? '' : '(UK)'}</option>
+                      <option value={Market.JP}>{translations.simulator.marketJP} {language === 'zh-TW' ? '' : '(JP)'}</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={row.annualReturn}
+                        onChange={(e) => updateInputRow(row.id, 'annualReturn', parseFloat(e.target.value) || 0)}
+                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                      />
+                      {row.ticker.trim() && (
+                        <button
+                          onClick={() => fetchReturnForRow(row.id)}
+                          disabled={row.loadingReturn || loadingTickers.has(row.ticker.trim().toUpperCase())}
+                          className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 active:bg-blue-200 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          title={translations.simulator.autoQueryTitle}
+                        >
+                          {(row.loadingReturn || loadingTickers.has(row.ticker.trim().toUpperCase())) ? (
+                            <span className="flex items-center gap-1">
+                              <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              {translations.simulator.querying}
+                            </span>
+                          ) : (
+                            translations.simulator.autoQuery
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={row.allocation === 0 ? '' : row.allocation}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                          updateInputRow(row.id, 'allocation', 0);
+                          return;
+                        }
+                        const numValue = parseFloat(inputValue);
+                        if (isNaN(numValue)) {
+                          updateInputRow(row.id, 'allocation', 0);
+                          return;
+                        }
+                        if (numValue < 0) {
+                          updateInputRow(row.id, 'allocation', 0);
+                        } else if (numValue > 100) {
+                          updateInputRow(row.id, 'allocation', 100);
+                        } else {
+                          updateInputRow(row.id, 'allocation', numValue);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numValue = parseFloat(e.target.value);
+                        if (isNaN(numValue) || numValue === 0) {
+                          updateInputRow(row.id, 'allocation', 0);
+                        } else {
+                          updateInputRow(row.id, 'allocation', numValue);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      placeholder="0"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => removeInputRow(row.id)}
+                      disabled={inputRows.length === 1}
+                      className="text-red-500 hover:text-red-700 active:text-red-900 active:scale-95 transition-all duration-150 text-sm px-2 py-1 rounded hover:bg-red-50 active:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {language === 'zh-TW' ? '刪除' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 批量添加按鈕 */}
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={batchAddAssets}
+            className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 active:bg-slate-950 active:scale-95 active:shadow-inner transition-all duration-150 font-medium shadow-md hover:shadow-lg"
+          >
+            {language === 'zh-TW' ? '批量添加所有' : 'Add All'}
+          </button>
         </div>
       </div>
 
