@@ -272,7 +272,9 @@ const Dashboard: React.FC<Props> = ({
                     <Bar 
                       yAxisId="left" 
                       dataKey="profit" 
-                      name={translations.dashboard.chartLabels.accumulatedPL} 
+                      name={language === 'zh-TW' 
+                        ? `${translations.dashboard.chartLabels.accumulatedPL}: 綠色=盈利 紅色=虧損`
+                        : `${translations.dashboard.chartLabels.accumulatedPL}: Green=Profit Red=Loss`} 
                       stackId="a" 
                       barSize={30}
                     >
@@ -285,7 +287,7 @@ const Dashboard: React.FC<Props> = ({
                     </Bar>
 
                     {/* Lines */}
-                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} dot={false} />
                     <Line yAxisId="left" type="monotone" dataKey="totalAssets" name={translations.dashboard.chartLabels.totalAssets} stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
