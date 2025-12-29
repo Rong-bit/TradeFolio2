@@ -18,6 +18,22 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
   const [years, setYears] = useState<number>(10); // 預設 10 年
   const [regularInvestment, setRegularInvestment] = useState<number>(0); // 定期定額金額
   const [regularFrequency, setRegularFrequency] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly'); // 定期定額頻率
+  
+  // 將 Market 枚舉值轉換為翻譯後的顯示文字
+  const getMarketDisplayText = (market: Market): string => {
+    switch (market) {
+      case Market.TW:
+        return translations.simulator.marketTW;
+      case Market.US:
+        return translations.simulator.marketUS;
+      case Market.UK:
+        return translations.simulator.marketUK;
+      case Market.JP:
+        return translations.simulator.marketJP;
+      default:
+        return market;
+    }
+  };
   // 多行輸入的臨時數據結構
   interface TempInputRow {
     id: string;
@@ -618,10 +634,10 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                       onChange={(e) => updateInputRow(row.id, 'market', e.target.value as Market)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value={Market.TW}>{translations.simulator.marketTW} {language === 'zh-TW' ? '' : '(TW)'}</option>
-                      <option value={Market.US}>{translations.simulator.marketUS} {language === 'zh-TW' ? '' : '(US)'}</option>
-                      <option value={Market.UK}>{translations.simulator.marketUK} {language === 'zh-TW' ? '' : '(UK)'}</option>
-                      <option value={Market.JP}>{translations.simulator.marketJP} {language === 'zh-TW' ? '' : '(JP)'}</option>
+                      <option value={Market.TW}>{translations.simulator.marketTW}</option>
+                      <option value={Market.US}>{translations.simulator.marketUS}</option>
+                      <option value={Market.UK}>{translations.simulator.marketUK}</option>
+                      <option value={Market.JP}>{translations.simulator.marketJP}</option>
                     </select>
                   </td>
                   <td className="px-4 py-3">
@@ -761,7 +777,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                         {asset.ticker}
                         {asset.name && <span className="text-xs text-slate-500 ml-2">({asset.name})</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{asset.market}</td>
+                      <td className="px-4 py-3 text-slate-600">{getMarketDisplayText(asset.market)}</td>
                       <td className="px-4 py-3 text-right">
                         <input
                           type="number"
