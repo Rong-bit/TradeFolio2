@@ -261,7 +261,13 @@ const Dashboard: React.FC<Props> = ({
                          if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
                          else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
 
-                         return [formatCurrency(value, 'TWD'), name + suffix];
+                         // For accumulated P/L, only show "累积损益" without the color explanation
+                         let displayName = name;
+                         if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
+                           displayName = translations.dashboard.chartLabels.accumulatedPL;
+                         }
+
+                         return [formatCurrency(value, 'TWD'), displayName + suffix];
                       }}
                     />
                     <Legend />
@@ -303,11 +309,19 @@ const Dashboard: React.FC<Props> = ({
               <span className="text-slate-600 font-medium">{translations.dashboard.chartLabels.accumulatedPL}:</span>
               <span className="flex items-center gap-1">
                 <span className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
-                <span>{language === 'zh-TW' ? '綠色=盈利' : 'Green=Profit'}</span>
+                {language === 'zh-TW' ? (
+                  <span><span style={{ color: '#10b981' }}>綠色</span>=盈利</span>
+                ) : (
+                  <span><span style={{ color: '#10b981' }}>Green</span>=Profit</span>
+                )}
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span>
-                <span>{language === 'zh-TW' ? '紅色=虧損' : 'Red=Loss'}</span>
+                {language === 'zh-TW' ? (
+                  <span><span style={{ color: '#ef4444' }}>紅色</span>=虧損</span>
+                ) : (
+                  <span><span style={{ color: '#ef4444' }}>Red</span>=Loss</span>
+                )}
               </span>
             </p>
           </div>
