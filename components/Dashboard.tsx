@@ -254,45 +254,19 @@ const Dashboard: React.FC<Props> = ({
                     <YAxis yAxisId="left" stroke="#64748b" fontSize={10} className="text-xs" tickFormatter={(val) => `${val / 1000}k`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                      content={({ active, payload }: any) => {
-                        if (!active || !payload || !payload.length) return null;
-                        
-                        return (
-                          <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-200">
-                            {payload.map((entry: any, index: number) => {
-                              const name = entry.name || '';
-                              const value = entry.value || 0;
-                              const isReal = entry.payload?.isRealData;
-                              let suffix = '';
-                              
-                              if (name === translations.dashboard.chartLabels.totalAssets && isReal) {
-                                suffix = translations.dashboard.chartLabels.realData;
-                              } else if (name === translations.dashboard.chartLabels.totalAssets) {
-                                suffix = translations.dashboard.chartLabels.estimated;
-                              }
+                      formatter={(value: number, name: string, props: any) => {
+                         // Check if this data point is real or simulated
+                         const isReal = props.payload.isRealData;
+                         let suffix = '';
+                         if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
+                         else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
 
-                              // For accumulated P/L, show with dynamic color
-                              if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                                const color = value >= 0 ? '#10b981' : '#ef4444';
-                                return (
-                                  <div key={index} className="mb-1 last:mb-0">
-                                    <span style={{ color }} className="font-medium">
-                                      {translations.dashboard.chartLabels.accumulatedPL}
-                                    </span>
-                                    <span className="ml-2 font-bold">{formatCurrency(value, 'TWD')}</span>
-                                  </div>
-                                );
-                              }
+                         // For accumulated P/L, only show "累积损益" without the color explanation, with black text
+                         if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
+                           return [formatCurrency(value, 'TWD'), translations.dashboard.chartLabels.accumulatedPL];
+                         }
 
-                              return (
-                                <div key={index} className="mb-1 last:mb-0">
-                                  <span className="text-slate-600">{name}{suffix}</span>
-                                  <span className="ml-2 font-bold">{formatCurrency(value, 'TWD')}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
+                         return [formatCurrency(value, 'TWD'), name + suffix];
                       }}
                     />
                     <Legend 
