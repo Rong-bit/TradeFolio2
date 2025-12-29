@@ -26,12 +26,19 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
   const [showInUSD, setShowInUSD] = useState(false);
   
   const handleTargetChange = (mergedKey: string, val: string, accountIds: string[], ticker: string) => {
-    const num = parseFloat(val);
+    // 移除前導零：處理 "020" 或 "02" 這種情況
+    let cleanedVal = val.trim();
+    if (cleanedVal && cleanedVal.length > 1 && cleanedVal[0] === '0' && cleanedVal[1] !== '.') {
+      // 移除前導零，但保留小數點前的零（例如 "0.5"）
+      cleanedVal = cleanedVal.replace(/^0+/, '') || '0';
+    }
+    
+    const num = parseFloat(cleanedVal);
     const newTargets = { ...targets };
     
     // 如果是現金目標
     if (mergedKey === 'cash') {
-      if (val === '' || isNaN(num)) {
+      if (cleanedVal === '' || isNaN(num)) {
         // 只有當輸入為空或無效時才刪除
         delete newTargets['cash'];
       } else {
@@ -449,7 +456,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
                               ? 'border-indigo-100 text-slate-700 bg-white' 
                               : 'border-slate-200 text-slate-400 bg-slate-50'
                           }`}
-                          value={row.targetPct}
+                          value={row.targetPct === 0 ? '' : row.targetPct}
                           onChange={(e) => handleTargetChange(row.mergedKey, e.target.value, row.accountIds, row.ticker)}
                           step="0.1"
                           min="0"
@@ -502,7 +509,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, exchangeRate, jpyEx
                           ? (cashTargetPct < 0 ? 'border-red-300 text-red-600 bg-red-50' : 'border-indigo-100 text-slate-700 bg-white') 
                           : 'border-slate-200 text-slate-400 bg-slate-50'
                       }`}
-                      value={isCashEnabled ? cashTargetPct : 0}
+                      value={isCashEnabled ? (cashTargetPct === 0 ? '' : cashTargetPct) : ''}
                       onChange={(e) => handleTargetChange('cash', e.target.value, [], '')}
                       step="0.1"
                       min="0"
