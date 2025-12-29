@@ -254,7 +254,6 @@ const Dashboard: React.FC<Props> = ({
                     <YAxis yAxisId="left" stroke="#64748b" fontSize={10} className="text-xs" tickFormatter={(val) => `${val / 1000}k`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                      labelFormatter={(label) => label}
                       formatter={(value: number, name: string, props: any) => {
                          // Check if this data point is real or simulated
                          const isReal = props.payload.isRealData;
@@ -262,45 +261,14 @@ const Dashboard: React.FC<Props> = ({
                          if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
                          else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
 
-                         // For accumulated P/L, only show "累积损益" without the color explanation
+                         // For accumulated P/L, only show "累积损益" without the color explanation, with dynamic color
                          if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                           return [formatCurrency(value, 'TWD'), translations.dashboard.chartLabels.accumulatedPL];
+                           const color = value >= 0 ? '#10b981' : '#ef4444';
+                           const displayName = React.createElement('span', { style: { color } }, translations.dashboard.chartLabels.accumulatedPL);
+                           return [formatCurrency(value, 'TWD'), displayName];
                          }
 
                          return [formatCurrency(value, 'TWD'), name + suffix];
-                      }}
-                      content={({ active, payload }: any) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div style={{ backgroundColor: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                              {payload.map((entry: any, index: number) => {
-                                const value = entry.value;
-                                let name = entry.name;
-                                const isReal = entry.payload?.isRealData;
-                                let suffix = '';
-                                if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
-                                else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
-
-                                // For accumulated P/L, show with dynamic color
-                                let displayName = name + suffix;
-                                let nameStyle: React.CSSProperties = {};
-                                if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                                  displayName = translations.dashboard.chartLabels.accumulatedPL;
-                                  nameStyle.color = value >= 0 ? '#10b981' : '#ef4444';
-                                }
-
-                                return (
-                                  <p key={index} style={{ margin: 0, padding: '2px 0' }}>
-                                    <span style={{ color: entry.color, marginRight: '8px' }}>●</span>
-                                    <span style={nameStyle}>{displayName}</span>
-                                    <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>{formatCurrency(value, 'TWD')}</span>
-                                  </p>
-                                );
-                              })}
-                            </div>
-                          );
-                        }
-                        return null;
                       }}
                     />
                     <Legend 
