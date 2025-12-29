@@ -222,7 +222,7 @@ const Dashboard: React.FC<Props> = ({
       {/* Main Chart (Cost vs Asset) - Only shown if NOT guest */}
       {!isGuest && (
         <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.assetVsCostTrend}</h3>
               {onUpdateHistorical && (
                 <button 
@@ -233,6 +233,19 @@ const Dashboard: React.FC<Props> = ({
                   <span>🤖</span> {translations.dashboard.aiCorrectHistory}
                 </button>
               )}
+          </div>
+          <div className="mb-4">
+            <p className="text-xs text-slate-500 flex items-center gap-2">
+              <span className="text-slate-600 font-medium">{translations.dashboard.chartLabels.accumulatedPL}:</span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
+                <span>{language === 'zh-TW' ? '綠色=盈利' : 'Green=Profit'}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span>
+                <span>{language === 'zh-TW' ? '紅色=虧損' : 'Red=Loss'}</span>
+              </span>
+            </p>
           </div>
           
           <div className="w-full">
