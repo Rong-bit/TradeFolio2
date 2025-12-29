@@ -19,7 +19,7 @@ interface Props {
   onUpdatePrice: (key: string, price: number) => void;
   onAutoUpdate: () => Promise<void>;
   isGuest?: boolean;
-  onUpdateHistorical?: () => void; // Changed from Promise to void (opens modal)
+  onUpdateHistorical?: () => void;
   language: Language;
 }
 
@@ -44,12 +44,11 @@ const Dashboard: React.FC<Props> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [showCostDetailModal, setShowCostDetailModal] = useState(false);
-  const [showAccountInUSD, setShowAccountInUSD] = useState(false); // 證券戶列表切換顯示幣種：false=台幣, true=美金
-  const [showAnnualInUSD, setShowAnnualInUSD] = useState(false); // 年度績效表切換顯示幣種：false=台幣, true=美金
+  const [showAccountInUSD, setShowAccountInUSD] = useState(false); 
+  const [showAnnualInUSD, setShowAnnualInUSD] = useState(false); 
 
 
   useEffect(() => {
-    // 確保組件完全掛載，防止 hydration 錯誤
     setIsMounted(true);
   }, []);
 
@@ -73,14 +72,11 @@ const Dashboard: React.FC<Props> = ({
           let rateSource = translations.dashboard.taiwanDollar;
           let amountTWD = 0;
 
-          // Priority 1: Explicit TWD amount (includes fees/adjustments)
           if (cf.amountTWD && cf.amountTWD > 0) {
              amountTWD = cf.amountTWD;
-             rate = cf.amount > 0 ? amountTWD / cf.amount : 0; // Derived effective rate
+             rate = cf.amount > 0 ? amountTWD / cf.amount : 0; 
              rateSource = translations.dashboard.fixedTWD;
-          } 
-          // Priority 2: Standard calculation
-          else {
+          } else {
              if (isUSD) {
                if (cf.exchangeRate && cf.exchangeRate > 0) {
                    rate = cf.exchangeRate;
@@ -136,7 +132,6 @@ const Dashboard: React.FC<Props> = ({
           </p>
           <div className="flex justify-between items-end mt-1">
              <p className="text-[10px] sm:text-xs text-slate-400">{translations.dashboard.includeCash}: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
-    
           </div>
         </div>
         <div className={`bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 ${summary.totalPLTWD >= 0 ? 'border-success' : 'border-danger'}`}>
@@ -219,7 +214,7 @@ const Dashboard: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Main Chart (Cost vs Asset) - Only shown if NOT guest */}
+      {/* Main Chart (Cost vs Asset) */}
       {!isGuest && (
         <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
           <div className="flex justify-between items-center mb-2">
@@ -255,13 +250,11 @@ const Dashboard: React.FC<Props> = ({
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
                       formatter={(value: number, name: string, props: any) => {
-                         // Check if this data point is real or simulated
                          const isReal = props.payload.isRealData;
                          let suffix = '';
                          if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
                          else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
 
-                         // For accumulated P/L, only show "累积损益" without the color explanation, with black text
                          if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
                            return [formatCurrency(value, 'TWD'), translations.dashboard.chartLabels.accumulatedPL];
                          }
@@ -270,71 +263,39 @@ const Dashboard: React.FC<Props> = ({
                       }}
                     />
                     <Legend 
+                      iconSize={0}
                       formatter={(value: string, entry: any) => {
-                        // Custom formatter for accumulated P/L to show colored text
+                        const isChinese = language === 'zh-TW';
                         if (value.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                          if (language === 'zh-TW') {
-                            const parts = value.split(': ');
-                            if (parts.length > 1) {
-                              const afterColon = parts[1];
-                              // Split the text and create colored spans
-                              const segments: any[] = [];
-                              let lastIndex = 0;
-                              // Find all occurrences of "綠色" and "紅色"
-                              const matches = [...afterColon.matchAll(/(綠色|紅色)/g)];
-                              matches.forEach((match) => {
-                                if (match.index !== undefined) {
-                                  // Add text before the match
-                                  if (match.index > lastIndex) {
-                                    segments.push(afterColon.substring(lastIndex, match.index));
-                                  }
-                                  // Add colored match
-                                  const color = match[0] === '綠色' ? '#10b981' : '#ef4444';
-                                  segments.push(React.createElement('span', { key: match.index, style: { color } }, match[0]));
-                                  lastIndex = match.index + match[0].length;
-                                }
-                              });
-                              // Add remaining text
-                              if (lastIndex < afterColon.length) {
-                                segments.push(afterColon.substring(lastIndex));
-                              }
-                              return React.createElement('span', {}, parts[0] + ': ', ...segments);
-                            }
-                          } else {
-                            const parts = value.split(': ');
-                            if (parts.length > 1) {
-                              const afterColon = parts[1];
-                              // Split the text and create colored spans for English
-                              const segments: any[] = [];
-                              let lastIndex = 0;
-                              const matches = [...afterColon.matchAll(/(Green|Red)/g)];
-                              matches.forEach((match) => {
-                                if (match.index !== undefined) {
-                                  if (match.index > lastIndex) {
-                                    segments.push(afterColon.substring(lastIndex, match.index));
-                                  }
-                                  const color = match[0] === 'Green' ? '#10b981' : '#ef4444';
-                                  segments.push(React.createElement('span', { key: match.index, style: { color } }, match[0]));
-                                  lastIndex = match.index + match[0].length;
-                                }
-                              });
-                              if (lastIndex < afterColon.length) {
-                                segments.push(afterColon.substring(lastIndex));
-                              }
-                              return React.createElement('span', {}, parts[0] + ': ', ...segments);
-                            }
-                          }
+                          return (
+                            <span className="inline-flex items-center gap-3">
+                              <span className="flex items-center gap-1">
+                                <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#10b981', borderRadius: '2px', marginRight: '4px' }}></span>
+                                <span style={{ color: '#10b981', fontWeight: 600 }}>{isChinese ? '盈利' : 'Profit'}</span>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '2px', marginRight: '4px' }}></span>
+                                <span style={{ color: '#ef4444', fontWeight: 600 }}>{isChinese ? '虧損' : 'Loss'}</span>
+                              </span>
+                            </span>
+                          );
                         }
-                        return value;
+                        return (
+                          <span className="inline-flex items-center gap-1">
+                            <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: entry.color, borderRadius: '2px', marginRight: '4px' }}></span>
+                            <span className="text-slate-700 font-medium">{value}</span>
+                          </span>
+                        );
                       }}
                     />
                     {/* Cost Bar */}
                     <Bar yAxisId="left" dataKey="cost" name={translations.dashboard.chartLabels.investmentCost} stackId="a" fill="#8b5cf6" barSize={30} />
                     
-                    {/* Profit Bar - Stacked on Cost, Solid with Dynamic Color */}
+                    {/* Profit Bar - Stacked on Cost */}
                     <Bar 
                       yAxisId="left" 
                       dataKey="profit" 
+                      fill="#000" 
                       name={language === 'zh-TW' 
                         ? `${translations.dashboard.chartLabels.accumulatedPL}: 綠色=盈利 紅色=虧損`
                         : `${translations.dashboard.chartLabels.accumulatedPL}: Green=Profit Red=Loss`} 
@@ -350,8 +311,8 @@ const Dashboard: React.FC<Props> = ({
                     </Bar>
 
                     {/* Lines */}
-                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} dot={false} />
                     <Line yAxisId="left" type="monotone" dataKey="totalAssets" name={translations.dashboard.chartLabels.totalAssets} stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
+                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -364,25 +325,20 @@ const Dashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Allocation Pie Chart - Only shown if NOT guest */}
+      {/* Allocation Pie Chart */}
       {!isGuest && (
         <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
           <h3 className="font-bold text-slate-800 text-lg mb-4">{translations.dashboard.allocation}</h3>
-          <div 
-            className="w-full flex justify-center" 
-          >
+          <div className="w-full flex justify-center">
             <div className="w-full max-w-md md:max-w-lg aspect-square">
               {isMounted && assetAllocation.length > 0 ? (
-                 <ResponsiveContainer 
-                   width="100%" 
-                   height="100%"
-                 >
+                 <ResponsiveContainer width="100%" height="100%">
                    <PieChart>
                       <Pie
                         data={assetAllocation as any[]}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
+                        innerRadius={70}
                         outerRadius={100}
                         paddingAngle={2}
                         dataKey="value"
@@ -391,15 +347,13 @@ const Dashboard: React.FC<Props> = ({
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                         formatter={(value: number) => formatCurrency(value, 'TWD')}
-                      />
+                      <Tooltip formatter={(value: number) => formatCurrency(value, 'TWD')} />
                       <Legend 
                          layout="vertical" 
                          verticalAlign="middle" 
                          align="right"
                          wrapperStyle={{ fontSize: '10px', paddingLeft: '10px' }}
-                         formatter={(value, entry: any) => {
+                         formatter={(value) => {
                            const item = assetAllocation.find(a => a.name === value);
                            return <span className="text-xs text-slate-600 ml-1">{value} ({item?.ratio.toFixed(1)}%)</span>;
                          }}
@@ -416,7 +370,7 @@ const Dashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Annual Performance Table (Below Charts) - Only shown if NOT guest */}
+      {/* Annual Performance Table */}
       {!isGuest && annualPerformance.length > 0 && (
           <div className="bg-white rounded-xl shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
@@ -459,7 +413,6 @@ const Dashboard: React.FC<Props> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {annualPerformance.map(item => {
-                    // 根據切換狀態決定顯示的幣種和數值
                     const displayCurrency = showAnnualInUSD ? 'USD' : 'TWD';
                     const startAssets = showAnnualInUSD ? item.startAssets / summary.exchangeRateUsdToTwd : item.startAssets;
                     const netInflow = showAnnualInUSD ? item.netInflow / summary.exchangeRateUsdToTwd : item.netInflow;
@@ -533,7 +486,6 @@ const Dashboard: React.FC<Props> = ({
             <tbody className="divide-y divide-slate-100">
               {accountPerformance.length > 0 ? (
                 accountPerformance.map(acc => {
-                  // 根據切換狀態決定顯示的幣種和數值
                   let displayCurrency: string;
                   let totalAssets: number;
                   let marketValue: number;
@@ -541,32 +493,12 @@ const Dashboard: React.FC<Props> = ({
                   let profit: number;
                   
                   if (showAccountInUSD) {
-                    // 切換到美金顯示
-                    if (acc.currency === Currency.USD) {
-                      // 美金帳戶：顯示原始美金值
-                      displayCurrency = 'USD';
-                      totalAssets = acc.totalAssetsNative || acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                      marketValue = acc.marketValueNative || acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                      cashBalance = acc.cashBalanceNative || acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                      profit = acc.profitNative || acc.profitTWD / summary.exchangeRateUsdToTwd;
-                    } else if (acc.currency === Currency.JPY) {
-                      // 日幣帳戶：轉換為美金顯示
-                      const jpyToUsdRate = summary.jpyExchangeRate && summary.exchangeRateUsdToTwd ? summary.jpyExchangeRate / summary.exchangeRateUsdToTwd : 0.0067; // 預設約 1 JPY = 0.0067 USD
-                      displayCurrency = 'USD';
-                      totalAssets = acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                      marketValue = acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                      cashBalance = acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                      profit = acc.profitTWD / summary.exchangeRateUsdToTwd;
-                    } else {
-                      // 台幣帳戶：轉換為美金顯示
-                      displayCurrency = 'USD';
-                      totalAssets = acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                      marketValue = acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                      cashBalance = acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                      profit = acc.profitTWD / summary.exchangeRateUsdToTwd;
-                    }
+                    displayCurrency = 'USD';
+                    totalAssets = acc.totalAssetsNative || acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
+                    marketValue = acc.marketValueNative || acc.marketValueTWD / summary.exchangeRateUsdToTwd;
+                    cashBalance = acc.cashBalanceNative || acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
+                    profit = acc.profitNative || acc.profitTWD / summary.exchangeRateUsdToTwd;
                   } else {
-                    // 切換到台幣顯示（預設）
                     displayCurrency = 'TWD';
                     totalAssets = acc.totalAssetsTWD;
                     marketValue = acc.marketValueTWD;
@@ -608,7 +540,6 @@ const Dashboard: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Holdings Table Integration in Dashboard */}
       <HoldingsTable 
         holdings={holdings}
         accounts={accounts}
@@ -617,7 +548,6 @@ const Dashboard: React.FC<Props> = ({
         language={language}
       />
 
-       {/* AI Advisor Section - Only shown if NOT guest */}
       {!isGuest && (
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 shadow-xl text-white">
           <div className="flex justify-between items-start mb-4">
@@ -647,7 +577,6 @@ const Dashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Cost Detail Modal */}
       {showCostDetailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
@@ -712,10 +641,7 @@ const Dashboard: React.FC<Props> = ({
             </div>
             
             <div className="p-4 border-t border-slate-200 bg-white flex justify-end">
-              <button 
-                onClick={() => setShowCostDetailModal(false)}
-                className="px-6 py-2 bg-slate-900 text-white rounded hover:bg-slate-800"
-              >
+              <button onClick={() => setShowCostDetailModal(false)} className="px-6 py-2 bg-slate-900 text-white rounded hover:bg-slate-800">
                 {translations.common.close}
               </button>
             </div>
