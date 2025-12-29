@@ -157,14 +157,17 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
 
   // 刪除輸入行
   const removeInputRow = (id: string) => {
-    if (inputRows.length > 1) {
-      setInputRows(inputRows.filter(row => row.id !== id));
-    }
+    setInputRows(prev => {
+      if (prev.length > 1) {
+        return prev.filter(row => row.id !== id);
+      }
+      return prev;
+    });
   };
 
   // 更新輸入行
   const updateInputRow = (id: string, field: keyof TempInputRow, value: any) => {
-    setInputRows(inputRows.map(row => {
+    setInputRows(prev => prev.map(row => {
       if (row.id === id) {
         return { ...row, [field]: value };
       }
@@ -254,8 +257,10 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
       const annualReturn = await fetchAnnualizedReturn(tickerUpper, row.market);
       
       if (annualReturn !== null) {
+        console.log(`[調試] 準備更新行 ${rowId} 的年化報酬率為: ${annualReturn}%`);
         updateInputRow(rowId, 'annualReturn', annualReturn);
         setErrorMessage(''); // 清除錯誤訊息
+        console.log(`[調試] 已更新行 ${rowId} 的年化報酬率`);
       } else {
         setErrorMessage(translate('simulator.errorCannotGetReturn', language, { ticker: tickerUpper }));
       }
