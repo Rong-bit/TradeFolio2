@@ -475,8 +475,8 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area - pb-20 on mobile to avoid bottom nav */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 pb-20 md:pb-8">
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
         {view === 'dashboard' && (
           <Dashboard 
             summary={summary} holdings={holdings} chartData={chartData} 
@@ -652,44 +652,6 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 text-white flex justify-around items-center h-16 z-40 border-t border-slate-800 shadow-2xl">
-        <button 
-          onClick={() => setView('dashboard')}
-          className={`flex flex-col items-center gap-1 flex-1 ${view === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'}`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-          <span className="text-[10px]">{translations.nav.dashboard}</span>
-        </button>
-        <button 
-          onClick={() => setView('history')}
-          className={`flex flex-col items-center gap-1 flex-1 ${view === 'history' ? 'text-indigo-400' : 'text-slate-400'}`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span className="text-[10px]">{translations.nav.history}</span>
-        </button>
-        <button 
-          onClick={() => setView('funds')}
-          className={`flex flex-col items-center gap-1 flex-1 ${view === 'funds' ? 'text-indigo-400' : 'text-slate-400'}`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span className="text-[10px]">{translations.nav.funds}</span>
-        </button>
-        <button 
-          onClick={() => setView('accounts')}
-          className={`flex flex-col items-center gap-1 flex-1 ${view === 'accounts' ? 'text-indigo-400' : 'text-slate-400'}`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-          <span className="text-[10px]">{translations.nav.accounts}</span>
-        </button>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className={`flex flex-col items-center gap-1 flex-1 ${isMobileMenuOpen ? 'text-indigo-400' : 'text-slate-400'}`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-          <span className="text-[10px]">{language === 'zh-TW' ? '更多' : 'More'}</span>
-        </button>
-      </nav>
 
       {/* Mobile More Menu Overlay */}
       {isMobileMenuOpen && (
