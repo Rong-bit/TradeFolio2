@@ -1,3 +1,4 @@
+
 // 語言類型
 export type Language = 'zh-TW' | 'en';
 
@@ -13,6 +14,7 @@ export interface Translations {
     close: string;
     loading: string;
     search: string;
+    logoutConfirm: string;
   };
   // 導航
   nav: {
@@ -153,12 +155,12 @@ export interface Translations {
     batchImport: string;
     addRecord: string;
     filter: string;
+    clearFilters: string;
     accountFilter: string;
     tickerFilter: string;
     dateFrom: string;
     dateTo: string;
     includeCashFlow: string;
-    clearFilters: string;
     showingRecords: string;
     totalRecords: string;
     last30Days: string;
@@ -364,6 +366,9 @@ export interface Translations {
     confirmImportWarning: string;
     confirmOverride: string;
     documentationContent: string;
+    androidPublish: string;
+    androidPublishTitle: string;
+    androidPublishDesc: string;
   };
 }
 
@@ -378,6 +383,7 @@ const zhTW: Translations = {
     close: '關閉',
     loading: '載入中...',
     search: '搜尋',
+    logoutConfirm: '確定要登出系統嗎？',
   },
   nav: {
     dashboard: '儀表板',
@@ -634,7 +640,7 @@ const zhTW: Translations = {
     quarterly: '每季投入',
     yearly: '每年投入',
     annualTotal: '年度總投入',
-    setToZero: '設定為 0 則不使用定期定額',
+    setToZero: '設定為 0則不使用定期定額',
     importFromHoldings: '現有持倉導入',
     importButton: '從現有持倉導入',
     manualAdd: '手動添加資產',
@@ -767,6 +773,9 @@ A: 具勾勾部份是顯示該年度年底的績效表現，無勾勾部份是�
 
 Q: 股價與匯率為何與按「AI聯網更新股價&匯率」得到現價為何不同？
 A: 股價與匯率因為是抓取網頁現值，故現值會慢三分鐘至五分鐘不等，所以勿拿來當買賣的參考值，建議買賣的參考仍以証券公司為主，此軟體僅適用作統計資產功能，例如有緊急預備金、旅遊基金、退休金、定存、股債券等統計參考，並無証券交易買賣功能；另外投資有賺有賠，記得預留緊急預備金，感謝您的使用。`,
+    androidPublish: '上架安卓商店指南',
+    androidPublishTitle: '如何將此工具上架到 Google Play？',
+    androidPublishDesc: '您可以透過 TWA 技術將網頁轉為 Android App：\n1. 註冊 Google 開發者帳號 ($25)。\n2. 使用 Bubblewrap CLI 工具封裝您的網站網址。\n3. 在 Play Console 上傳 AAB 檔並提交審核。',
   },
 };
 
@@ -781,6 +790,7 @@ const en: Translations = {
     close: 'Close',
     loading: 'Loading...',
     search: 'Search',
+    logoutConfirm: 'Are you sure you want to logout?',
   },
   nav: {
     dashboard: 'Dashboard',
@@ -926,6 +936,7 @@ const en: Translations = {
     last30Days: 'Last 30 Days',
     thisYear: 'This Year',
     noTransactions: 'No transactions',
+    // Fix: Key 'noMatchingTransactions' was missing and malformed
     noMatchingTransactions: 'No matching transactions found',
     edit: 'Edit',
     delete: 'Delete',
@@ -1170,6 +1181,9 @@ A: The parts with checkmarks show the performance at the end of that year. The p
 
 Q: Why are stock prices and exchange rates different from the current prices obtained by clicking "AI Update Prices & Exchange Rates"?
 A: Stock prices and exchange rates are scraped from web current values, so the current values may lag by three to five minutes. Therefore, do not use them as references for buying and selling. It is recommended to use securities companies as the main reference for buying and selling. This software is only suitable for statistical asset functions, such as emergency funds, travel funds, retirement funds, fixed deposits, stocks and bonds, etc. It does not have securities trading functions. Additionally, investments have profits and losses. Remember to reserve emergency funds. Thank you for using.`,
+    androidPublish: 'Android Store Publishing Guide',
+    androidPublishTitle: 'How to publish this tool on Google Play?',
+    androidPublishDesc: 'You can convert the web app to an Android App using TWA:\n1. Register for a Google Developer account ($25).\n2. Use Bubblewrap CLI to wrap your website URL.\n3. Upload the AAB file to Play Console and submit for review.',
   },
 };
 
@@ -1213,4 +1227,3 @@ export const translate = (key: string, lang: Language, params?: Record<string, s
   
   return typeof value === 'string' ? value : key;
 };
-
