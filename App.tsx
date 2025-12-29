@@ -1105,7 +1105,7 @@ const App: React.FC = () => {
 
           {/* Mobile Navigation (Horizontal Scroll) */}
           <div className="md:hidden border-t border-slate-800 py-2 overflow-x-auto no-scrollbar">
-             <div className="flex flex-nowrap space-x-2 px-1 items-center">
+             <div className="flex space-x-2 px-1 items-center">
                 {/* Mobile Language Selector */}
                 <div className="flex items-center bg-slate-800 rounded-full border border-slate-700 overflow-hidden shrink-0 ml-1">
                   <button
@@ -1133,7 +1133,7 @@ const App: React.FC = () => {
                  <button
                    key={tab}
                    onClick={() => setView(tab as View)}
-                   className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                   className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                      view === tab 
                        ? 'bg-indigo-600 text-white' 
                        : 'bg-slate-800 text-slate-300'
