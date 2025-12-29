@@ -163,7 +163,8 @@ const HelpView: React.FC<Props> = ({
                                      <span className="bg-slate-200 text-slate-600 px-2 py-1 rounded text-xs font-medium">{translations.help.systemAuthorized}</span>
                                  </td>
                              </tr>
-                         </tbody>
+                         ))}
+                     </tbody>
                  </table>
              </div>
          </div>
@@ -221,7 +222,7 @@ const HelpView: React.FC<Props> = ({
       {/* Import Confirmation Modal */}
       {pendingImportFile && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-              <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+              <div className="bg-white rounded-lg shadow-xl max-sm w-full p-6 text-center">
                   <h3 className="text-lg font-bold mb-2 text-red-600">
                       {translations.help.confirmImport}
                   </h3>
