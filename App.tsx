@@ -77,20 +77,10 @@ const App: React.FC = () => {
   const [isCashFlowDeleteConfirmOpen, setIsCashFlowDeleteConfirmOpen] = useState(false);
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
   const [isBatchUpdateMarketOpen, setIsBatchUpdateMarketOpen] = useState(false);
-  const [isClearTickerConfirmOpen, setIsClearTickerConfirmOpen] = useState(false);
-  const [isClearAccountConfirmOpen, setIsClearAccountConfirmOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [cashFlowToDelete, setCashFlowToDelete] = useState<string | null>(null);
-  const [tickerToClear, setTickerToClear] = useState<{ ticker: string; market: Market } | null>(null);
-  const [accountToClear, setAccountToClear] = useState<string | null>(null);
-  // Fix: Line 87 - correctly initialize state using useState and proper generic type annotation
-  const [alertDialog, setAlertDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: 'info' | 'success' | 'error';
-  }>({
+  const [alertDialog, setAlertDialog] = useState<{isOpen: boolean, title: string, message: string, type: 'info' | 'success' | 'error'}>({
     isOpen: false, title: '', message: '', type: 'info'
   });
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
@@ -311,46 +301,6 @@ const App: React.FC = () => {
     setTimeout(() => showAlert(`✅ 成功清空 ${count} 筆交易紀錄！`, "刪除成功", "success"), 100);
   };
   const cancelDeleteAllTransactions = () => setIsDeleteConfirmOpen(false);
-  
-  const handleClearTickerTransactions = (ticker: string, market: Market) => {
-    setTickerToClear({ ticker, market });
-    setIsClearTickerConfirmOpen(true);
-  };
-  const confirmClearTickerTransactions = () => {
-    if (tickerToClear) {
-      const { ticker, market } = tickerToClear;
-      const filtered = transactions.filter(tx => !(tx.ticker === ticker && tx.market === market));
-      const count = transactions.length - filtered.length;
-      setTransactions(filtered);
-      setIsClearTickerConfirmOpen(false);
-      setTickerToClear(null);
-      setTimeout(() => showAlert(`✅ 成功清空 ${count} 筆「${market}-${ticker}」的交易紀錄！`, "刪除成功", "success"), 100);
-    }
-  };
-  const cancelClearTickerTransactions = () => {
-    setIsClearTickerConfirmOpen(false);
-    setTickerToClear(null);
-  };
-  
-  const handleClearAccountTransactions = (accountId: string) => {
-    setAccountToClear(accountId);
-    setIsClearAccountConfirmOpen(true);
-  };
-  const confirmClearAccountTransactions = () => {
-    if (accountToClear) {
-      const accountName = accounts.find(a => a.id === accountToClear)?.name || accountToClear;
-      const filtered = transactions.filter(tx => tx.accountId !== accountToClear);
-      const count = transactions.length - filtered.length;
-      setTransactions(filtered);
-      setIsClearAccountConfirmOpen(false);
-      setAccountToClear(null);
-      setTimeout(() => showAlert(`✅ 成功清空帳戶「${accountName}」的 ${count} 筆交易紀錄！`, "刪除成功", "success"), 100);
-    }
-  };
-  const cancelClearAccountTransactions = () => {
-    setIsClearAccountConfirmOpen(false);
-    setAccountToClear(null);
-  };
   
   const addAccount = (acc: Account) => setAccounts(prev => [...prev, acc]);
   const updateAccount = (acc: Account) => {
@@ -731,7 +681,7 @@ const App: React.FC = () => {
         price: 0,
         quantity: 0,
         amount: cf.amount,
-        fees: cf.fee || 0, // 顯示手續費
+        fees: 0,
         description: cf.note || cf.type,
         originalRecord: cf,
         targetAccountId: cf.targetAccountId,
@@ -752,7 +702,7 @@ const App: React.FC = () => {
           price: 0,
           quantity: 0,
           amount: targetAmount,
-          fees: 0, // 轉入記錄不顯示手續費（手續費已從轉出帳戶扣除）
+          fees: 0,
           description: `轉入自 ${accounts.find(a => a.id === cf.accountId)?.name || '未知帳戶'}`,
           originalRecord: cf,
           sourceAccountId: cf.accountId,
@@ -811,7 +761,7 @@ const App: React.FC = () => {
       } else if (record.type === 'CASHFLOW') {
         if (record.subType === 'DEPOSIT') balanceChange = record.amount;
         else if (record.subType === 'WITHDRAW') balanceChange = -record.amount;
-        else if (record.subType === 'TRANSFER') balanceChange = -record.amount - (record.fees || 0); // 扣除手續費
+        else if (record.subType === 'TRANSFER') balanceChange = -record.amount;
         else if (record.subType === 'TRANSFER_IN') balanceChange = record.amount;
         else if (record.subType === 'INTEREST') balanceChange = record.amount;
       }
@@ -996,15 +946,14 @@ const App: React.FC = () => {
       <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo & Brand - Simplified as per screenshot */}
+            {/* Logo & Brand */}
             <div className="flex items-center gap-3 shrink-0">
                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
                   T
                </div>
                <div className="hidden md:block">
-                  <h1 className="font-bold text-lg leading-none text-slate-100">
-                    {language === 'en' ? 'TradeFolio' : '台美股資產管理'}
-                  </h1>
+                  <h1 className="font-bold text-lg leading-none bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">TradeFolio</h1>
+                  <p className="text-[10px] text-slate-400 leading-none mt-0.5">{language === 'en' ? 'Portfolio Management' : '台美股資產管理'}</p>
                </div>
             </div>
 
@@ -1083,9 +1032,9 @@ const App: React.FC = () => {
                   />
                </div>
                
-               {/* User Profile - Restored to colored avatar per request */}
+               {/* User Profile */}
                <div className="flex items-center gap-2 pl-2 border-l border-slate-700">
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-indigo-500/20" title={currentUser}>
+                  <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold ring-2 ring-slate-800 shadow-sm" title={currentUser}>
                      {currentUser.substring(0, 2).toUpperCase()}
                   </div>
                   
@@ -1104,8 +1053,8 @@ const App: React.FC = () => {
           </div>
 
           {/* Mobile Navigation (Horizontal Scroll) */}
-          <div className="md:hidden border-t border-slate-800 py-2 w-full overflow-x-auto no-scrollbar" style={{ writingMode: 'horizontal-tb', boxSizing: 'border-box' }}>
-             <div className="flex flex-nowrap space-x-2 px-1 items-center" style={{ width: 'max-content' }}>
+          <div className="md:hidden border-t border-slate-800 py-2 overflow-x-auto no-scrollbar">
+             <div className="flex space-x-2 px-1 items-center">
                 {/* Mobile Language Selector */}
                 <div className="flex items-center bg-slate-800 rounded-full border border-slate-700 overflow-hidden shrink-0 ml-1">
                   <button
@@ -1115,7 +1064,6 @@ const App: React.FC = () => {
                         ? 'bg-indigo-600 text-white' 
                         : 'text-slate-300 hover:text-white'
                     }`}
-                    style={{ writingMode: 'horizontal-tb', textOrientation: 'mixed' }}
                   >
                     繁
                   </button>
@@ -1126,7 +1074,6 @@ const App: React.FC = () => {
                         ? 'bg-indigo-600 text-white' 
                         : 'text-slate-300 hover:text-white'
                     }`}
-                    style={{ writingMode: 'horizontal-tb', textOrientation: 'mixed' }}
                   >
                     EN
                   </button>
@@ -1135,12 +1082,11 @@ const App: React.FC = () => {
                  <button
                    key={tab}
                    onClick={() => setView(tab as View)}
-                   className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                   className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                      view === tab 
                        ? 'bg-indigo-600 text-white' 
                        : 'bg-slate-800 text-slate-300'
                    }`}
-                   style={{ writingMode: 'horizontal-tb', textOrientation: 'mixed' }}
                  >
                    {tab === 'dashboard' && t(language).nav.dashboard}
                    {tab === 'history' && t(language).nav.history}
@@ -1158,30 +1104,29 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
-         {/* Page Title - Hidden for Dashboard to match clean screenshot look */}
-         {view !== 'dashboard' && (
-           <div className="mb-6">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-2 sm:pl-3 flex justify-between items-center">
-                  <span className="break-words">
-                    {view === 'history' && t(language).pages.history}
-                    {view === 'funds' && t(language).pages.funds}
-                    {view === 'accounts' && t(language).pages.accounts}
-                    {view === 'rebalance' && t(language).pages.rebalance}
-                    {view === 'simulator' && t(language).pages.simulator}
-                    {view === 'help' && t(language).pages.help}
-                  </span>
-                  {/* Mobile specific Guest Button */}
-                  {isGuest && (
-                     <button
-                       onClick={handleContactAdmin}
-                       className="sm:hidden px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow"
-                     >
-                       {language === 'en' ? 'Upgrade' : '申請開通'}
-                     </button>
-                  )}
-              </h2>
-           </div>
-         )}
+         {/* Page Title */}
+         <div className="mb-6">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-2 sm:pl-3 flex justify-between items-center">
+                <span className="break-words">
+                  {view === 'dashboard' && t(language).pages.dashboard}
+                  {view === 'history' && t(language).pages.history}
+                  {view === 'funds' && t(language).pages.funds}
+                  {view === 'accounts' && t(language).pages.accounts}
+                  {view === 'rebalance' && t(language).pages.rebalance}
+                  {view === 'simulator' && t(language).pages.simulator}
+                  {view === 'help' && t(language).pages.help}
+                </span>
+                {/* Mobile specific Guest Button */}
+                {isGuest && (
+                   <button
+                     onClick={handleContactAdmin}
+                     className="sm:hidden px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow"
+                   >
+                     {language === 'en' ? 'Upgrade' : '申請開通'}
+                   </button>
+                )}
+            </h2>
+         </div>
 
          {/* View Content */}
          <div className="animate-fade-in">
@@ -1243,20 +1188,9 @@ const App: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* 帳戶篩選 */}
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-slate-700">
-                          {t(language).history.accountFilter}
-                        </label>
-                        {filterAccount && (
-                          <button
-                            onClick={() => handleClearAccountTransactions(filterAccount)}
-                            className="text-xs text-red-600 hover:text-red-800 underline"
-                            title={language === 'zh-TW' ? '清空此帳戶的所有交易' : 'Clear all transactions for this account'}
-                          >
-                            {language === 'zh-TW' ? '清空此帳戶' : 'Clear'}
-                          </button>
-                        )}
-                      </div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        {t(language).history.accountFilter}
+                      </label>
                       <select
                         value={filterAccount}
                         onChange={(e) => setFilterAccount(e.target.value)}
@@ -1354,29 +1288,6 @@ const App: React.FC = () => {
                     
                     {/* 快速篩選按鈕 */}
                     <div className="flex gap-2">
-                      {/* 清空當前篩選證券交易按鈕 */}
-                      {(() => {
-                        // 計算篩選結果中的唯一證券（只包含交易記錄）
-                        const uniqueSecurities = new Set<string>();
-                        filteredRecords.forEach(record => {
-                          if (record.type === 'TRANSACTION') {
-                            uniqueSecurities.add(`${record.market}-${record.ticker}`);
-                          }
-                        });
-                        // 如果只有一個唯一的證券，顯示清空按鈕
-                        if (uniqueSecurities.size === 1) {
-                          const [market, ticker] = Array.from(uniqueSecurities)[0].split('-');
-                          return (
-                            <button
-                              onClick={() => handleClearTickerTransactions(ticker, market as Market)}
-                              className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition"
-                            >
-                              {language === 'zh-TW' ? `清空 ${market}-${ticker} 交易` : `Clear ${market}-${ticker}`}
-                            </button>
-                          );
-                        }
-                        return null;
-                      })()}
                       <button
                         onClick={() => {
                           const thirtyDaysAgo = new Date();
@@ -1488,40 +1399,26 @@ const App: React.FC = () => {
                              <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' ? formatNumber(record.quantity) : '-'}
                              </td>
-                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
-                              {(record as any).fees > 0 ? formatNumber((record as any).fees) : '-'}
-                            </td>
+                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
+                               {record.type === 'TRANSACTION' && (record as any).fees > 0 ? formatNumber((record as any).fees) : '-'}
+                             </td>
                              <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold font-mono text-slate-700 text-xs sm:text-sm">
-                              {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
-                              <div className="md:hidden mt-0.5">
-                                {(() => {
-                                  const bal = (record as any).balance || 0;
-                                  const absBal = Math.abs(bal);
-                                  const displayBal = absBal < 0.01 ? 0 : bal;
-                                  return (
-                                    <span className={`text-[10px] font-normal ${
-                                      displayBal >= 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {absBal < 0.01 ? '0.00' : bal.toFixed(2)}
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                            </td>
-                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-right hidden md:table-cell">
-                               <div className="flex flex-col items-end">
-                                 {(() => {
-                                   const bal = (record as any).balance || 0;
-                                   const absBal = Math.abs(bal);
-                                   const displayBal = absBal < 0.01 ? 0 : bal;
-                                   return (
-                                     <span className={`font-medium text-xs sm:text-sm ${
-                                       displayBal >= 0 ? 'text-green-600' : 'text-red-600'
-                                     }`}>
-                                       {absBal < 0.01 ? '0.00' : bal.toFixed(2)}
-                                     </span>
-                                   );
-                                 })()}
+                               {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
+                               <div className="md:hidden mt-0.5">
+                                 <span className={`text-[10px] font-normal ${
+                                   (record as any).balance >= 0 ? 'text-green-600' : 'text-red-600'
+                                 }`}>
+                                   {(record as any).balance?.toFixed(2) || '0.00'}
+                                 </span>
+                               </div>
+                             </td>
+                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right hidden md:table-cell">
+                                <div className="flex flex-col items-end">
+                                  <span className={`font-medium text-xs sm:text-sm ${
+                                    (record as any).balance >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {(record as any).balance?.toFixed(2) || '0.00'}
+                                  </span>
                                   <span className="text-[10px] text-slate-400">
                                     {accounts.find(a => a.id === record.accountId)?.currency || 'TWD'}
                                   </span>
@@ -1697,50 +1594,6 @@ const App: React.FC = () => {
            </div>
         </div>
       )}
-      {isClearTickerConfirmOpen && tickerToClear && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-           <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
-              <h3 className="text-lg font-bold text-red-600 mb-2">
-                {language === 'zh-TW' ? `確認清空「${tickerToClear.market}-${tickerToClear.ticker}」的所有交易？` : `Confirm clear all transactions for ${tickerToClear.market}-${tickerToClear.ticker}?`}
-              </h3>
-              <p className="text-slate-600 mb-6">
-                {language === 'zh-TW' ? '此操作無法復原，請確認您已備份資料。' : 'This operation cannot be undone. Please make sure you have backed up your data.'}
-              </p>
-              <div className="flex justify-end gap-3">
-                 <button onClick={cancelClearTickerTransactions} className="px-4 py-2 rounded border hover:bg-slate-50">
-                   {language === 'zh-TW' ? '取消' : 'Cancel'}
-                 </button>
-                 <button onClick={confirmClearTickerTransactions} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                   {language === 'zh-TW' ? '確認清空' : 'Confirm Clear'}
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
-      {/* Fix: Line 1645 (original position) - wrap IIFE call in ternary for better type resolution */}
-      {isClearAccountConfirmOpen && accountToClear ? (() => {
-        const accountName = accounts.find(a => a.id === accountToClear)?.name || accountToClear;
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-             <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
-                <h3 className="text-lg font-bold text-red-600 mb-2">
-                  {language === 'zh-TW' ? `確認清空帳戶「${accountName}」的所有交易？` : `Confirm clear all transactions for account "${accountName}"?`}
-                </h3>
-                <p className="text-slate-600 mb-6">
-                  {language === 'zh-TW' ? '此操作無法復原，請確認您已備份資料。' : 'This operation cannot be undone. Please make sure you have backed up your data.'}
-                </p>
-                <div className="flex justify-end gap-3">
-                   <button onClick={cancelClearAccountTransactions} className="px-4 py-2 rounded border hover:bg-slate-50">
-                     {language === 'zh-TW' ? '取消' : 'Cancel'}
-                   </button>
-                   <button onClick={confirmClearAccountTransactions} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                     {language === 'zh-TW' ? '確認清空' : 'Confirm Clear'}
-                   </button>
-                </div>
-             </div>
-          </div>
-        );
-      })() : null}
       {isTransactionDeleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
@@ -1753,8 +1606,7 @@ const App: React.FC = () => {
            </div>
         </div>
       )}
-      {/* Fix: Line 1761 (original position) - wrap IIFE call in ternary for better type resolution */}
-      {isCashFlowDeleteConfirmOpen && cashFlowToDelete ? (() => {
+      {isCashFlowDeleteConfirmOpen && cashFlowToDelete && (() => {
         const cashFlow = cashFlows.find(cf => cf.id === cashFlowToDelete);
         if (!cashFlow) return null;
         
@@ -1781,7 +1633,7 @@ const App: React.FC = () => {
         
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-md">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md">
               <h3 className="text-lg font-bold text-red-600 mb-2">確認刪除資金紀錄</h3>
               <div className="mb-4">
                 <p className="text-slate-700 mb-2">
@@ -1807,7 +1659,6 @@ const App: React.FC = () => {
                   </p>
                 </div>
               )}
-              {/* Fix: Line 1799 (original position) - properly close paragraph tag and quote */}
               <p className="text-slate-600 mb-6">確定要刪除這筆資金紀錄嗎？此操作無法復原。</p>
               <div className="flex justify-end gap-3">
                 <button onClick={cancelRemoveCashFlow} className="px-4 py-2 rounded border hover:bg-slate-50">取消</button>
@@ -1816,7 +1667,7 @@ const App: React.FC = () => {
             </div>
           </div>
         );
-      })() : null}
+      })()}
 
       {/* Global Alert Dialog */}
       {alertDialog.isOpen && (
@@ -1837,3 +1688,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+
