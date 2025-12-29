@@ -261,16 +261,75 @@ const Dashboard: React.FC<Props> = ({
                          if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
                          else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
 
-                         // For accumulated P/L, only show "累积损益" without the color explanation
-                         let displayName = name;
+                         // For accumulated P/L, only show "累积损益" without the color explanation, with dynamic color
                          if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                           displayName = translations.dashboard.chartLabels.accumulatedPL;
+                           const color = value >= 0 ? '#10b981' : '#ef4444';
+                           const displayName = React.createElement('span', { style: { color } }, translations.dashboard.chartLabels.accumulatedPL);
+                           return [formatCurrency(value, 'TWD'), displayName];
                          }
 
-                         return [formatCurrency(value, 'TWD'), displayName + suffix];
+                         return [formatCurrency(value, 'TWD'), name + suffix];
                       }}
                     />
-                    <Legend />
+                    <Legend 
+                      formatter={(value: string, entry: any) => {
+                        // Custom formatter for accumulated P/L to show colored text
+                        if (value.includes(translations.dashboard.chartLabels.accumulatedPL)) {
+                          if (language === 'zh-TW') {
+                            const parts = value.split(': ');
+                            if (parts.length > 1) {
+                              const afterColon = parts[1];
+                              // Split the text and create colored spans
+                              const segments: any[] = [];
+                              let lastIndex = 0;
+                              // Find all occurrences of "綠色" and "紅色"
+                              const matches = [...afterColon.matchAll(/(綠色|紅色)/g)];
+                              matches.forEach((match) => {
+                                if (match.index !== undefined) {
+                                  // Add text before the match
+                                  if (match.index > lastIndex) {
+                                    segments.push(afterColon.substring(lastIndex, match.index));
+                                  }
+                                  // Add colored match
+                                  const color = match[0] === '綠色' ? '#10b981' : '#ef4444';
+                                  segments.push(React.createElement('span', { key: match.index, style: { color } }, match[0]));
+                                  lastIndex = match.index + match[0].length;
+                                }
+                              });
+                              // Add remaining text
+                              if (lastIndex < afterColon.length) {
+                                segments.push(afterColon.substring(lastIndex));
+                              }
+                              return React.createElement('span', {}, parts[0] + ': ', ...segments);
+                            }
+                          } else {
+                            const parts = value.split(': ');
+                            if (parts.length > 1) {
+                              const afterColon = parts[1];
+                              // Split the text and create colored spans for English
+                              const segments: any[] = [];
+                              let lastIndex = 0;
+                              const matches = [...afterColon.matchAll(/(Green|Red)/g)];
+                              matches.forEach((match) => {
+                                if (match.index !== undefined) {
+                                  if (match.index > lastIndex) {
+                                    segments.push(afterColon.substring(lastIndex, match.index));
+                                  }
+                                  const color = match[0] === 'Green' ? '#10b981' : '#ef4444';
+                                  segments.push(React.createElement('span', { key: match.index, style: { color } }, match[0]));
+                                  lastIndex = match.index + match[0].length;
+                                }
+                              });
+                              if (lastIndex < afterColon.length) {
+                                segments.push(afterColon.substring(lastIndex));
+                              }
+                              return React.createElement('span', {}, parts[0] + ': ', ...segments);
+                            }
+                          }
+                        }
+                        return value;
+                      }}
+                    />
                     {/* Cost Bar */}
                     <Bar yAxisId="left" dataKey="cost" name={translations.dashboard.chartLabels.investmentCost} stackId="a" fill="#8b5cf6" barSize={30} />
                     
@@ -303,27 +362,6 @@ const Dashboard: React.FC<Props> = ({
                 </div>
               )}
             </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-xs text-slate-500 flex items-center gap-2 justify-center">
-              <span className="text-slate-600 font-medium">{translations.dashboard.chartLabels.accumulatedPL}:</span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
-                {language === 'zh-TW' ? (
-                  <span><span style={{ color: '#10b981' }}>綠色</span>=盈利</span>
-                ) : (
-                  <span><span style={{ color: '#10b981' }}>Green</span>=Profit</span>
-                )}
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span>
-                {language === 'zh-TW' ? (
-                  <span><span style={{ color: '#ef4444' }}>紅色</span>=虧損</span>
-                ) : (
-                  <span><span style={{ color: '#ef4444' }}>Red</span>=Loss</span>
-                )}
-              </span>
-            </p>
           </div>
         </div>
       )}
