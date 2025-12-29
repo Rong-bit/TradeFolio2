@@ -1104,8 +1104,8 @@ const App: React.FC = () => {
           </div>
 
           {/* Mobile Navigation (Horizontal Scroll) */}
-          <div className="md:hidden border-t border-slate-800 py-2 overflow-x-auto no-scrollbar" style={{ writingMode: 'horizontal-tb' }}>
-             <div className="flex flex-nowrap space-x-2 px-1 items-center">
+          <div className="md:hidden border-t border-slate-800 py-2 w-full overflow-x-auto no-scrollbar" style={{ writingMode: 'horizontal-tb', boxSizing: 'border-box' }}>
+             <div className="flex flex-nowrap space-x-2 px-1 items-center" style={{ width: 'max-content' }}>
                 {/* Mobile Language Selector */}
                 <div className="flex items-center bg-slate-800 rounded-full border border-slate-700 overflow-hidden shrink-0 ml-1">
                   <button
