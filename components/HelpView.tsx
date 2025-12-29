@@ -134,6 +134,22 @@ const HelpView: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Android Publishing Guide */}
+      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-emerald-500">
+         <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            {translations.help.androidPublish}
+         </h3>
+         <div className="bg-emerald-50 p-4 rounded border border-emerald-100">
+             <p className="font-bold text-emerald-900 mb-2">{translations.help.androidPublishTitle}</p>
+             <p className="text-sm text-emerald-800 whitespace-pre-line leading-relaxed">
+                 {translations.help.androidPublishDesc}
+             </p>
+         </div>
+      </div>
+
       {/* Authorized Users Section */}
       <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
          <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -247,4 +263,3 @@ const HelpView: React.FC<Props> = ({
 };
 
 export default HelpView;
-
