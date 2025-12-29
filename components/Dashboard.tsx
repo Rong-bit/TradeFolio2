@@ -1,655 +1,777 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChartDataPoint, PortfolioSummary, Holding, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlow, Account, CashFlowType, Currency, Market } from '../types';
-import { formatCurrency } from '../utils/calculations';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import { analyzePortfolio } from '../services/geminiService';
-import HoldingsTable from './HoldingsTable';
-import { Language, t } from '../utils/i18n';
+import { 
+  Transaction, Holding, PortfolioSummary, ChartDataPoint, Market, 
+  Account, CashFlow, TransactionType, AssetAllocationItem, 
+  AnnualPerformanceItem, AccountPerformance, CashFlowType, Currency, HistoricalData 
+} from './types';
+import { 
+  calculateHoldings, calculateAccountBalances, generateAdvancedChartData, 
+  calculateAssetAllocation, calculateAnnualPerformance, calculateAccountPerformance, 
+  calculateXIRR 
+} from './utils/calculations';
+import TransactionForm from './components/TransactionForm';
+import Dashboard from './components/Dashboard';
+import AccountManager from './components/AccountManager';
+import FundManager from './components/FundManager';
+import RebalanceView from './components/RebalanceView';
+import HelpView from './components/HelpView';
+import BatchImportModal from './components/BatchImportModal';
+import HistoricalDataModal from './components/HistoricalDataModal';
+import BatchUpdateMarketModal from './components/BatchUpdateMarketModal';
+import AssetAllocationSimulator from './components/AssetAllocationSimulator';
+import { fetchCurrentPrices } from './services/yahooFinanceService';
+import { ADMIN_EMAIL, SYSTEM_ACCESS_CODE, GLOBAL_AUTHORIZED_USERS } from './config';
+import { Language, getLanguage, setLanguage as saveLanguage, t, translate } from './utils/i18n';
 
-interface Props {
-  summary: PortfolioSummary;
-  holdings: Holding[];
-  chartData: ChartDataPoint[];
-  assetAllocation: AssetAllocationItem[];
-  annualPerformance: AnnualPerformanceItem[];
-  accountPerformance: AccountPerformance[];
-  cashFlows: CashFlow[];
-  accounts: Account[];
-  onUpdatePrice: (key: string, price: number) => void;
-  onAutoUpdate: () => Promise<void>;
-  isGuest?: boolean;
-  onUpdateHistorical?: () => void;
-  language: Language;
-}
+type View = 'dashboard' | 'history' | 'funds' | 'accounts' | 'rebalance' | 'simulator' | 'help';
 
-const Dashboard: React.FC<Props> = ({ 
-  summary, 
-  chartData, 
-  holdings, 
-  assetAllocation, 
-  annualPerformance, 
-  accountPerformance, 
-  cashFlows, 
-  accounts,
-  onUpdatePrice,
-  onAutoUpdate,
-  isGuest = false,
-  onUpdateHistorical,
-  language
-}) => {
-  const translations = t(language);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [loadingAi, setLoadingAi] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [showCostDetailModal, setShowCostDetailModal] = useState(false);
-  const [showAccountInUSD, setShowAccountInUSD] = useState(false); 
-  const [showAnnualInUSD, setShowAnnualInUSD] = useState(false); 
+const App: React.FC = () => {
+  // --- Auth State ---
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [loginEmail, setLoginEmail] = useState(''); 
+  const [loginPassword, setLoginPassword] = useState('');
+  const [currentUser, setCurrentUser] = useState(''); 
+  
+  // --- Core Data State ---
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [cashFlows, setCashFlows] = useState<CashFlow[]>([]);
+  const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({});
+  const [priceDetails, setPriceDetails] = useState<Record<string, { change: number, changePercent: number }>>({});
+  const [exchangeRate, setExchangeRate] = useState<number>(32.5);
+  const [jpyExchangeRate, setJpyExchangeRate] = useState<number>(0.22);
+  const [rebalanceTargets, setRebalanceTargets] = useState<Record<string, number>>({});
+  const [rebalanceEnabledItems, setRebalanceEnabledItems] = useState<string[]>([]);
+  const [historicalData, setHistoricalData] = useState<HistoricalData>({});
+  
+  // --- UI State ---
+  const [view, setView] = useState<View>('dashboard');
+  const [language, setLanguage] = useState<Language>(getLanguage());
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
+  const [isBatchUpdateMarketOpen, setIsBatchUpdateMarketOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
 
+  // --- Filtering State ---
+  const [filterAccount, setFilterAccount] = useState<string>('');
+  const [filterTicker, setFilterTicker] = useState<string>('');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
+  const [includeCashFlow, setIncludeCashFlow] = useState<boolean>(true);
 
+  // --- Custom Dialog State ---
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'error';
+  }>({ isOpen: false, title: '', message: '', type: 'info' });
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: 'danger' | 'warning';
+  } | null>(null);
+
+  // --- Persistence Logic ---
   useEffect(() => {
-    setIsMounted(true);
+    const lastUser = localStorage.getItem('tf_last_user');
+    const isAuth = localStorage.getItem('tf_is_auth');
+    const guestStatus = localStorage.getItem('tf_is_guest');
+    
+    if (isAuth === 'true' && lastUser) {
+      setCurrentUser(lastUser);
+      setIsGuest(guestStatus === 'true');
+      setIsAuthenticated(true);
+    }
   }, []);
 
-  const handleAskAi = async () => {
-    setLoadingAi(true);
-    const result = await analyzePortfolio(holdings, summary);
-    setAiAnalysis(result);
-    setLoadingAi(false);
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    const getKey = (key: string) => `tf_${currentUser}_${key}`;
+    
+    const load = (key: string, defaultVal: any) => {
+        const item = localStorage.getItem(getKey(key));
+        return item ? JSON.parse(item) : defaultVal;
+    };
+    
+    setTransactions(load('transactions', []));
+    setAccounts(load('accounts', []));
+    setCashFlows(load('cashFlows', []));
+    setCurrentPrices(load('prices', {}));
+    setPriceDetails(load('priceDetails', {}));
+    setExchangeRate(parseFloat(localStorage.getItem(getKey('exchangeRate')) || '32.5'));
+    setJpyExchangeRate(parseFloat(localStorage.getItem(getKey('jpyExchangeRate')) || '0.22'));
+    setHistoricalData(load('historicalData', {}));
+    setRebalanceTargets(load('rebalanceTargets', {}));
+    setRebalanceEnabledItems(load('rebalanceEnabledItems', []));
+  }, [isAuthenticated, currentUser]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    const getKey = (key: string) => `tf_${currentUser}_${key}`;
+    localStorage.setItem(getKey('transactions'), JSON.stringify(transactions));
+    localStorage.setItem(getKey('accounts'), JSON.stringify(accounts));
+    localStorage.setItem(getKey('cashFlows'), JSON.stringify(cashFlows));
+    localStorage.setItem(getKey('prices'), JSON.stringify(currentPrices));
+    localStorage.setItem(getKey('priceDetails'), JSON.stringify(priceDetails));
+    localStorage.setItem(getKey('exchangeRate'), exchangeRate.toString());
+    localStorage.setItem(getKey('jpyExchangeRate'), jpyExchangeRate.toString());
+    localStorage.setItem(getKey('historicalData'), JSON.stringify(historicalData));
+    localStorage.setItem(getKey('rebalanceTargets'), JSON.stringify(rebalanceTargets));
+    localStorage.setItem(getKey('rebalanceEnabledItems'), JSON.stringify(rebalanceEnabledItems));
+  }, [transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, jpyExchangeRate, historicalData, rebalanceTargets, rebalanceEnabledItems, isAuthenticated, currentUser]);
+
+  // --- Derived Calculations ---
+  const baseHoldings = useMemo(() => calculateHoldings(transactions, currentPrices, priceDetails), [transactions, currentPrices, priceDetails]);
+  const computedAccounts = useMemo(() => calculateAccountBalances(accounts, cashFlows, transactions), [accounts, cashFlows, transactions]);
+
+  const summary = useMemo<PortfolioSummary>(() => {
+    let netInvestedTWD = 0;
+    cashFlows.forEach(cf => {
+      if (cf.type === CashFlowType.DEPOSIT || cf.type === CashFlowType.WITHDRAW) {
+        const account = accounts.find(a => a.id === cf.accountId);
+        let rate = 1;
+        if (account?.currency === Currency.USD) rate = cf.exchangeRate || exchangeRate;
+        else if (account?.currency === Currency.JPY) rate = cf.exchangeRate || jpyExchangeRate;
+        
+        const amountTWD = cf.amountTWD || (cf.amount * rate);
+        if (cf.type === CashFlowType.DEPOSIT) netInvestedTWD += amountTWD;
+        else netInvestedTWD -= amountTWD;
+      }
+    });
+
+    const stockValueTWD = baseHoldings.reduce((sum, h) => {
+      let rate = 1;
+      if (h.market === Market.US || h.market === Market.UK) rate = exchangeRate;
+      else if (h.market === Market.JP) rate = jpyExchangeRate;
+      return sum + (h.currentValue * rate);
+    }, 0);
+
+    const cashValueTWD = computedAccounts.reduce((sum, a) => {
+      let rate = 1;
+      if (a.currency === Currency.USD) rate = exchangeRate;
+      else if (a.currency === Currency.JPY) rate = jpyExchangeRate;
+      return sum + (a.balance * rate);
+    }, 0);
+
+    const totalAssets = stockValueTWD + cashValueTWD;
+    const totalPLTWD = totalAssets - netInvestedTWD;
+
+    return {
+      totalCostTWD: netInvestedTWD,
+      totalValueTWD: stockValueTWD,
+      totalPLTWD,
+      totalPLPercent: netInvestedTWD > 0 ? (totalPLTWD / netInvestedTWD) * 100 : 0,
+      cashBalanceTWD: cashValueTWD,
+      netInvestedTWD,
+      annualizedReturn: calculateXIRR(cashFlows, accounts, totalAssets, exchangeRate),
+      exchangeRateUsdToTwd: exchangeRate,
+      jpyExchangeRate: jpyExchangeRate,
+      accumulatedCashDividendsTWD: 0,
+      accumulatedStockDividendsTWD: 0,
+      avgExchangeRate: 0
+    };
+  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, jpyExchangeRate, accounts]);
+
+  const holdings = useMemo(() => {
+    const totalAssets = summary.totalValueTWD + summary.cashBalanceTWD;
+    return baseHoldings.map(h => {
+      let valTwd = h.currentValue;
+      if (h.market === Market.US || h.market === Market.UK) valTwd = h.currentValue * exchangeRate;
+      else if (h.market === Market.JP) valTwd = h.currentValue * jpyExchangeRate;
+      
+      return {
+        ...h,
+        weight: totalAssets > 0 ? (valTwd / totalAssets) * 100 : 0
+      };
+    });
+  }, [baseHoldings, summary, exchangeRate, jpyExchangeRate]);
+
+  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate), [transactions, cashFlows, accounts, summary, exchangeRate, historicalData, jpyExchangeRate]);
+  const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate), [holdings, summary, exchangeRate, jpyExchangeRate]);
+  const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
+  const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate]);
+
+  // --- Merged Transaction History Logic ---
+  const combinedRecords = useMemo(() => {
+    const transactionRecords = transactions.map(tx => ({
+      id: tx.id, date: tx.date, accountId: tx.accountId, type: 'TRANSACTION' as const, subType: tx.type,
+      ticker: tx.ticker, market: tx.market, price: tx.price, quantity: tx.quantity,
+      amount: tx.amount || (tx.type === 'BUY' ? tx.price * tx.quantity + tx.fees : tx.price * tx.quantity - tx.fees),
+      fees: tx.fees || 0, description: `${tx.market}-${tx.ticker}`
+    }));
+
+    const cashFlowRecords: any[] = [];
+    cashFlows.forEach(cf => {
+      cashFlowRecords.push({
+        id: cf.id, date: cf.date, accountId: cf.accountId, type: 'CASHFLOW' as const, subType: cf.type,
+        ticker: '', market: '', price: 0, quantity: 0, amount: cf.amount, fees: cf.fee || 0,
+        description: cf.note || cf.type, isSource: true
+      });
+      if (cf.type === 'TRANSFER' && cf.targetAccountId) {
+        const targetAmount = cf.exchangeRate ? cf.amount * cf.exchangeRate : cf.amount;
+        cashFlowRecords.push({
+          id: `${cf.id}-target`, date: cf.date, accountId: cf.targetAccountId, type: 'CASHFLOW' as const,
+          subType: 'TRANSFER_IN', ticker: '', market: '', price: 0, quantity: 0, amount: targetAmount,
+          fees: 0, description: `轉入自 ${accounts.find(a => a.id === cf.accountId)?.name || '未知'}`
+        });
+      }
+    });
+
+    return [...transactionRecords, ...cashFlowRecords].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  }, [transactions, cashFlows, accounts]);
+
+  const filteredRecords = useMemo(() => {
+    return combinedRecords.filter(r => {
+      if (filterAccount && r.accountId !== filterAccount) return false;
+      if (!includeCashFlow && r.type === 'CASHFLOW') return false;
+      if (filterTicker && r.type === 'TRANSACTION' && !r.ticker.toUpperCase().includes(filterTicker.toUpperCase())) return false;
+      if (filterDateFrom && r.date < filterDateFrom) return false;
+      if (filterDateTo && r.date > filterDateTo) return false;
+      return true;
+    });
+  }, [combinedRecords, filterAccount, filterTicker, filterDateFrom, filterDateTo, includeCashFlow]);
+
+  // --- Handlers ---
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = loginEmail.trim();
+    if (!email) return;
+
+    if (email === ADMIN_EMAIL && loginPassword === SYSTEM_ACCESS_CODE) {
+      loginSuccess(email, false);
+    } else if (GLOBAL_AUTHORIZED_USERS.includes(email)) {
+      loginSuccess(email, false);
+    } else {
+      loginSuccess(email, true);
+      showAlert("進入「非會員模式」：無法使用圖表、年度績效與再平衡功能。", "登入成功", "info");
+    }
   };
 
-  const costDetails = useMemo(() => {
-    return cashFlows
-      .filter(cf => cf.type === CashFlowType.DEPOSIT || cf.type === CashFlowType.WITHDRAW)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(cf => {
-          const account = accounts.find(a => a.id === cf.accountId);
-          if (!account) return null;
-          const isUSD = account.currency === Currency.USD;
-          
-          let rate = 1;
-          let rateSource = translations.dashboard.taiwanDollar;
-          let amountTWD = 0;
+  const loginSuccess = (user: string, isGuestUser: boolean) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setIsGuest(isGuestUser);
+    localStorage.setItem('tf_is_auth', 'true');
+    localStorage.setItem('tf_last_user', user);
+    localStorage.setItem('tf_is_guest', isGuestUser ? 'true' : 'false');
+  };
 
-          if (cf.amountTWD && cf.amountTWD > 0) {
-             amountTWD = cf.amountTWD;
-             rate = cf.amount > 0 ? amountTWD / cf.amount : 0; 
-             rateSource = translations.dashboard.fixedTWD;
-          } else {
-             if (isUSD) {
-               if (cf.exchangeRate && cf.exchangeRate > 0) {
-                   rate = cf.exchangeRate;
-                   rateSource = `${translations.dashboard.historicalRate} (${cf.exchangeRate})`;
-               } else {
-                   rate = summary.exchangeRateUsdToTwd;
-                   rateSource = `${translations.dashboard.currentRate} (${rate})`;
-               }
-             }
-             amountTWD = cf.amount * rate;
-          }
-          
-          return {
-              ...cf,
-              accountName: account.name,
-              currency: account.currency,
-              rate,
-              rateSource,
-              amountTWD
-          };
-      }).filter((item): item is NonNullable<typeof item> => item !== null);
-  }, [cashFlows, accounts, summary.exchangeRateUsdToTwd]);
+  const handleLogout = () => {
+    const translations = t(language);
+    setConfirmDialog({
+      isOpen: true,
+      title: translations.nav.logout,
+      message: translations.common.logoutConfirm,
+      type: 'warning',
+      onConfirm: () => {
+        localStorage.removeItem('tf_is_auth');
+        localStorage.removeItem('tf_last_user');
+        localStorage.removeItem('tf_is_guest');
+        setIsAuthenticated(false);
+        setCurrentUser('');
+        setIsGuest(false);
+        setTransactions([]);
+        setAccounts([]);
+        setCashFlows([]);
+        setCurrentPrices({});
+        setPriceDetails({});
+        setLoginEmail('');
+        setLoginPassword('');
+        setView('dashboard');
+        setConfirmDialog(null);
+      }
+    });
+  };
 
-  const verifyTotal = costDetails.reduce((acc, item) => {
-      if (item.type === CashFlowType.DEPOSIT) return acc + item.amountTWD;
-      if (item.type === CashFlowType.WITHDRAW) return acc - item.amountTWD;
-      return acc;
-  }, 0);
+  const showAlert = (message: string, title = '提示', type: 'info' | 'success' | 'error' = 'info') => {
+    setAlertDialog({ isOpen: true, title, message, type });
+  };
 
-  return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-purple-500 relative">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between items-center">
-            {translations.dashboard.netCost}
-            <button 
-              onClick={() => setShowCostDetailModal(true)}
-              className="text-indigo-600 hover:text-indigo-800 text-[10px] sm:text-xs bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"
-              title={translations.dashboard.viewCalculationDetails}
-            >
-              🔍 {translations.dashboard.detail}
-            </button>
-          </h4>
-          <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            {formatCurrency(summary.netInvestedTWD, 'TWD')}
-          </p>
-        </div>
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-green-500">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalAssets}</h4>
-          <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            {formatCurrency(summary.totalValueTWD + summary.cashBalanceTWD, 'TWD')}
-          </p>
-          <div className="flex justify-between items-end mt-1">
-             <p className="text-[10px] sm:text-xs text-slate-400">{translations.dashboard.includeCash}: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
-          </div>
-        </div>
-        <div className={`bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 ${summary.totalPLTWD >= 0 ? 'border-success' : 'border-danger'}`}>
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalPL}</h4>
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className={`text-xl sm:text-2xl font-bold ${summary.totalPLTWD >= 0 ? 'text-success' : 'text-danger'}`}>
-               {summary.totalPLTWD >= 0 ? '+' : ''}{formatCurrency(summary.totalPLTWD, 'TWD')}
-            </p>
-          </div>
-          <p className={`text-[10px] sm:text-xs font-bold mt-1 ${summary.totalPLTWD >= 0 ? 'text-success' : 'text-danger'}`}>
-             {summary.totalPLPercent.toFixed(2)}%
-          </p>
-        </div>
-         <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-blue-500">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.annualizedReturn}</h4>
-          <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            {summary.annualizedReturn.toFixed(1)}%
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{translations.dashboard.estimatedGrowth8}: {formatCurrency(summary.netInvestedTWD * 1.08, 'TWD')}</p>
-        </div>
-      </div>
+  const handleAutoUpdate = async () => {
+    const tickers = Array.from(new Set(holdings.map(h => h.ticker)));
+    const markets = Array.from(new Set(holdings.map(h => h.market as any)));
+    try {
+      const result = await fetchCurrentPrices(tickers, markets);
+      const newPrices: Record<string, number> = {};
+      Object.entries(result.prices).forEach(([key, val]) => {
+         const h = holdings.find(item => item.ticker === key);
+         if (h) newPrices[`${h.market}-${h.ticker}`] = (val as any).price;
+      });
+      setCurrentPrices(prev => ({ ...prev, ...newPrices }));
+      if (result.exchangeRate) setExchangeRate(result.exchangeRate);
+      if (result.jpyExchangeRate) setJpyExchangeRate(result.jpyExchangeRate);
+      showAlert("股價與匯率已同步更新", "更新成功", "success");
+    } catch (e) {
+      showAlert("更新失敗，請檢查網路連線", "錯誤", "error");
+    }
+  };
 
-      {/* Detailed Statistics Toggle */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <button 
-          onClick={() => setShowDetails(!showDetails)}
-          className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition text-slate-700 font-medium text-sm"
-        >
-          <span>{translations.dashboard.detailedStatistics}</span>
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className={`h-5 w-5 transition-transform ${showDetails ? 'rotate-180' : ''}`} 
-            viewBox="0 0 20 20" fill="currentColor"
-          >
-            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
-        
-        {showDetails && (
-          <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 animate-fade-in border-t border-slate-100">
-            <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.totalCost}</p>
-              <p className="text-lg font-bold text-slate-800">{formatCurrency(summary.netInvestedTWD, 'TWD')}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.totalPLAmount}</p>
-              <p className={`text-lg font-bold ${summary.totalPLTWD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(summary.totalPLTWD, 'TWD')}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.accumulatedCashDividends}</p>
-              <p className="text-lg font-bold text-yellow-600">{formatCurrency(summary.accumulatedCashDividendsTWD, 'TWD')}</p>
-            </div>
-             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.accumulatedStockDividends}</p>
-              <p className="text-lg font-bold text-yellow-600">{formatCurrency(summary.accumulatedStockDividendsTWD, 'TWD')}</p>
-            </div>
-             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.annualizedReturnRate}</p>
-              <p className={`text-lg font-bold ${summary.annualizedReturn >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                {summary.annualizedReturn.toFixed(2)}%
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.avgExchangeRate}</p>
-              <p className="text-lg font-bold text-slate-700">{summary.avgExchangeRate > 0 ? summary.avgExchangeRate.toFixed(2) : '-'}</p>
-            </div>
-             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.currentExchangeRate}</p>
-              <p className="text-lg font-bold text-slate-700">{summary.exchangeRateUsdToTwd.toFixed(2)}</p>
-            </div>
-             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.totalReturnRate}</p>
-              <p className={`text-lg font-bold ${summary.totalPLPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {summary.totalPLPercent.toFixed(2)}%
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+  const updatePrice = (key: string, price: number) => { 
+    setCurrentPrices(p => ({ ...p, [key]: price })); 
+  };
 
-      {/* Main Chart (Cost vs Asset) */}
-      {!isGuest && (
-        <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-          <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.assetVsCostTrend}</h3>
-              {onUpdateHistorical && (
-                <button 
-                  onClick={onUpdateHistorical}
-                  className="text-xs px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200 flex items-center gap-1 transition"
-                  title={language === 'zh-TW' ? '手動編輯或使用 AI 修正歷史股價' : 'Manually edit or use AI to correct historical prices'}
-                >
-                  <span>🤖</span> {translations.dashboard.aiCorrectHistory}
-                </button>
+  const handleDeleteTransaction = (id: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "刪除交易",
+      message: "確定要刪除這筆交易記錄嗎？此操作無法復原。",
+      type: 'danger',
+      onConfirm: () => {
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        setConfirmDialog(null);
+      }
+    });
+  };
+
+  const handleClearTransactions = (scope: 'all' | 'ticker' | 'account') => {
+    let msg = "確定要清空所有交易紀錄嗎？";
+    if (scope === 'ticker') msg = `確定要清空證券「${filterTicker}」的所有交易紀錄嗎？`;
+    if (scope === 'account') {
+      const name = accounts.find(a => a.id === filterAccount)?.name || "此帳戶";
+      msg = `確定要清空帳戶「${name}」的所有交易紀錄嗎？`;
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: "清空紀錄",
+      message: msg,
+      type: 'danger',
+      onConfirm: () => {
+        if (scope === 'all') setTransactions([]);
+        else if (scope === 'ticker') setTransactions(prev => prev.filter(t => !t.ticker.includes(filterTicker.toUpperCase())));
+        else if (scope === 'account') setTransactions(prev => prev.filter(t => t.accountId !== filterAccount));
+        setConfirmDialog(null);
+        showAlert("已成功清空指定範圍的紀錄", "操作完成", "success");
+      }
+    });
+  };
+
+  const handleSaveHistoricalData = (data: HistoricalData) => {
+    setHistoricalData(data);
+    showAlert("歷史股價已校正並儲存", "儲存成功", "success");
+  };
+
+  const handleBatchUpdateMarket = (updates: { id: string; market: Market }[]) => {
+    setTransactions(prev => prev.map(tx => {
+      const update = updates.find(u => u.id === tx.id);
+      return update ? { ...tx, market: update.market } : tx;
+    }));
+    showAlert(`已更新 ${updates.length} 筆交易的市場資訊`, "操作成功", "success");
+  };
+
+  // --- Render ---
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+          <div className="p-8">
+            <div className="text-center mb-8">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                T
+              </div>
+              <h1 className="mt-4 text-2xl font-bold text-slate-800">TradeFolio</h1>
+              <p className="mt-2 text-slate-500 text-sm">台美日股資產管理系統</p>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input 
+                type="email" required placeholder="Email 信箱" 
+                value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+                className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+              {loginEmail === ADMIN_EMAIL && (
+                <input 
+                  type="password" placeholder="管理員代碼" 
+                  value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
               )}
-          </div>
-          
-          <div className="w-full">
-            <div className="w-full h-[300px] md:h-[450px]">
-              {isMounted && chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="year" 
-                      stroke="#64748b" 
-                      fontSize={10}
-                      className="text-xs"
-                      padding={{ left: 10, right: 10 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis yAxisId="left" stroke="#64748b" fontSize={10} className="text-xs" tickFormatter={(val) => `${val / 1000}k`} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                      formatter={(value: number, name: string, props: any) => {
-                         const isReal = props.payload.isRealData;
-                         let suffix = '';
-                         if (name === translations.dashboard.chartLabels.totalAssets && isReal) suffix = translations.dashboard.chartLabels.realData;
-                         else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
+              <button className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition shadow-lg">登入系統</button>
+            </form>
 
-                         if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                           return [formatCurrency(value, 'TWD'), translations.dashboard.chartLabels.accumulatedPL];
-                         }
-
-                         return [formatCurrency(value, 'TWD'), name + suffix];
-                      }}
-                    />
-                    <Legend 
-                      iconSize={0}
-                      formatter={(value: string, entry: any) => {
-                        const isChinese = language === 'zh-TW';
-                        if (value.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                          return (
-                            <span className="inline-flex items-center gap-3">
-                              <span className="flex items-center gap-1">
-                                <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#10b981', borderRadius: '2px', marginRight: '4px' }}></span>
-                                <span style={{ color: '#10b981', fontWeight: 600 }}>{isChinese ? '盈利' : 'Profit'}</span>
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '2px', marginRight: '4px' }}></span>
-                                <span style={{ color: '#ef4444', fontWeight: 600 }}>{isChinese ? '虧損' : 'Loss'}</span>
-                              </span>
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="inline-flex items-center gap-1">
-                            <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: entry.color, borderRadius: '2px', marginRight: '4px' }}></span>
-                            <span className="text-slate-700 font-medium">{value}</span>
-                          </span>
-                        );
-                      }}
-                    />
-                    {/* Cost Bar */}
-                    <Bar yAxisId="left" dataKey="cost" name={translations.dashboard.chartLabels.investmentCost} stackId="a" fill="#8b5cf6" barSize={30} />
-                    
-                    {/* Profit Bar - Stacked on Cost */}
-                    <Bar 
-                      yAxisId="left" 
-                      dataKey="profit" 
-                      fill="#000" 
-                      name={language === 'zh-TW' 
-                        ? `${translations.dashboard.chartLabels.accumulatedPL}: 綠色=盈利 紅色=虧損`
-                        : `${translations.dashboard.chartLabels.accumulatedPL}: Green=Profit Red=Loss`} 
-                      stackId="a" 
-                      barSize={30}
-                    >
-                      {chartData.map((entry: ChartDataPoint, index: number) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.profit >= 0 ? "#10b981" : "#ef4444"}
-                        />
-                      ))}
-                    </Bar>
-
-                    {/* Lines */}
-                    <Line yAxisId="left" type="monotone" dataKey="totalAssets" name={translations.dashboard.chartLabels.totalAssets} stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
-                    <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} dot={false} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-slate-400">
-                    {!isMounted ? translations.dashboard.chartLoading : chartData.length === 0 ? translations.dashboard.noChartData : translations.dashboard.chartLoading}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Allocation Pie Chart */}
-      {!isGuest && (
-        <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-          <h3 className="font-bold text-slate-800 text-lg mb-4">{translations.dashboard.allocation}</h3>
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-md md:max-w-lg aspect-square">
-              {isMounted && assetAllocation.length > 0 ? (
-                 <ResponsiveContainer width="100%" height="100%">
-                   <PieChart>
-                      <Pie
-                        data={assetAllocation as any[]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={70}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {assetAllocation.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number) => formatCurrency(value, 'TWD')} />
-                      <Legend 
-                         layout="vertical" 
-                         verticalAlign="middle" 
-                         align="right"
-                         wrapperStyle={{ fontSize: '10px', paddingLeft: '10px' }}
-                         formatter={(value) => {
-                           const item = assetAllocation.find(a => a.name === value);
-                           return <span className="text-xs text-slate-600 ml-1">{value} ({item?.ratio.toFixed(1)}%)</span>;
-                         }}
-                      />
-                   </PieChart>
-                 </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-slate-400">
-                  {!isMounted ? translations.dashboard.chartLoading : translations.dashboard.noHoldings}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Annual Performance Table */}
-      {!isGuest && annualPerformance.length > 0 && (
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.annualPerformance}</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">{translations.dashboard.displayCurrency}:</span>
-                <button
-                  onClick={() => setShowAnnualInUSD(false)}
-                  className={`px-3 py-1.5 text-sm rounded transition ${
-                    !showAnnualInUSD 
-                      ? 'bg-indigo-600 text-white font-medium' 
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {translations.dashboard.ntd}
-                </button>
-                <button
-                  onClick={() => setShowAnnualInUSD(true)}
-                  className={`px-3 py-1.5 text-sm rounded transition ${
-                    showAnnualInUSD 
-                      ? 'bg-indigo-600 text-white font-medium' 
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {translations.dashboard.usd}
-                </button>
+            <div className="mt-8">
+              <div className="p-4 bg-blue-50 border-2 border-dashed border-blue-200 rounded-xl text-center">
+                  <p className="text-xs font-bold text-blue-900 flex flex-col items-center gap-1">
+                      <span className="flex items-center gap-1 text-blue-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {t(language).login.privacy}
+                      </span>
+                      <span>{t(language).login.privacyDesc}</span>
+                  </p>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
-                  <tr>
-                    <th className="px-6 py-3">{translations.dashboard.year}</th>
-                    <th className="px-6 py-3 text-right">{translations.dashboard.startAssets}</th>
-                    <th className="px-6 py-3 text-right">{translations.dashboard.annualNetInflow}</th>
-                    <th className="px-6 py-3 text-right">{translations.dashboard.endAssets}</th>
-                    <th className="px-6 py-3 text-right">{translations.dashboard.annualProfit}</th>
-                    <th className="px-6 py-3 text-right">{translations.dashboard.annualROI}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {annualPerformance.map(item => {
-                    const displayCurrency = showAnnualInUSD ? 'USD' : 'TWD';
-                    const startAssets = showAnnualInUSD ? item.startAssets / summary.exchangeRateUsdToTwd : item.startAssets;
-                    const netInflow = showAnnualInUSD ? item.netInflow / summary.exchangeRateUsdToTwd : item.netInflow;
-                    const endAssets = showAnnualInUSD ? item.endAssets / summary.exchangeRateUsdToTwd : item.endAssets;
-                    const profit = showAnnualInUSD ? item.profit / summary.exchangeRateUsdToTwd : item.profit;
-                    
-                    return (
-                      <tr key={item.year} className="hover:bg-slate-50">
-                        <td className="px-6 py-3 font-bold text-slate-700">
-                          {item.year}
-                          {item.isRealData && <span title={language === 'zh-TW' ? '真實歷史數據' : 'Real historical data'} className="ml-2 text-xs cursor-help">✅</span>}
-                        </td>
-                        <td className="px-6 py-3 text-right text-slate-500">{formatCurrency(startAssets, displayCurrency)}</td>
-                        <td className="px-6 py-3 text-right text-slate-500">{formatCurrency(netInflow, displayCurrency)}</td>
-                        <td className="px-6 py-3 text-right font-medium">{formatCurrency(endAssets, displayCurrency)}</td>
-                        <td className={`px-6 py-3 text-right font-bold ${profit >= 0 ? 'text-success' : 'text-danger'}`}>
-                          {formatCurrency(profit, displayCurrency)}
-                        </td>
-                        <td className={`px-6 py-3 text-right font-bold ${item.roi >= 0 ? 'text-success' : 'text-danger'}`}>
-                          {item.roi.toFixed(2)}%
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           </div>
-      )}
-
-      {/* Account List Card */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.brokerageAccounts}</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-600">{translations.dashboard.displayCurrency}:</span>
-            <button
-              onClick={() => setShowAccountInUSD(false)}
-              className={`px-3 py-1.5 text-sm rounded transition ${
-                !showAccountInUSD 
-                  ? 'bg-indigo-600 text-white font-medium' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {translations.dashboard.ntd}
-            </button>
-            <button
-              onClick={() => setShowAccountInUSD(true)}
-              className={`px-3 py-1.5 text-sm rounded transition ${
-                showAccountInUSD 
-                  ? 'bg-indigo-600 text-white font-medium' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {translations.dashboard.usd}
-            </button>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
-              <tr>
-                <th className="px-6 py-3">{translations.dashboard.accountName}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.totalAssetsNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.marketValueNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.balanceNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.profitNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.annualizedROI}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {accountPerformance.length > 0 ? (
-                accountPerformance.map(acc => {
-                  let displayCurrency: string;
-                  let totalAssets: number;
-                  let marketValue: number;
-                  let cashBalance: number;
-                  let profit: number;
-                  
-                  if (showAccountInUSD) {
-                    displayCurrency = 'USD';
-                    totalAssets = acc.totalAssetsNative || acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                    marketValue = acc.marketValueNative || acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                    cashBalance = acc.cashBalanceNative || acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                    profit = acc.profitNative || acc.profitTWD / summary.exchangeRateUsdToTwd;
-                  } else {
-                    displayCurrency = 'TWD';
-                    totalAssets = acc.totalAssetsTWD;
-                    marketValue = acc.marketValueTWD;
-                    cashBalance = acc.cashBalanceTWD;
-                    profit = acc.profitTWD;
-                  }
-                  
-                  return (
-                    <tr key={acc.id} className="hover:bg-slate-50">
-                      <td className="px-6 py-3 font-semibold text-slate-700">
-                        {acc.name} 
-                        <span className="text-xs font-normal text-slate-400 ml-1">({acc.currency})</span>
-                      </td>
-                      <td className="px-6 py-3 text-right font-bold text-slate-700">
-                        {formatCurrency(totalAssets, displayCurrency)}
-                      </td>
-                      <td className="px-6 py-3 text-right text-slate-600">
-                        {formatCurrency(marketValue, displayCurrency)}
-                      </td>
-                      <td className="px-6 py-3 text-right text-slate-600">
-                        {formatCurrency(cashBalance, displayCurrency)}
-                      </td>
-                      <td className={`px-6 py-3 text-right font-bold ${profit >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {formatCurrency(profit, displayCurrency)}
-                      </td>
-                      <td className={`px-6 py-3 text-right font-bold ${acc.roi >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {acc.roi.toFixed(2)}%
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">{translations.dashboard.noAccounts}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
+    );
+  }
 
-      <HoldingsTable 
-        holdings={holdings}
-        accounts={accounts}
-        onUpdatePrice={onUpdatePrice}
-        onAutoUpdate={onAutoUpdate}
-        language={language}
-      />
+  const translations = t(language);
+  const availableViews: View[] = isGuest 
+    ? ['dashboard', 'history', 'funds', 'accounts', 'simulator', 'help']
+    : ['dashboard', 'history', 'funds', 'accounts', 'rebalance', 'simulator', 'help'];
 
-      {!isGuest && (
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 shadow-xl text-white">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             {/* 手機版漢堡按鈕 */}
+             <button 
+               onClick={() => setIsMobileMenuOpen(true)}
+               className="md:hidden p-2 -ml-2 text-slate-300 hover:text-white transition-colors"
+               aria-label="Open Menu"
+             >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
                 </svg>
-                {translations.dashboard.aiAdvisor}
-              </h3>
-              <p className="text-slate-300 text-sm mt-1">{translations.dashboard.aiAdvisorDesc}</p>
-            </div>
-            <button 
-              onClick={handleAskAi} 
-              disabled={loadingAi}
-              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold rounded-lg transition disabled:opacity-50 text-sm shadow-lg shadow-yellow-500/20"
-            >
-              {loadingAi ? translations.dashboard.analyzing : translations.dashboard.startAnalysis}
-            </button>
-          </div>
+             </button>
 
-          {aiAnalysis && (
-            <div className="bg-white/10 p-5 rounded-lg text-slate-100 text-sm leading-relaxed whitespace-pre-wrap border border-white/10 animate-fade-in">
-              {aiAnalysis}
-            </div>
-          )}
+             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold cursor-pointer" onClick={() => setView('dashboard')}>T</div>
+             <nav className="hidden md:flex gap-1">
+                {availableViews.map(v => (
+                  <button 
+                    key={v} onClick={() => setView(v)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${view === v ? 'bg-indigo-600' : 'text-slate-300 hover:bg-slate-800'}`}
+                  >
+                    {translations.nav[v as keyof typeof translations.nav]}
+                  </button>
+                ))}
+             </nav>
+          </div>
+          <div className="flex items-center gap-3">
+             <button onClick={() => {
+               const newLang = language === 'zh-TW' ? 'en' : 'zh-TW';
+               setLanguage(newLang);
+               saveLanguage(newLang);
+             }} className="text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700">
+               {language === 'zh-TW' ? 'EN' : '中文'}
+             </button>
+             <div className="hidden sm:flex items-center bg-slate-800 rounded px-2 py-1 border border-slate-700">
+                <span className="text-[10px] text-slate-400 mr-2 font-bold">USD</span>
+                <input 
+                  type="number" step="0.1" value={exchangeRate} onChange={e => setExchangeRate(parseFloat(e.target.value))}
+                  className="w-12 bg-transparent text-sm font-bold text-emerald-400 text-right focus:outline-none"
+                />
+             </div>
+             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold">
+                {currentUser.substring(0,2).toUpperCase()}
+             </div>
+             <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400" title={translations.nav.logout}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+             </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
+        {view === 'dashboard' && (
+          <Dashboard 
+            summary={summary} holdings={holdings} chartData={chartData} 
+            assetAllocation={assetAllocation} annualPerformance={annualPerformance}
+            accountPerformance={accountPerformance} cashFlows={cashFlows} accounts={computedAccounts}
+            onUpdatePrice={updatePrice} onAutoUpdate={handleAutoUpdate}
+            isGuest={isGuest} onUpdateHistorical={() => setIsHistoricalModalOpen(true)}
+            language={language}
+          />
+        )}
+
+        {view === 'history' && (
+           <div className="space-y-4">
+              <div className="bg-white p-4 rounded-xl shadow border border-slate-100 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                 <h2 className="text-xl font-bold">{translations.nav.history}</h2>
+                 <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setIsBatchUpdateMarketOpen(true)} className="bg-purple-600 text-white px-3 py-1.5 rounded text-sm font-bold shadow-md hover:bg-purple-700">批次修改市場</button>
+                    <button onClick={() => handleClearTransactions('all')} className="bg-red-50 text-red-600 px-3 py-1.5 rounded text-sm font-bold border border-red-200">清空全部紀錄</button>
+                    <button onClick={() => setIsImportOpen(true)} className="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm font-bold shadow-md">批次匯入交易</button>
+                    <button onClick={() => setIsFormOpen(true)} className="bg-slate-900 text-white px-4 py-2 rounded text-sm font-bold shadow-lg">新增交易</button>
+                 </div>
+              </div>
+
+              {/* 篩選與清空特定範圍功能 */}
+              <div className="bg-white p-6 rounded-xl shadow border border-slate-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">查詢與快速清理</h3>
+                  <button onClick={() => { setFilterAccount(''); setFilterTicker(''); }} className="text-xs text-indigo-600 hover:underline">清除篩選</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 mb-1">帳戶篩選</label>
+                    <div className="flex gap-2">
+                      <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} className="flex-1 border rounded p-2 text-sm">
+                        <option value="">所有帳戶</option>
+                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                      {filterAccount && <button onClick={() => handleClearTransactions('account')} className="bg-red-50 text-red-600 px-2 rounded text-xs border border-red-100">清空</button>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 mb-1">代號搜尋</label>
+                    <div className="flex gap-2">
+                      <input type="text" value={filterTicker} onChange={e => setFilterTicker(e.target.value)} placeholder="例如: 0050" className="flex-1 border rounded p-2 text-sm" />
+                      {filterTicker && <button onClick={() => handleClearTransactions('ticker')} className="bg-red-50 text-red-600 px-2 rounded text-xs border border-red-100">清空</button>}
+                    </div>
+                  </div>
+                  <div className="flex items-center pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={includeCashFlow} onChange={e => setIncludeCashFlow(e.target.checked)} className="rounded text-indigo-600" />
+                      <span className="text-sm text-slate-600">包含現金流</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
+                <table className="min-w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
+                    <tr>
+                      <th className="px-6 py-4">日期</th>
+                      <th className="px-6 py-4">標的</th>
+                      <th className="px-6 py-4">類別</th>
+                      <th className="px-6 py-4 text-right">單價</th>
+                      <th className="px-6 py-4 text-right">數量</th>
+                      <th className="px-6 py-4 text-right">金額</th>
+                      <th className="px-6 py-4 text-right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredRecords.length === 0 ? <tr><td colSpan={7} className="p-10 text-center text-slate-400">尚無符合條件的紀錄</td></tr> :
+                      filteredRecords.map(r => (
+                        <tr key={r.id} className="hover:bg-slate-50">
+                          <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{r.date}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-700">{r.description}</span>
+                              <span className="text-[10px] text-slate-400">{accounts.find(a => a.id === r.accountId)?.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold 
+                              ${r.subType === 'BUY' ? 'bg-red-50 text-red-600' : 
+                                r.subType === 'SELL' ? 'bg-green-50 text-green-600' : 
+                                r.subType === 'DEPOSIT' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                              {r.subType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right font-mono">{r.price > 0 ? r.price.toLocaleString() : '-'}</td>
+                          <td className="px-6 py-4 text-right font-mono">{r.quantity > 0 ? r.quantity.toLocaleString() : '-'}</td>
+                          <td className="px-6 py-4 text-right font-bold font-mono">
+                            {r.amount.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                             <div className="flex justify-end gap-2">
+                               {r.type === 'TRANSACTION' && (
+                                 <button onClick={() => { setTransactionToEdit(transactions.find(t => t.id === r.id)!); setIsFormOpen(true); }} className="text-indigo-400 hover:underline">編輯</button>
+                               )}
+                               <button onClick={() => handleDeleteTransaction(r.id)} className="text-red-400 hover:underline">刪除</button>
+                             </div>
+                          </td>
+                        </tr>
+                      ))
+                    }
+                  </tbody>
+                </table>
+              </div>
+           </div>
+        )}
+
+        {view === 'funds' && (
+          <FundManager 
+            accounts={accounts} cashFlows={cashFlows} onAdd={cf => setCashFlows(p => [...p, cf])}
+            onUpdate={cf => setCashFlows(p => p.map(x => x.id === cf.id ? cf : x))}
+            onBatchAdd={cfs => setCashFlows(p => [...p, ...cfs])}
+            onDelete={id => setConfirmDialog({
+              isOpen: true,
+              title: "刪除紀錄",
+              message: "確定要刪除這筆資金紀錄嗎？",
+              type: 'danger',
+              onConfirm: () => { setCashFlows(p => p.filter(x => x.id !== id)); setConfirmDialog(null); }
+            })}
+            onClearAll={() => setConfirmDialog({
+              isOpen: true,
+              title: "清空全部",
+              message: "確定要清空所有入金、出金紀錄嗎？",
+              type: 'danger',
+              onConfirm: () => { setCashFlows([]); setConfirmDialog(null); }
+            })} 
+            currentExchangeRate={exchangeRate}
+            currentJpyExchangeRate={jpyExchangeRate}
+            language={language}
+          />
+        )}
+
+        {view === 'accounts' && (
+          <AccountManager 
+            accounts={computedAccounts} onAdd={a => setAccounts(p => [...p, a])}
+            onUpdate={a => setAccounts(p => p.map(x => x.id === a.id ? a : x))}
+            onDelete={id => removeAccount(id)}
+            language={language}
+          />
+        )}
+
+        {view === 'rebalance' && !isGuest && (
+           <RebalanceView 
+             summary={summary} holdings={holdings} exchangeRate={exchangeRate}
+             jpyExchangeRate={jpyExchangeRate}
+             targets={rebalanceTargets} onUpdateTargets={setRebalanceTargets}
+             enabledItems={rebalanceEnabledItems} onUpdateEnabledItems={setRebalanceEnabledItems}
+             language={language}
+           />
+        )}
+
+        {view === 'simulator' && <AssetAllocationSimulator language={language} holdings={holdings} />}
+        
+        {view === 'help' && (
+          <HelpView 
+            onExport={handleExportData} onImport={handleImportData}
+            authorizedUsers={GLOBAL_AUTHORIZED_USERS} currentUser={currentUser} language={language}
+          />
+        )}
+      </main>
+
+      {/* Desktop Footer */}
+      <footer className="hidden md:block bg-slate-900 text-slate-400 py-8 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-sm font-bold">TradeFolio 台美日股資產管家</p>
+          <p className="text-[10px] mt-2 opacity-60">
+            所有交易數據皆加密儲存於本地端 (LocalStorage)，保障您的隱私與安全。<br/>
+            建議定期匯出備份 JSON 檔案，避免瀏覽器清除快取導致資料遺失。
+          </p>
+        </div>
+      </footer>
+
+
+      {/* Mobile More Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black bg-opacity-50 animate-fade-in" onClick={() => setIsMobileMenuOpen(false)}>
+           <div className="bg-slate-900 rounded-t-3xl p-6 pb-24 space-y-4 shadow-2xl transform transition-transform animate-slide-up" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-2">
+                 <h3 className="text-white font-bold text-lg">{language === 'zh-TW' ? '功能選單' : 'App Menu'}</h3>
+                 <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 text-2xl">&times;</button>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                 {/* 在選單中加入所有功能按鈕 */}
+                 {availableViews.map(v => (
+                   <button 
+                    key={v}
+                    onClick={() => { setView(v); setIsMobileMenuOpen(false); }}
+                    className={`flex items-center gap-3 p-4 rounded-xl text-left transition ${view === v ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                   >
+                     <span className="font-bold">{translations.nav[v as keyof typeof translations.nav]}</span>
+                   </button>
+                 ))}
+              </div>
+              <button 
+                onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-900/30 text-red-400 font-bold border border-red-900/50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                {translations.nav.logout}
+              </button>
+           </div>
         </div>
       )}
 
-      {showCostDetailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
-            <div className="bg-slate-900 p-4 flex justify-between items-center shrink-0">
-              <h2 className="text-white font-bold text-lg flex items-center gap-2">
-                <span>💰</span> {translations.dashboard.netInvestedBreakdown}
-              </h2>
-              <button onClick={() => setShowCostDetailModal(false)} className="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            
-            <div className="p-4 bg-blue-50 border-b border-blue-100 text-sm text-blue-800">
-              <p>ℹ️ <strong>{language === 'zh-TW' ? '計算公式：' : 'Formula: '}</strong> {translations.dashboard.calculationFormula}</p>
-              <p>⚠️ <strong>{translations.dashboard.attention}：</strong> {translations.dashboard.formulaNote}</p>
-            </div>
+      {/* Global Alert Dialog */}
+      {alertDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <h3 className={`text-xl font-bold mb-2 ${alertDialog.type === 'error' ? 'text-red-600' : alertDialog.type === 'success' ? 'text-green-600' : 'text-slate-800'}`}>
+              {alertDialog.title}
+            </h3>
+            <p className="text-slate-600 mb-6 text-sm leading-relaxed whitespace-pre-line">{alertDialog.message}</p>
+            <button onClick={() => setAlertDialog(p => ({...p, isOpen: false}))} className="w-full bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition">
+              確定
+            </button>
+          </div>
+        </div>
+      )}
 
-            <div className="flex-1 overflow-y-auto p-0">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-slate-100 sticky top-0 text-slate-600 font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-2">{translations.dashboard.date}</th>
-                    <th className="px-4 py-2">{translations.dashboard.category}</th>
-                    <th className="px-4 py-2">{translations.labels.account}</th>
-                    <th className="px-4 py-2 text-right">{translations.dashboard.originalAmount}</th>
-                    <th className="px-4 py-2 text-right">{translations.labels.exchangeRate}</th>
-                    <th className="px-4 py-2 text-right">{translations.dashboard.twdCost}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {costDetails.map((item, idx) => (
-                    <tr key={item.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-2 whitespace-nowrap">{item.date}</td>
-                      <td className="px-4 py-2">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${item.type === CashFlowType.DEPOSIT ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {item.type === CashFlowType.DEPOSIT ? translations.dashboard.deposit : translations.dashboard.withdraw}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2">
-                        {item.accountName} <span className="text-xs text-slate-400">({item.currency})</span>
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono">
-                        {item.currency === Currency.USD ? '$' : 'NT$'}{item.amount.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        <div className="flex flex-col items-end">
-                          <span>{item.rate.toFixed(2)}</span>
-                          <span className="text-[10px] text-slate-400">{item.rateSource}</span>
-                        </div>
-                      </td>
-                      <td className={`px-4 py-2 text-right font-bold font-mono ${item.type === CashFlowType.DEPOSIT ? 'text-slate-800' : 'text-red-500'}`}>
-                        {item.type === CashFlowType.WITHDRAW ? '-' : ''}{formatCurrency(item.amountTWD, 'TWD')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-slate-50 sticky bottom-0 border-t-2 border-slate-300 font-bold text-slate-800">
-                  <tr>
-                    <td colSpan={5} className="px-4 py-3 text-right">{translations.dashboard.totalNetInvested}</td>
-                    <td className="px-4 py-3 text-right text-lg">{formatCurrency(verifyTotal, 'TWD')}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            
-            <div className="p-4 border-t border-slate-200 bg-white flex justify-end">
-              <button onClick={() => setShowCostDetailModal(false)} className="px-6 py-2 bg-slate-900 text-white rounded hover:bg-slate-800">
-                {translations.common.close}
+      {/* Global Confirm Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 className="text-xl font-bold text-slate-800 mb-2">{confirmDialog.title}</h3>
+            <p className="text-slate-600 mb-8 text-sm leading-relaxed">{confirmDialog.message}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setConfirmDialog(null)} className="py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition">
+                取消
+              </button>
+              <button onClick={confirmDialog.onConfirm} className={`py-3 px-4 rounded-xl text-white font-bold transition shadow-lg ${confirmDialog.type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200'}`}>
+                確認執行
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Existing Modals */}
+      {isFormOpen && (
+        <TransactionForm 
+          accounts={accounts} holdings={holdings}
+          onAdd={addTransaction} onUpdate={updateTransaction}
+          editingTransaction={transactionToEdit} onClose={() => { setIsFormOpen(false); setTransactionToEdit(null); }}
+        />
+      )}
+      {isImportOpen && <BatchImportModal accounts={accounts} onImport={addBatchTransactions} onClose={() => setIsImportOpen(false)} />}
+      {isHistoricalModalOpen && <HistoricalDataModal transactions={transactions} cashFlows={cashFlows} accounts={accounts} historicalData={historicalData} onSave={handleSaveHistoricalData} onClose={() => setIsHistoricalModalOpen(false)} />}
+      {isBatchUpdateMarketOpen && <BatchUpdateMarketModal transactions={transactions} onUpdate={handleBatchUpdateMarket} onClose={() => setIsBatchUpdateMarketOpen(false)} />}
     </div>
   );
+
+  function addTransaction(tx: Transaction) { setTransactions(p => [...p, tx]); }
+  function updateTransaction(tx: Transaction) { setTransactions(p => p.map(x => x.id === tx.id ? tx : x)); }
+  function addBatchTransactions(txs: Transaction[]) { setTransactions(p => [...p, ...txs]); }
+  
+  function removeAccount(id: string) {
+    const acc = accounts.find(a => a.id === id);
+    setConfirmDialog({
+      isOpen: true,
+      title: "刪除帳戶",
+      message: `確定要刪除「${acc?.name}」嗎？這不會刪除該帳戶下的歷史交易。`,
+      type: 'danger',
+      onConfirm: () => { setAccounts(p => p.filter(x => x.id !== id)); setConfirmDialog(null); }
+    });
+  }
+
+  function handleExportData() {
+    const data = { transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, jpyExchangeRate, rebalanceTargets, rebalanceEnabledItems, historicalData };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tradefolio_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  }
+
+  function handleImportData(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.transactions) setTransactions(data.transactions);
+        if (data.accounts) setAccounts(data.accounts);
+        if (data.cashFlows) setCashFlows(data.cashFlows);
+        if (data.historicalData) setHistoricalData(data.historicalData);
+        if (data.exchangeRate) setExchangeRate(data.exchangeRate);
+        if (data.jpyExchangeRate) setJpyExchangeRate(data.jpyExchangeRate);
+        showAlert("資料已成功還原", "匯入成功", "success");
+      } catch(err) { showAlert("檔案格式不正確", "匯入失敗", "error"); }
+    };
+    reader.readAsText(file);
+  }
 };
 
-export default Dashboard;
+export default App;
