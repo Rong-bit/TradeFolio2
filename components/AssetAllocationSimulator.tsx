@@ -611,8 +611,8 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
               <tr>
                 <th className="px-4 py-3 text-left">{translations.simulator.ticker}</th>
                 <th className="px-4 py-3 text-left">{translations.simulator.market}</th>
-                <th className="px-4 py-3 text-left">{translations.simulator.annualReturn} {language === 'zh-TW' ? '' : '(%)'}</th>
-                <th className="px-4 py-3 text-left">{translations.simulator.allocation} {language === 'zh-TW' ? '' : '(%)'}</th>
+                <th className="px-4 py-3 text-left">{translations.simulator.annualReturn}</th>
+                <th className="px-4 py-3 text-left">{translations.simulator.allocation}</th>
                 <th className="px-4 py-3 text-center">{language === 'zh-TW' ? '操作' : 'Action'}</th>
               </tr>
             </thead>
@@ -763,8 +763,8 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                 <tr>
                   <th className="px-4 py-3 text-left">{translations.simulator.ticker}</th>
                   <th className="px-4 py-3 text-left">{translations.simulator.market}</th>
-                  <th className="px-4 py-3 text-right">{translations.simulator.annualReturn} {language === 'zh-TW' ? '' : '(%)'}</th>
-                  <th className="px-4 py-3 text-right">{translations.simulator.allocation} {language === 'zh-TW' ? '' : '(%)'}</th>
+                  <th className="px-4 py-3 text-right">{translations.simulator.annualReturn}</th>
+                  <th className="px-4 py-3 text-right">{translations.simulator.allocation}</th>
                   <th className="px-4 py-3 text-right">{language === 'zh-TW' ? '操作' : 'Action'}</th>
                 </tr>
               </thead>
