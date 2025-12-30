@@ -246,7 +246,7 @@ const Dashboard: React.FC<Props> = ({
       {!isGuest && (
         <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
           <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.assetVsCostTrend}</h3>
+              <h3 className="font-bold text-blue-600 text-lg">{translations.dashboard.assetVsCostTrend}</h3>
               {onUpdateHistorical && (
                 <button 
                   onClick={onUpdateHistorical}
@@ -339,7 +339,7 @@ const Dashboard: React.FC<Props> = ({
                     </Bar>
 
                     {/* Lines */}
-                    <Line yAxisId="left" type="monotone" dataKey="totalAssets" name={translations.dashboard.chartLabels.totalAssets} stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
+                    <Line yAxisId="left" type="monotone" dataKey="totalAssets" name={translations.dashboard.chartLabels.totalAssets} stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} />
                     <Line yAxisId="left" type="monotone" dataKey="estTotalAssets" name={translations.dashboard.chartLabels.estimatedAssets} stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
