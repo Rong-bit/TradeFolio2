@@ -1,6 +1,7 @@
 // 簡化版 Webhook 測試 - 用於診斷問題
 // 訪問: https://trade-folio.vercel.app/api/webhook-test
 
+// @ts-ignore - Vercel runtime 會自動提供這些類型
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
