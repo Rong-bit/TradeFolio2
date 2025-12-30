@@ -1,21 +1,32 @@
 // Vercel Serverless Function - 處理支付 Webhook
 // 此檔案應放在 api/webhook.ts（Vercel 會自動識別）
-// 
-// 安裝依賴：
-// npm install --save-dev @types/node @vercel/node
-// npm install crypto
 
-// @ts-ignore - Vercel runtime 會自動提供這些類型
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-const crypto = require('crypto');
+import { createHash } from 'crypto';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 添加 CORS 標頭
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // 處理 OPTIONS 請求（CORS preflight）
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // 只接受 POST 請求
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    console.log('Webhook received:', {
+      method: req.method,
+      headers: Object.keys(req.headers),
+      bodyType: typeof req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : [],
+    });
     // 1. 驗證 Webhook 簽名（防止偽造）
     const signature = req.headers['x-ecpay-signature'] || req.headers['stripe-signature'];
     
@@ -53,9 +64,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error('Webhook error:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Error details:', {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+    });
+    
     return res.status(500).json({ 
       error: 'Internal server error', 
-      message: error.message 
+      message: error?.message || 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
     });
   }
 }
@@ -66,6 +85,13 @@ async function verifyWebhookSignature(
   signature: string | string[] | undefined,
   headers: any
 ): Promise<boolean> {
+  // ⚠️ 測試模式：僅用於開發階段，生產環境請移除或設定為 false
+  // 設定環境變數 WEBHOOK_TEST_MODE=true 可跳過簽名驗證
+  if (process.env.WEBHOOK_TEST_MODE === 'true') {
+    console.warn('⚠️ WEBHOOK_TEST_MODE is enabled - Signature verification skipped');
+    return true;
+  }
+
   if (!signature) return false;
 
   // 綠界科技的簽名驗證
@@ -82,8 +108,7 @@ async function verifyWebhookSignature(
       .join('&');
     
     const hashString = `HashKey=${hashKey}&${checkString}&HashIV=${hashIV}`;
-    const calculatedHash = crypto
-      .createHash('sha256')
+    const calculatedHash = createHash('sha256')
       .update(hashString, 'utf8')
       .digest('hex')
       .toUpperCase();
@@ -95,20 +120,48 @@ async function verifyWebhookSignature(
   if (headers['stripe-signature']) {
     // 需要安裝 stripe 套件：npm install stripe
     try {
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
       
-      if (!webhookSecret) return false;
+      if (!webhookSecret) {
+        console.warn('STRIPE_WEBHOOK_SECRET not set');
+        return false;
+      }
+
+      // 嘗試動態導入 stripe（避免在未安裝時報錯）
+      let stripe: any;
+      try {
+        const stripeModule = await import('stripe');
+        stripe = stripeModule.default;
+      } catch (importError: any) {
+        if (importError?.code === 'MODULE_NOT_FOUND') {
+          console.warn('Stripe package not installed. Install with: npm install stripe');
+          return false;
+        }
+        throw importError;
+      }
+
+      const Stripe = stripe;
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+        apiVersion: '2024-11-20.acacia',
+      });
       
       const sig = Array.isArray(signature) ? signature[0] : signature;
-      stripe.webhooks.constructEvent(
-        JSON.stringify(body),
+      
+      // 對於測試，如果 body 是字符串，需要轉換
+      const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
+      
+      stripeClient.webhooks.constructEvent(
+        bodyString,
         sig,
         webhookSecret
       );
       return true;
-    } catch (err) {
-      console.error('Stripe signature verification failed:', err);
+    } catch (err: any) {
+      console.error('Stripe signature verification failed:', err?.message);
+      console.error('Stripe error details:', {
+        code: err?.code,
+        type: err?.type,
+      });
       return false;
     }
   }
