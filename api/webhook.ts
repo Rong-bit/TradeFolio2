@@ -1,6 +1,7 @@
 // Vercel Serverless Function - 處理支付 Webhook
 // 此檔案應放在 api/webhook.ts（Vercel 會自動識別）
 
+// @ts-ignore - Vercel runtime 會自動提供這些類型
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'crypto';
 
@@ -130,6 +131,7 @@ async function verifyWebhookSignature(
       // 嘗試動態導入 stripe（避免在未安裝時報錯）
       let stripe: any;
       try {
+        // @ts-ignore - stripe 是可選依賴，可能未安裝
         const stripeModule = await import('stripe');
         stripe = stripeModule.default;
       } catch (importError: any) {
