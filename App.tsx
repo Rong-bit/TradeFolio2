@@ -88,6 +88,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('dashboard');
   const [hasAutoUpdated, setHasAutoUpdated] = useState(false);
   const [language, setLanguage] = useState<Language>(getLanguage());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // 篩選狀態
   const [filterAccount, setFilterAccount] = useState<string>('');
@@ -948,37 +949,25 @@ const App: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo & Brand */}
             <div className="flex items-center gap-3 shrink-0">
-               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
+               {/* 漢堡選單按鈕 */}
+               <button
+                 onClick={() => setIsMobileMenuOpen(true)}
+                 className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                 aria-label="Open Menu"
+               >
+                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                 </svg>
+               </button>
+               
+               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg cursor-pointer" onClick={() => setView('dashboard')}>
                   T
                </div>
-               <div className="hidden md:block">
+               <div className="hidden sm:block">
                   <h1 className="font-bold text-lg leading-none bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">TradeFolio</h1>
                   <p className="text-[10px] text-slate-400 leading-none mt-0.5">{language === 'en' ? 'Portfolio Management' : '台美股資產管理'}</p>
                </div>
             </div>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-1">
-               {availableViews.map((tab) => (
-                 <button
-                   key={tab}
-                   onClick={() => setView(tab as View)}
-                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                     view === tab 
-                       ? 'bg-indigo-600 text-white shadow' 
-                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                   }`}
-                 >
-                   {tab === 'dashboard' && t(language).nav.dashboard}
-                   {tab === 'history' && t(language).nav.history}
-                   {tab === 'funds' && t(language).nav.funds}
-                   {tab === 'accounts' && t(language).nav.accounts}
-                   {tab === 'rebalance' && t(language).nav.rebalance}
-                   {tab === 'simulator' && t(language).nav.simulator}
-                   {tab === 'help' && t(language).nav.help}
-                 </button>
-               ))}
-            </nav>
 
             {/* Right Controls */}
             <div className="flex items-center gap-2 sm:gap-3">
@@ -1052,53 +1041,6 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Navigation (Horizontal Scroll) */}
-          <div className="md:hidden border-t border-slate-800 py-2 overflow-x-auto no-scrollbar">
-             <div className="flex space-x-2 px-1 items-center">
-                {/* Mobile Language Selector */}
-                <div className="flex items-center bg-slate-800 rounded-full border border-slate-700 overflow-hidden shrink-0 ml-1">
-                  <button
-                    onClick={() => handleLanguageChange('zh-TW')}
-                    className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                      language === 'zh-TW' 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    繁
-                  </button>
-                  <button
-                    onClick={() => handleLanguageChange('en')}
-                    className={`px-2.5 py-1 text-[10px] font-medium transition-colors border-l border-slate-700 ${
-                      language === 'en' 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    EN
-                  </button>
-                </div>
-                {availableViews.map((tab) => (
-                 <button
-                   key={tab}
-                   onClick={() => setView(tab as View)}
-                   className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                     view === tab 
-                       ? 'bg-indigo-600 text-white' 
-                       : 'bg-slate-800 text-slate-300'
-                   }`}
-                 >
-                   {tab === 'dashboard' && t(language).nav.dashboard}
-                   {tab === 'history' && t(language).nav.history}
-                   {tab === 'funds' && (language === 'en' ? 'Funds' : '資金')}
-                   {tab === 'accounts' && (language === 'en' ? 'Accounts' : '證券戶')}
-                   {tab === 'rebalance' && t(language).nav.rebalance}
-                   {tab === 'simulator' && (language === 'en' ? 'Sim' : '模擬')}
-                   {tab === 'help' && t(language).nav.help}
-                 </button>
-              ))}
-             </div>
-          </div>
         </div>
       </header>
 
@@ -1535,6 +1477,113 @@ const App: React.FC = () => {
             )}
          </div>
       </main>
+      
+      {/* Mobile Drawer Navigation (側邊選單) */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex bg-black bg-opacity-50 animate-fade-in" onClick={() => setIsMobileMenuOpen(false)}>
+          <div 
+            className="bg-slate-900 w-80 h-full shadow-2xl flex flex-col transform transition-transform animate-slide-right" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 選單標題 */}
+            <div className="p-6 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+              <div>
+                <h3 className="text-white font-bold text-lg">TradeFolio</h3>
+                <p className="text-slate-400 text-xs mt-1">{currentUser}</p>
+              </div>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)} 
+                className="text-slate-400 hover:text-white text-2xl transition-colors"
+                aria-label="Close Menu"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* 匯率顯示 */}
+            <div className="p-4 bg-slate-900/50 border-b border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold">
+                <span className="text-slate-500">USD/TWD {language === 'zh-TW' ? '匯率' : 'Rate'}</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={exchangeRate} 
+                  onChange={e => setExchangeRate(parseFloat(e.target.value))}
+                  className="w-20 bg-slate-800 rounded border border-slate-700 text-emerald-400 text-right px-2 py-1"
+                />
+              </div>
+            </div>
+
+            {/* 導航選單 */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              {availableViews.map(v => (
+                <button 
+                  key={v}
+                  onClick={() => { 
+                    setView(v as View); 
+                    setIsMobileMenuOpen(false); 
+                  }}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl text-left transition ${
+                    view === v 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'hover:bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  <span className="font-bold">
+                    {v === 'dashboard' && t(language).nav.dashboard}
+                    {v === 'history' && t(language).nav.history}
+                    {v === 'funds' && t(language).nav.funds}
+                    {v === 'accounts' && t(language).nav.accounts}
+                    {v === 'rebalance' && t(language).nav.rebalance}
+                    {v === 'simulator' && t(language).nav.simulator}
+                    {v === 'help' && t(language).nav.help}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* 底部操作 */}
+            <div className="p-4 border-t border-slate-800 space-y-2">
+              <button 
+                onClick={() => {
+                  const newLang = language === 'zh-TW' ? 'en' : 'zh-TW';
+                  handleLanguageChange(newLang);
+                }}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition"
+              >
+                🌐 {language === 'zh-TW' ? 'Switch to English' : '切換為繁體中文'}
+              </button>
+              {isGuest && (
+                <button
+                  onClick={() => {
+                    handleContactAdmin();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-amber-500 text-slate-900 font-bold hover:bg-amber-600 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  {language === 'en' ? 'Upgrade' : '申請開通'}
+                </button>
+              )}
+              <button 
+                onClick={() => { 
+                  handleLogout(); 
+                  setIsMobileMenuOpen(false); 
+                }}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-900/20 text-red-400 font-bold border border-red-900/30 hover:bg-red-900/30 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                {t(language).nav.logout}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-6 mt-12 border-t border-slate-800">
