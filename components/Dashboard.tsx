@@ -59,6 +59,34 @@ const Dashboard: React.FC<Props> = ({
     setLoadingAi(false);
   };
 
+  // 計算市場分布比例
+  const marketDistribution = useMemo(() => {
+    const marketValues: Record<Market, number> = {
+      [Market.TW]: 0,
+      [Market.US]: 0,
+      [Market.UK]: 0,
+      [Market.JP]: 0,
+    };
+
+    holdings.forEach(h => {
+      let valTwd = h.currentValue;
+      if (h.market === Market.US || h.market === Market.UK) {
+        valTwd = h.currentValue * summary.exchangeRateUsdToTwd;
+      } else if (h.market === Market.JP) {
+        valTwd = h.currentValue * (summary.jpyExchangeRate || summary.exchangeRateUsdToTwd);
+      }
+      marketValues[h.market] = (marketValues[h.market] || 0) + valTwd;
+    });
+
+    const totalMarketValue = Object.values(marketValues).reduce((sum, val) => sum + val, 0);
+    
+    return Object.entries(marketValues).map(([market, value]) => ({
+      market: market as Market,
+      value,
+      ratio: totalMarketValue > 0 ? (value / totalMarketValue) * 100 : 0,
+    })).filter(item => item.value > 0);
+  }, [holdings, summary.exchangeRateUsdToTwd, summary.jpyExchangeRate]);
+
   const costDetails = useMemo(() => {
     return cashFlows
       .filter(cf => cf.type === CashFlowType.DEPOSIT || cf.type === CashFlowType.WITHDRAW)
@@ -324,6 +352,50 @@ const Dashboard: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* Market Distribution */}
+      <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
+        <h3 className="font-bold text-slate-800 text-lg mb-4">{language === 'zh-TW' ? '市場分佈比例' : 'Market Distribution'}</h3>
+        {marketDistribution.length > 0 ? (
+          <div className="space-y-3">
+            {marketDistribution.map((item) => {
+              const marketNames: Record<Market, string> = {
+                [Market.TW]: language === 'zh-TW' ? '台股' : 'Taiwan',
+                [Market.US]: language === 'zh-TW' ? '美股' : 'US',
+                [Market.UK]: language === 'zh-TW' ? '英國股' : 'UK',
+                [Market.JP]: language === 'zh-TW' ? '日本股' : 'Japan',
+              };
+              const marketColors: Record<Market, string> = {
+                [Market.TW]: 'bg-blue-500',
+                [Market.US]: 'bg-green-500',
+                [Market.UK]: 'bg-purple-500',
+                [Market.JP]: 'bg-red-500',
+              };
+              
+              return (
+                <div key={item.market} className="flex items-center gap-4">
+                  <div className="w-20 text-sm font-medium text-slate-700">{marketNames[item.market]}</div>
+                  <div className="flex-1 bg-slate-200 rounded-full h-6 overflow-hidden">
+                    <div 
+                      className={`h-full ${marketColors[item.market]} transition-all duration-500 flex items-center justify-end pr-2`}
+                      style={{ width: `${item.ratio}%` }}
+                    >
+                      <span className="text-white text-xs font-bold">{item.ratio.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div className="w-24 text-right text-sm font-mono text-slate-600">
+                    {formatCurrency(item.value, 'TWD')}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-slate-400 py-8">
+            {language === 'zh-TW' ? '尚無持倉資料' : 'No holdings data'}
+          </div>
+        )}
+      </div>
 
       {/* Allocation Pie Chart */}
       {!isGuest && (
