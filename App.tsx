@@ -395,35 +395,41 @@ const App: React.FC = () => {
 
       // 檢查是否在 Capacitor 環境中（Android/iOS）
       try {
-        const { Capacitor } = await import('@capacitor/core');
-        const { Share } = await import('@capacitor/share');
+        // 使用動態導入避免 TypeScript 編譯錯誤（如果模組不存在）
+        const capacitorModule = await import('@capacitor/core').catch(() => null);
+        const shareModule = await import('@capacitor/share').catch(() => null);
         
-        if (Capacitor.isNativePlatform()) {
-          // 在 Android/iOS 上使用 Share API
-          // 將 Blob 轉換為 Base64
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            try {
-              const base64Data = (reader.result as string).split(',')[1];
-              const dataUrl = `data:application/json;base64,${base64Data}`;
-              
-              await Share.share({
-                title: 'TradeFolio 備份檔案',
-                text: `TradeFolio 備份：${filename}`,
-                url: dataUrl,
-                dialogTitle: '儲存備份檔案'
-              });
-            } catch (shareErr) {
-              console.error("Share failed:", shareErr);
-              // 如果 Share 失敗，回退到傳統方式
+        if (capacitorModule && shareModule) {
+          const { Capacitor } = capacitorModule;
+          const { Share } = shareModule;
+          
+          if (Capacitor.isNativePlatform()) {
+            // 在 Android/iOS 上使用 Share API
+            // 將 Blob 轉換為 Base64
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              try {
+                const base64Data = (reader.result as string).split(',')[1];
+                const dataUrl = `data:application/json;base64,${base64Data}`;
+                
+                await Share.share({
+                  title: 'TradeFolio 備份檔案',
+                  text: `TradeFolio 備份：${filename}`,
+                  url: dataUrl,
+                  dialogTitle: '儲存備份檔案'
+                });
+              } catch (shareErr) {
+                console.error("Share failed:", shareErr);
+                // 如果 Share 失敗，回退到傳統方式
+                fallbackDownload(blob, filename);
+              }
+            };
+            reader.onerror = () => {
               fallbackDownload(blob, filename);
-            }
-          };
-          reader.onerror = () => {
-            fallbackDownload(blob, filename);
-          };
-          reader.readAsDataURL(blob);
-          return; // 成功啟動 Share，提前返回
+            };
+            reader.readAsDataURL(blob);
+            return; // 成功啟動 Share，提前返回
+          }
         }
       } catch (importErr) {
         // 如果導入失敗（例如在網頁環境），使用傳統方式
