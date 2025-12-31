@@ -397,9 +397,10 @@ const App: React.FC = () => {
       try {
         // 動態導入 Capacitor（避免在非 Capacitor 環境中報錯）
         const capacitorModule = await import('@capacitor/core');
-        const shareModule = await import('@capacitor/share');
+        // 動態導入 Share 插件（使用類型斷言避免 TypeScript 錯誤）
+        const shareModule = await import('@capacitor/share') as any;
         const Capacitor = capacitorModule.Capacitor;
-        const Share = shareModule.Share;
+        const Share = shareModule?.Share;
         
         if (Capacitor && Share && Capacitor.isNativePlatform()) {
           // 在 Android/iOS 上使用 Share API
