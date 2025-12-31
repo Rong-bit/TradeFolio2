@@ -1120,7 +1120,7 @@ const en: Translations = {
     systemAuthorized: 'System Authorized',
     contact: 'Purchase Authorization & Contact Administrator',
     contactTitle: 'Like this system?',
-    contactDesc: 'If you are a non-member and wish to obtain permanent usage rights, or have any feature suggestions and bug reports, please contact the developer.',
+    contactDesc: 'If you are a non-member and wish to obtain permanent usage rights, or have any feature suggestions and bug reports, please contact the developer. Maintained during spare time, please understand that responses may be slower.',
     contactEmail: 'Contact Administrator (Email)',
     documentation: 'Documentation',
     copyAll: 'Copy All',
