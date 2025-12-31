@@ -395,22 +395,10 @@ const App: React.FC = () => {
 
       // 檢查是否在 Capacitor 環境中（Android/iOS）
       try {
-        // 動態導入 Capacitor（避免在非 Capacitor 環境中報錯）
-        const capacitorModule = await import('@capacitor/core');
-        const Capacitor = capacitorModule.Capacitor;
+        const { Capacitor } = await import('@capacitor/core');
+        const { Share } = await import('@capacitor/share');
         
-        if (Capacitor && Capacitor.isNativePlatform()) {
-          // 動態導入 Share 插件（使用 try-catch 處理模組不存在的情況）
-          let Share: any = null;
-          try {
-            // 動態導入，TypeScript 編譯時可能無法解析，使用 eval 來避免編譯錯誤
-            const shareModule = await eval('import("@capacitor/share")');
-            Share = shareModule?.Share;
-          } catch (shareImportErr) {
-            console.log("Share plugin not available:", shareImportErr);
-          }
-          
-          if (Share) {
+        if (Capacitor.isNativePlatform()) {
           // 在 Android/iOS 上使用 Share API
           // 將 Blob 轉換為 Base64
           const reader = new FileReader();
@@ -436,7 +424,6 @@ const App: React.FC = () => {
           };
           reader.readAsDataURL(blob);
           return; // 成功啟動 Share，提前返回
-          }
         }
       } catch (importErr) {
         // 如果導入失敗（例如在網頁環境），使用傳統方式
