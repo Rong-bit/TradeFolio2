@@ -1,7 +1,8 @@
 # Android 構建文件
 *.apk
 *.aab
-*.ap_
+*.ap_*
+*.idsig
 *.dex
 *.class
 bin/
