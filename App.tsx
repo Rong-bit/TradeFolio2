@@ -354,7 +354,21 @@ const App: React.FC = () => {
       showAlert("歷史資產數據更新完成！報表已根據真實股價修正。", "更新成功", "success");
   };
 
-  const handleExportData = () => {
+  // 傳統下載方式（用於網頁瀏覽器）
+  const fallbackDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  const handleExportData = async () => {
     try {
       const exportData = { 
         version: "2.0", 
@@ -373,23 +387,51 @@ const App: React.FC = () => {
 
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
       
       // Sanitize filename
       const safeUser = (currentUser || 'guest').replace(/[^a-zA-Z0-9@._-]/g, '_');
       const dateStr = new Date().toISOString().split('T')[0];
-      link.download = `tradefolio_${safeUser}_${dateStr}.json`;
-      
-      document.body.appendChild(link);
-      link.click();
-      
-      // Delay cleanup to ensure browser captures the click
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      const filename = `tradefolio_${safeUser}_${dateStr}.json`;
+
+      // 檢查是否在 Capacitor 環境中（Android/iOS）
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        const { Share } = await import('@capacitor/share');
+        
+        if (Capacitor.isNativePlatform()) {
+          // 在 Android/iOS 上使用 Share API
+          // 將 Blob 轉換為 Base64
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64Data = (reader.result as string).split(',')[1];
+              const dataUrl = `data:application/json;base64,${base64Data}`;
+              
+              await Share.share({
+                title: 'TradeFolio 備份檔案',
+                text: `TradeFolio 備份：${filename}`,
+                url: dataUrl,
+                dialogTitle: '儲存備份檔案'
+              });
+            } catch (shareErr) {
+              console.error("Share failed:", shareErr);
+              // 如果 Share 失敗，回退到傳統方式
+              fallbackDownload(blob, filename);
+            }
+          };
+          reader.onerror = () => {
+            fallbackDownload(blob, filename);
+          };
+          reader.readAsDataURL(blob);
+          return; // 成功啟動 Share，提前返回
+        }
+      } catch (importErr) {
+        // 如果導入失敗（例如在網頁環境），使用傳統方式
+        console.log("Capacitor not available, using fallback download");
+      }
+
+      // 在網頁瀏覽器中使用傳統方式
+      fallbackDownload(blob, filename);
 
     } catch (err) {
       console.error("Export failed:", err);
