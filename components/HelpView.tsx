@@ -133,43 +133,6 @@ const HelpView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Authorized Users Section */}
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
-         <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            {translations.help.authorizedUsers}
-         </h3>
-         
-         <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-             <p className="text-sm text-slate-600 mb-4">{translations.help.authorizedUsersDesc}</p>
-             <div className="overflow-x-auto">
-                 <table className="min-w-full text-sm">
-                     <thead>
-                         <tr className="bg-slate-100 text-slate-500 uppercase">
-                             <th className="px-4 py-2 text-left">{translations.help.emailAccount}</th>
-                             <th className="px-4 py-2 text-right">{translations.help.status}</th>
-                         </tr>
-                     </thead>
-                     <tbody className="divide-y divide-slate-100">
-                         {authorizedUsers.map(email => (
-                             <tr key={email}>
-                                 <td className="px-4 py-3 font-mono text-slate-700">
-                                     {maskEmail(email)} 
-                                     {currentUser === email && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{language === 'zh-TW' ? '您' : 'You'}</span>}
-                                 </td>
-                                 <td className="px-4 py-3 text-right">
-                                     <span className="bg-slate-200 text-slate-600 px-2 py-1 rounded text-xs font-medium">{translations.help.systemAuthorized}</span>
-                                 </td>
-                             </tr>
-                         ))}
-                     </tbody>
-                 </table>
-             </div>
-         </div>
-      </div>
-
       {/* Contact Section */}
       <div className="bg-white p-6 rounded-lg shadow border-l-4 border-amber-500">
          <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
