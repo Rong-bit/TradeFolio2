@@ -395,10 +395,13 @@ const App: React.FC = () => {
 
       // 檢查是否在 Capacitor 環境中（Android/iOS）
       try {
-        const { Capacitor } = await import('@capacitor/core');
-        const { Share } = await import('@capacitor/share');
+        // 動態導入 Capacitor（避免在非 Capacitor 環境中報錯）
+        const capacitorModule = await import('@capacitor/core');
+        const shareModule = await import('@capacitor/share');
+        const Capacitor = capacitorModule.Capacitor;
+        const Share = shareModule.Share;
         
-        if (Capacitor.isNativePlatform()) {
+        if (Capacitor && Share && Capacitor.isNativePlatform()) {
           // 在 Android/iOS 上使用 Share API
           // 將 Blob 轉換為 Base64
           const reader = new FileReader();
