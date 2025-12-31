@@ -7,9 +7,16 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:skip-check": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "npx cap sync",
+    "cap:sync:android": "npx cap sync android",
+    "cap:open:android": "npx cap open android",
+    "android:build": "npm run build && npx cap sync android",
+    "android:dev": "npm run build && npx cap sync android && npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
     "@google/genai": "^1.31.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -17,6 +24,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
