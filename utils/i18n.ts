@@ -712,7 +712,7 @@ const zhTW: Translations = {
     systemAuthorized: '系統授權',
     contact: '購買授權與聯絡管理員',
     contactTitle: '喜歡這個系統嗎？',
-    contactDesc: '如果您是非會員並希望獲得永久使用權限，或是有任何功能建議與 Bug 回報，歡迎聯繫開發者。',
+    contactDesc: '如果您是非會員並希望獲得永久使用權限，或是有任何功能建議與 Bug 回報，歡迎聯繫開發者。公餘時間維護，回覆較慢請見諒。',
     contactEmail: '聯絡管理員',
     documentation: '使用說明',
     copyAll: '複製全文',
