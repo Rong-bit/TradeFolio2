@@ -395,40 +395,47 @@ const App: React.FC = () => {
 
       // 檢查是否在 Capacitor 環境中（Android/iOS）
       try {
-        // 使用動態導入避免 TypeScript 編譯錯誤（如果模組不存在）
-        const capacitorModule = await import('@capacitor/core').catch(() => null);
-        const shareModule = await import('@capacitor/share').catch(() => null);
+        // 動態導入 Capacitor（避免在非 Capacitor 環境中報錯）
+        const capacitorModule = await import('@capacitor/core');
+        const Capacitor = capacitorModule.Capacitor;
         
-        if (capacitorModule && shareModule) {
-          const { Capacitor } = capacitorModule;
-          const { Share } = shareModule;
+        if (Capacitor && Capacitor.isNativePlatform()) {
+          // 動態導入 Share 插件（使用 try-catch 處理模組不存在的情況）
+          let Share: any = null;
+          try {
+            // 動態導入，TypeScript 編譯時可能無法解析，使用 eval 來避免編譯錯誤
+            const shareModule = await eval('import("@capacitor/share")');
+            Share = shareModule?.Share;
+          } catch (shareImportErr) {
+            console.log("Share plugin not available:", shareImportErr);
+          }
           
-          if (Capacitor.isNativePlatform()) {
-            // 在 Android/iOS 上使用 Share API
-            // 將 Blob 轉換為 Base64
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              try {
-                const base64Data = (reader.result as string).split(',')[1];
-                const dataUrl = `data:application/json;base64,${base64Data}`;
-                
-                await Share.share({
-                  title: 'TradeFolio 備份檔案',
-                  text: `TradeFolio 備份：${filename}`,
-                  url: dataUrl,
-                  dialogTitle: '儲存備份檔案'
-                });
-              } catch (shareErr) {
-                console.error("Share failed:", shareErr);
-                // 如果 Share 失敗，回退到傳統方式
-                fallbackDownload(blob, filename);
-              }
-            };
-            reader.onerror = () => {
+          if (Share) {
+          // 在 Android/iOS 上使用 Share API
+          // 將 Blob 轉換為 Base64
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64Data = (reader.result as string).split(',')[1];
+              const dataUrl = `data:application/json;base64,${base64Data}`;
+              
+              await Share.share({
+                title: 'TradeFolio 備份檔案',
+                text: `TradeFolio 備份：${filename}`,
+                url: dataUrl,
+                dialogTitle: '儲存備份檔案'
+              });
+            } catch (shareErr) {
+              console.error("Share failed:", shareErr);
+              // 如果 Share 失敗，回退到傳統方式
               fallbackDownload(blob, filename);
-            };
-            reader.readAsDataURL(blob);
-            return; // 成功啟動 Share，提前返回
+            }
+          };
+          reader.onerror = () => {
+            fallbackDownload(blob, filename);
+          };
+          reader.readAsDataURL(blob);
+          return; // 成功啟動 Share，提前返回
           }
         }
       } catch (importErr) {
@@ -1785,5 +1792,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
