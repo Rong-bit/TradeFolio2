@@ -77,6 +77,7 @@ export interface Translations {
     annualProfit: string;
     annualROI: string;
     brokerageAccounts: string;
+    accountNativeCurrencyNote?: string;
     accountName: string;
     totalAssetsNT: string;
     marketValueNT: string;
@@ -542,6 +543,7 @@ const zhTW: Translations = {
     annualProfit: '年度損益',
     annualROI: '年度報酬率',
     brokerageAccounts: '證券戶列表',
+    accountNativeCurrencyNote: '各帳戶以原幣別顯示',
     accountName: '證券名稱',
     totalAssetsNT: '總資產',
     marketValueNT: '市值',
@@ -1066,6 +1068,7 @@ const en: Translations = {
     annualProfit: 'Annual Profit',
     annualROI: 'Annual ROI',
     brokerageAccounts: 'Brokerage Accounts',
+    accountNativeCurrencyNote: 'Each account shown in its native currency',
     accountName: 'Account Name',
     totalAssetsNT: 'Total Assets (NT$)',
     marketValueNT: 'Market Value (NT$)',
