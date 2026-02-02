@@ -46,7 +46,6 @@ const Dashboard: React.FC<Props> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [showCostDetailModal, setShowCostDetailModal] = useState(false);
-  const [showAccountInUSD, setShowAccountInUSD] = useState(false); 
   const [showAnnualInUSD, setShowAnnualInUSD] = useState(false);
 
   const rates = { exchangeRateUsdToTwd: summary.exchangeRateUsdToTwd, jpyExchangeRate: summary.jpyExchangeRate };
@@ -523,33 +522,11 @@ const Dashboard: React.FC<Props> = ({
           </div>
       )}
 
-      {/* Account List Card */}
+      {/* Account List Card：各帳戶以原設定的幣別顯示（TWD 帳戶顯示台幣，USD 帳戶顯示美元） */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
           <h3 className="font-bold text-slate-800 text-xl">{translations.dashboard.brokerageAccounts}</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-600">{translations.dashboard.displayCurrency}:</span>
-            <button
-              onClick={() => setShowAccountInUSD(false)}
-              className={`px-3 py-1.5 text-sm rounded transition ${
-                !showAccountInUSD 
-                  ? 'bg-indigo-600 text-white font-medium' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {baseCurrency}
-            </button>
-            <button
-              onClick={() => setShowAccountInUSD(true)}
-              className={`px-3 py-1.5 text-sm rounded transition ${
-                showAccountInUSD 
-                  ? 'bg-indigo-600 text-white font-medium' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {translations.dashboard.usd}
-            </button>
-          </div>
+          <span className="text-xs text-slate-500">{translations.dashboard.accountNativeCurrencyNote || '各帳戶以原幣別顯示'}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm sm:text-base text-left">
@@ -566,37 +543,15 @@ const Dashboard: React.FC<Props> = ({
             <tbody className="divide-y divide-slate-100">
               {accountPerformance.length > 0 ? (
                 accountPerformance.map(acc => {
-                  let displayCurrency: string;
-                  let totalAssets: number;
-                  let marketValue: number;
-                  let cashBalance: number;
-                  let profit: number;
-                  
-                  if (showAccountInUSD) {
-                    displayCurrency = 'USD';
-                    if (acc.currency === Currency.USD) {
-                      totalAssets = acc.totalAssetsNative || acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                      marketValue = acc.marketValueNative || acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                      cashBalance = acc.cashBalanceNative || acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                      profit = acc.profitNative || acc.profitTWD / summary.exchangeRateUsdToTwd;
-                    } else {
-                      totalAssets = acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                      marketValue = acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                      cashBalance = acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                      profit = acc.profitTWD / summary.exchangeRateUsdToTwd;
-                    }
-                  } else {
-                    displayCurrency = baseCurrency;
-                    totalAssets = toBase(acc.totalAssetsTWD);
-                    marketValue = toBase(acc.marketValueTWD);
-                    cashBalance = toBase(acc.cashBalanceTWD);
-                    profit = toBase(acc.profitTWD);
-                  }
-                  
+                  const displayCurrency = acc.currency;
+                  const totalAssets = acc.totalAssetsNative ?? (acc.currency === Currency.USD ? acc.totalAssetsTWD / summary.exchangeRateUsdToTwd : acc.totalAssetsTWD);
+                  const marketValue = acc.marketValueNative ?? (acc.currency === Currency.USD ? acc.marketValueTWD / summary.exchangeRateUsdToTwd : acc.marketValueTWD);
+                  const cashBalance = acc.cashBalanceNative ?? (acc.currency === Currency.USD ? acc.cashBalanceTWD / summary.exchangeRateUsdToTwd : acc.cashBalanceTWD);
+                  const profit = acc.profitNative ?? (acc.currency === Currency.USD ? acc.profitTWD / summary.exchangeRateUsdToTwd : acc.profitTWD);
                   return (
                     <tr key={acc.id} className="hover:bg-slate-50">
                       <td className="px-3 py-2 font-semibold text-slate-700">
-                        {acc.name} 
+                        {acc.name}
                         <span className="text-xs font-normal text-slate-400 ml-1">({acc.currency})</span>
                       </td>
                       <td className="px-3 py-2 text-right font-bold text-slate-700">
