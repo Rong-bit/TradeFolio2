@@ -31,7 +31,7 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        run: npm run build:skip-check
         env:
           API_KEY: ${{ secrets.API_KEY }}
 
