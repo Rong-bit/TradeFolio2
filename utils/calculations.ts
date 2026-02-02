@@ -11,8 +11,32 @@ import {
   AnnualPerformanceItem, 
   AccountPerformance,
   TransactionType,
-  HistoricalData
+  HistoricalData,
+  BaseCurrency
 } from '../types';
+
+/** 將 TWD 換算為基準幣（僅顯示用；內部仍以 TWD 為單位） */
+export function valueInBaseCurrency(
+  valueTWD: number,
+  baseCurrency: BaseCurrency,
+  rates: { exchangeRateUsdToTwd: number; jpyExchangeRate?: number }
+): number {
+  if (baseCurrency === 'TWD') return valueTWD;
+  if (baseCurrency === 'USD') return valueTWD / rates.exchangeRateUsdToTwd;
+  const jpyRate = rates.jpyExchangeRate && rates.jpyExchangeRate > 0 ? rates.jpyExchangeRate : 0.21;
+  return valueTWD / jpyRate; // JPY: jpyExchangeRate = JPY→TWD, so TWD→JPY = 1/jpyRate
+}
+
+/** 儀表板僅顯示一個主要匯率：回傳 { label, value } */
+export function getDisplayRateForBaseCurrency(
+  baseCurrency: BaseCurrency,
+  rates: { exchangeRateUsdToTwd: number; jpyExchangeRate?: number }
+): { label: string; value: number } {
+  const jpy = rates.jpyExchangeRate && rates.jpyExchangeRate > 0 ? rates.jpyExchangeRate : 0.21;
+  if (baseCurrency === 'TWD') return { label: 'USD/TWD', value: rates.exchangeRateUsdToTwd };
+  if (baseCurrency === 'USD') return { label: 'TWD/USD', value: 1 / rates.exchangeRateUsdToTwd };
+  return { label: 'USD/JPY', value: rates.exchangeRateUsdToTwd / jpy };
+}
 
 export const calculateHoldings = (
   transactions: Transaction[], 

@@ -18,9 +18,9 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
   const [activeTab, setActiveTab] = useState<'file' | 'paste'>('paste'); // Default to paste for ease
 
   // Helper to parse date MM/DD/YYYY or YYYY/MM/DD to YYYY-MM-DD
-  const parseDate = (dateStr: string) => {
+  const parseDate = (dateStr: string | undefined) => {
     try {
-      if (!dateStr || !dateStr.trim()) return new Date().toISOString().split('T')[0];
+      if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) return new Date().toISOString().split('T')[0];
       
       const trimmed = dateStr.trim();
       const parts = trimmed.split('/');
@@ -90,8 +90,8 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
   };
 
   // Helper to clean currency string "$1,234.56" -> 1234.56, "-6,674.00" -> -6674.00
-  const parseNumber = (str: string) => {
-    if (!str) return 0;
+  const parseNumber = (str: string | undefined) => {
+    if (!str || typeof str !== 'string') return 0;
     // 保留負號，移除貨幣符號和逗號
     const cleaned = str.replace(/[$,]/g, '');
     const result = parseFloat(cleaned);
@@ -129,9 +129,11 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
       let currentFailures = 0;
       let headers: string[] = [];
       
-      // Detection: Check if it looks like Schwab CSV (has specific headers)
+      // Detection: Check if it looks like Schwab CSV or Firstrade CSV (has specific headers)
       const firstLine = lines.find(l => l.trim().length > 0) || '';
-      const isSchwabCSV = firstLine.includes('Date') && firstLine.includes('Action') && firstLine.includes(',');
+      // Firstrade 有 TradeDate 列，嘉信只有 Date 列
+      const isFirstradeCSV = firstLine.includes('TradeDate') && firstLine.includes('Action') && firstLine.includes('Symbol') && firstLine.includes(',');
+      const isSchwabCSV = !isFirstradeCSV && firstLine.includes('Date') && firstLine.includes('Action') && firstLine.includes(',');
       const isTabSeparated = firstLine.includes('\t');
 
       lines.forEach((line, index) => {
@@ -205,6 +207,459 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
             }
             
             // 為 Schwab CSV 設置 amountVal（如果還沒設置的話）
+            if (amountVal === 0 && amountIdx !== -1) {
+                amountVal = parseNumber(cols[amountIdx]);
+            }
+
+        } else if (isFirstradeCSV) {
+            // --- Logic for Firstrade CSV ---
+            const cleanLine = line.trim();
+            if (index === 0 || (cleanLine.includes('TradeDate') && cleanLine.includes('Action'))) {
+              headers = cleanLine.split(',').map(h => h.replace(/"/g, '').trim());
+              return; // Header row is not a failure
+            }
+            
+            // 移除行尾的 \r\n
+            const trimmedLine = cleanLine.replace(/\r\n?$/, '').trim();
+            
+            // 使用简单的 split(',') 方法，因为 Firstrade CSV 格式固定，字段用逗号分隔
+            // 先尝试处理引号包裹的字段
+            let cols: string[] = [];
+            let currentField = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < trimmedLine.length; i++) {
+                const char = trimmedLine[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    cols.push(currentField.trim());
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            // 添加最后一个字段
+            if (currentField || trimmedLine.endsWith(',')) {
+                cols.push(currentField.trim());
+            }
+            
+            // 如果解析出来的列数太少，使用备用方法
+            if (cols.length < 5) {
+                const columns = trimmedLine.split(',');
+                cols = columns.map(c => c.replace(/^"|"$/g, '').trim());
+            }
+            
+            if (cols.length < 5) {
+                currentFailures++;
+                return;
+            }
+
+            const tradeDateIdx = headers.indexOf('TradeDate');
+            const actionIdx = headers.indexOf('Action');
+            const symbolIdx = headers.indexOf('Symbol');
+            const qtyIdx = headers.indexOf('Quantity');
+            const priceIdx = headers.indexOf('Price');
+            // 嘗試多種可能的列名
+            let descriptionIdx = headers.indexOf('Description');
+            if (descriptionIdx === -1) {
+                descriptionIdx = headers.indexOf('Descriptor');
+            }
+            if (descriptionIdx === -1) {
+                descriptionIdx = headers.findIndex(h => h.toLowerCase().includes('description') || h.toLowerCase().includes('descriptor'));
+            }
+            // Firstrade 的列名是分開的：Commission 和 Fee
+            // Fee 列才是手續費（索引 10），Commission 列通常是 0（索引 9）
+            let feeIdx = headers.indexOf('Fee');
+            if (feeIdx === -1) {
+                feeIdx = headers.findIndex(h => h.toLowerCase().trim() === 'fee');
+            }
+            if (feeIdx === -1) {
+                // 如果找不到，根據 Firstrade 標準格式，Fee 應該在索引 10
+                feeIdx = headers.length > 10 ? 10 : -1;
+            }
+            const amountIdx = headers.indexOf('Amount');
+            const recordTypeIdx = headers.indexOf('RecordType');
+
+            // 使用 TradeDate 作為日期，如果沒有則使用 SettledDate
+            const settledDateIdx = headers.indexOf('SettledDate');
+            const dateColumnIdx = tradeDateIdx !== -1 ? tradeDateIdx : (settledDateIdx !== -1 ? settledDateIdx : 0);
+            dateVal = parseDate(cols[dateColumnIdx] || '');
+            
+            // 安全地获取各个列的值，避免 undefined 错误
+            // Firstrade 标准列顺序: Symbol(0), Quantity(1), Price(2), Action(3), Description(4), 
+            // TradeDate(5), SettledDate(6), Interest(7), Amount(8), Commission(9), Fee(10), CUSIP(11), RecordType(12)
+            tickerVal = (symbolIdx !== -1 && symbolIdx < cols.length && cols[symbolIdx]) ? String(cols[symbolIdx]).trim() : '';
+            const rawQty = parseNumber((qtyIdx !== -1 && qtyIdx < cols.length) ? cols[qtyIdx] : (cols[1] || ''));
+            quantityVal = Math.abs(rawQty);
+            priceVal = parseNumber((priceIdx !== -1 && priceIdx < cols.length) ? cols[priceIdx] : (cols[2] || ''));
+            // Fee 列在索引 10，這是手續費（不是 Commission，也不是 CUSIP）
+            // 先嘗試從列名獲取，如果找不到則使用默認索引 10
+            let rawFeesStr = '';
+            if (feeIdx !== -1 && feeIdx < cols.length) {
+                rawFeesStr = cols[feeIdx] || '';
+            } else if (cols.length > 10) {
+                // 如果找不到列名，使用默認位置（索引 10）
+                rawFeesStr = cols[10] || '';
+            } else {
+                rawFeesStr = '0';
+            }
+            
+            // 檢查是否是科學記數法（CUSIP 可能是科學記數法）或異常大的數字
+            // 正常手續費通常在 0-100 之間，超過 100 可能是錯誤數據（如 CUSIP）
+            if (rawFeesStr && typeof rawFeesStr === 'string') {
+                const trimmedFeesStr = rawFeesStr.trim();
+                if (trimmedFeesStr.includes('E+') || trimmedFeesStr.includes('e+')) {
+                    // 科學記數法，可能是 CUSIP，設為 0
+                    rawFeesStr = '0';
+                } else {
+                    const feesNum = parseFloat(trimmedFeesStr.replace(/[$,]/g, '') || '0');
+                    if (!isNaN(feesNum) && feesNum > 100) {
+                        // 手續費超過 100，可能是 CUSIP 或其他錯誤數據，設為 0
+                        rawFeesStr = '0';
+                    }
+                }
+            }
+            
+            feesVal = Math.abs(parseNumber(rawFeesStr));
+            // 再次驗證：如果解析出的手續費異常大（>100），設為 0（正常手續費不會超過 100）
+            // 但保留小數點後的手續費（如 0.09, 2.33, 0.41, 0.35, 1.19 等）
+            if (feesVal > 100) {
+                feesVal = 0;
+            }
+            // Amount 在索引 8
+            let rawAmountStr = (amountIdx !== -1 && amountIdx < cols.length) ? cols[amountIdx] : (cols.length > 8 ? cols[8] : '0');
+            // 檢查是否是科學記數法（CUSIP 可能是科學記數法）或異常大的數字
+            if (rawAmountStr && (rawAmountStr.includes('E+') || rawAmountStr.includes('e+'))) {
+                // 這可能是 CUSIP，不是 Amount，設為 0
+                rawAmountStr = '0';
+            }
+            // 先解析原始值（可能是負數，如股息再投入）
+            amountVal = parseNumber(rawAmountStr);
+            // 如果解析出的金額異常大（可能是 CUSIP），設為 0（保留負數，因為股息再投入的 Amount 是負數）
+            if (Math.abs(amountVal) > 1000000) {
+                amountVal = 0;
+            }
+
+            const actionVal = (actionIdx !== -1 && actionIdx < cols.length && cols[actionIdx]) 
+                ? String(cols[actionIdx]) 
+                : ((cols[3] && cols.length > 3) ? String(cols[3]) : '');
+            const actionLower = (actionVal || '').toLowerCase();
+            const recordTypeVal = (recordTypeIdx !== -1 && recordTypeIdx < cols.length && cols[recordTypeIdx]) 
+                ? String(cols[recordTypeIdx]) 
+                : '';
+            const recordType = recordTypeVal ? recordTypeVal.toLowerCase() : '';
+            // 獲取 Description 列（用於判斷 REIN、XFER 等特殊類型）
+            // 先嘗試從列名獲取，如果找不到則使用默認索引 4
+            let descriptionVal = '';
+            if (descriptionIdx !== -1 && descriptionIdx < cols.length) {
+                descriptionVal = String(cols[descriptionIdx] || '').trim();
+            }
+            // 如果還是空的，使用默認位置（索引 4，因為格式是：Symbol,Quantity,Price,Action,Description,...）
+            if (!descriptionVal && cols.length > 4) {
+                descriptionVal = String(cols[4] || '').trim();
+            }
+            // 如果還是空的，嘗試在其他列中查找（Description 通常較長且包含公司名稱）
+            if (!descriptionVal) {
+                for (let i = 3; i < Math.min(cols.length, 6); i++) {
+                    const testVal = String(cols[i] || '').trim();
+                    if (testVal && testVal.length > 20) { // Description 通常較長
+                        descriptionVal = testVal;
+                        break;
+                    }
+                }
+            }
+            let descriptionUpper = (descriptionVal || '').toUpperCase();
+
+            // 跳過不需要解析的 Action 類型
+            if (actionLower.includes('reinvest dividend') || actionLower.includes('nra tax adj')) {
+                return; // 直接跳過，不計入失敗數
+            }
+
+            // 根據 Action 和 RecordType 判斷交易類型
+            if (actionLower.includes('buy')) {
+                // 檢查是否有有效的價格或金額
+                // 如果 Price = 0 且 Amount 無效，可能是數據錯誤，跳過
+                if (priceVal === 0 && (amountVal === 0 || isNaN(amountVal))) {
+                    // 檢查是否可能是再投資股息（應該有數量）
+                    if (quantityVal > 0 && recordType !== 'trade') {
+                        // 可能是再投資股息，但被標記為 BUY，跳過（應該由 DIVIDEND 處理）
+                        return;
+                    } else {
+                        // 無效的 BUY 記錄，跳過
+                        return;
+                    }
+                }
+                type = TransactionType.BUY;
+            } else if (actionLower.includes('sell')) {
+                type = TransactionType.SELL;
+            } else if (actionLower.includes('dividend')) {
+                // Firstrade 的 Dividend 可能是現金股息或再投資股息
+                // 判斷標準：
+                // 1. 股息再投入：RecordType = "Trade" 且 Quantity > 0 且 Price > 0
+                // 2. 現金股息：RecordType = "Financial" 或 (Quantity = 0 且 Price = 0)
+                const isReinvestDividend = recordType === 'trade' && quantityVal > 0 && priceVal > 0;
+                const isCashDividend = recordType === 'financial' || (quantityVal === 0 && priceVal === 0);
+                
+                if (isReinvestDividend) {
+                    // 股息再投入（股票股息）：自動買入股票，有數量和價格
+                    type = TransactionType.DIVIDEND;
+                    feesVal = 0; // 股息不應該有手續費
+                    // 確保 amountVal 正確（應該是價格 × 數量）
+                    if (amountVal <= 0 || amountVal > 1000000) {
+                        amountVal = priceVal * quantityVal;
+                    }
+                } else if (isCashDividend) {
+                    // 現金股息：使用 Amount 作為股息金額
+                    type = TransactionType.CASH_DIVIDEND;
+                    // 確保 amountVal 是正確的值（不應該是 CUSIP）
+                    // 如果 amountVal 還是 0 或異常，嘗試從 Interest 列獲取
+                    if (amountVal <= 0 || amountVal > 1000000) {
+                        const interestIdx = headers.indexOf('Interest');
+                        if (interestIdx !== -1 && interestIdx < cols.length && cols[interestIdx]) {
+                            const interestVal = parseNumber(cols[interestIdx]);
+                            if (interestVal > 0 && interestVal <= 1000000) {
+                                amountVal = interestVal;
+                            } else {
+                                // 無法確定股息金額，跳過這筆記錄
+                                return;
+                            }
+                        } else {
+                            // 無法確定股息金額，跳過
+                            return;
+                        }
+                    }
+                    amountVal = Math.abs(amountVal);
+                    priceVal = amountVal; // 現金股息用 amount 作為 price
+                    quantityVal = 1;
+                    feesVal = 0; // 股息不應該有手續費
+                } else {
+                    // 無法確定類型，根據數量判斷
+                    if (quantityVal > 0 && priceVal > 0) {
+                        // 有數量和價格，視為再投資股息
+                        type = TransactionType.DIVIDEND;
+                        feesVal = 0;
+                        if (amountVal <= 0 || amountVal > 1000000) {
+                            amountVal = priceVal * quantityVal;
+                        }
+                    } else {
+                        // 沒有數量或價格，視為現金股息
+                        type = TransactionType.CASH_DIVIDEND;
+                        if (amountVal <= 0 || amountVal > 1000000) {
+                            const interestIdx = headers.indexOf('Interest');
+                            if (interestIdx !== -1 && interestIdx < cols.length && cols[interestIdx]) {
+                                const interestVal = parseNumber(cols[interestIdx]);
+                                if (interestVal > 0 && interestVal <= 1000000) {
+                                    amountVal = interestVal;
+                                } else {
+                                    return; // 無法確定股息金額，跳過
+                                }
+                            } else {
+                                return; // 無法確定股息金額，跳過
+                            }
+                        }
+                        amountVal = Math.abs(amountVal);
+                        priceVal = amountVal;
+                        quantityVal = 1;
+                        feesVal = 0;
+                    }
+                }
+            } else if (actionLower.includes('interest')) {
+                // 利息收入，跳過（通常不屬於股票交易）
+                return;
+            } else if (actionLower.includes('other')) {
+                // Other 類型需要根據 Description 判斷具體類型
+                // 1. REIN（股息再投入）- 識別為 DIVIDEND
+                // 2. XFER（轉帳）- 識別為 TRANSFER_IN/OUT
+                // 3. 稅務相關記錄（NRA ADJ, TAX WITHHELD 等）- 跳過
+                // 4. 其他情況根據數量判斷
+                
+                // 調試：檢查 Description 列是否正確獲取
+                // 如果 descriptionVal 為空，嘗試從所有列中查找包含 REIN 的列
+                // 同時也嘗試從 Description 索引附近的列查找
+                if (!descriptionVal || descriptionVal === '') {
+                    // 嘗試在 Description 索引附近的列中查找（索引 3, 4, 5）
+                    for (let offset = -1; offset <= 1; offset++) {
+                        const tryIdx = (descriptionIdx !== -1 ? descriptionIdx : 4) + offset;
+                        if (tryIdx >= 0 && tryIdx < cols.length && cols[tryIdx]) {
+                            const tryVal = String(cols[tryIdx]).trim();
+                            if (tryVal && tryVal.length > 10) { // Description 通常較長
+                                descriptionVal = tryVal;
+                                descriptionUpper = descriptionVal.toUpperCase();
+                                break;
+                            }
+                        }
+                    }
+                    // 如果還是找不到，嘗試在所有列中查找包含 REIN 的內容
+                    if (!descriptionVal || descriptionVal === '') {
+                        for (let i = 0; i < cols.length; i++) {
+                            const colVal = String(cols[i] || '').trim().toUpperCase();
+                            if (colVal.includes('REIN') || colVal.includes('REINVEST')) {
+                                descriptionVal = String(cols[i] || '').trim();
+                                descriptionUpper = descriptionVal.toUpperCase();
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 優先檢查是否為稅務相關記錄（應該跳過，不計入失敗數）
+                const isTaxRelated = descriptionUpper.includes('NRA ADJ') || 
+                                   descriptionUpper.includes('NON-RES TAX') || 
+                                   descriptionUpper.includes('TAX WITHHELD') || 
+                                   descriptionUpper.includes('WITHHELD') ||
+                                   descriptionUpper.includes('NON RESIDENT') ||
+                                   (descriptionUpper.includes('ADJ') && (descriptionUpper.includes('TAX') || descriptionUpper.includes('NRA')));
+                
+                if (isTaxRelated) {
+                    // 稅務相關記錄，跳過（不屬於股票交易）
+                    return;
+                }
+                
+                // 檢查是否為股息再投入：檢查 Description 中是否包含 REIN，或者檢查是否有 Symbol、正數量但 Price 為空（這通常是股息再投入的特徵）
+                // 優先檢查 Description，如果 Description 為空，則使用其他特徵判斷
+                const hasReinInDescription = descriptionUpper.includes('REIN') || descriptionUpper.includes('REINVEST');
+                // 股息再投入的特徵：Symbol + 正數量 + Price = 0 + RecordType = Financial + Amount < 0
+                const hasReinvestCharacteristics = tickerVal && tickerVal !== '' && quantityVal > 0 && (priceVal === 0 || isNaN(priceVal)) && recordType === 'financial' && amountVal < 0;
+                const isReinvest = hasReinInDescription || hasReinvestCharacteristics;
+                
+                if (isReinvest) {
+                    // 股息再投入：自動用股息購買股票
+                    // 必須有 Symbol 和數量才能處理
+                    if (!tickerVal || tickerVal === '' || quantityVal <= 0) {
+                        // 如果沒有 Symbol 或數量，可能是數據錯誤，跳過
+                        return;
+                    }
+                    
+                    type = TransactionType.DIVIDEND;
+                    feesVal = 0; // 股息不應該有手續費
+                    
+                    // 確保 amountVal 正確：股息再投入的 Amount 是負數（支出），需要先轉為正數
+                    let workingAmount = amountVal;
+                    if (workingAmount < 0) {
+                        workingAmount = Math.abs(workingAmount);
+                    }
+                    
+                    // 從 Description 中提取價格（格式：REIN @ 513.2849 或 REIN @  513.2849）
+                    // 嘗試多種格式：REIN @ 513.2849, REIN @  513.2849, REIN@513.2849
+                    let extractedPrice = 0;
+                    const pricePatterns = [
+                        /REIN\s*@\s*(\d+\.?\d*)/i,  // REIN @ 513.2849
+                        /REIN\s*@\s*\s*(\d+\.?\d*)/i, // REIN @  513.2849 (多個空格)
+                        /@\s*(\d+\.?\d*)\s*REC/i,    // @ 513.2849 REC
+                    ];
+                    
+                    for (const pattern of pricePatterns) {
+                        const match = descriptionVal.match(pattern);
+                        if (match && match[1]) {
+                            const parsed = parseNumber(match[1]);
+                            if (parsed > 0) {
+                                extractedPrice = parsed;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果從 Description 中提取到價格，使用它
+                    if (extractedPrice > 0) {
+                        priceVal = extractedPrice;
+                    }
+                    
+                    // 如果 Price 列有值，優先使用 Price 列（但應該檢查 Price 列是否正確）
+                    if (priceVal > 0 && !isNaN(priceVal)) {
+                        // Price 列或從 Description 提取的價格有效
+                    } else {
+                        // 如果 Price 列為空或無效，使用 Amount / Quantity 計算
+                        if (workingAmount > 0 && !isNaN(workingAmount) && quantityVal > 0) {
+                            priceVal = workingAmount / quantityVal;
+                        } else {
+                            // 無法確定價格，嘗試從原始 Price 列獲取（雖然可能為 0）
+                            // 如果還是無法確定，跳過
+                            if (priceVal === 0 || isNaN(priceVal)) {
+                                return; // 無法確定價格，跳過
+                            }
+                        }
+                    }
+                    
+                    // 確保 amountVal 正確：使用計算出的價格和數量，或使用原始 Amount（轉為正數）
+                    if (priceVal > 0 && quantityVal > 0) {
+                        const calculatedAmount = priceVal * quantityVal;
+                        // 使用計算出的金額，或者原始金額（如果合理）
+                        if (workingAmount > 0 && Math.abs(calculatedAmount - workingAmount) / Math.max(calculatedAmount, workingAmount) < 0.1) {
+                            // 計算值和原始值接近（誤差 < 10%），使用原始值
+                            amountVal = workingAmount;
+                        } else {
+                            // 使用計算值
+                            amountVal = calculatedAmount;
+                        }
+                    } else if (workingAmount > 0) {
+                        amountVal = workingAmount;
+                    } else {
+                        // 無法確定金額，跳過
+                        return;
+                    }
+                    
+                    noteVal = 'Batch Import - 股息再投入 (Firstrade)';
+                } else if (descriptionUpper.includes('XFER') || descriptionUpper.includes('TRANSFER')) {
+                    // 轉帳操作 - 需要有 Symbol 才能處理為股票轉帳
+                    if (!tickerVal || tickerVal === '') {
+                        // 如果沒有 Symbol，是現金轉帳，跳過（不屬於股票交易）
+                        return;
+                    }
+                    // 根據數量正負或 Amount 正負判斷轉入/轉出
+                    if (rawQty > 0 || (amountVal > 0 && rawQty === 0)) {
+                        type = TransactionType.TRANSFER_IN;
+                        noteVal = 'Batch Import - 轉入 (Firstrade)';
+                    } else if (rawQty < 0 || amountVal < 0) {
+                        type = TransactionType.TRANSFER_OUT;
+                        noteVal = 'Batch Import - 轉出 (Firstrade)';
+                        amountVal = Math.abs(amountVal);
+                    } else {
+                        // 無法判斷，跳過
+                        return;
+                    }
+                } else {
+                    // 其他 Other 類型 - 需要根據具體情況判斷
+                    // 如果沒有 Symbol，跳過這筆記錄（可能是現金操作，不屬於股票交易）
+                    if (!tickerVal || tickerVal === '') {
+                        return;
+                    }
+                    
+                    // 檢查是否是稅務或調整記錄（數量為 0 且金額很小，通常小於 10）
+                    if (quantityVal === 0 && Math.abs(amountVal) > 0 && Math.abs(amountVal) < 10) {
+                        // 很可能是稅務或調整記錄，跳過
+                        return;
+                    }
+                    
+                    // 如果數量為 0 且金額也為 0，跳過（無意義記錄）
+                    if (quantityVal === 0 && Math.abs(amountVal) === 0) {
+                        return;
+                    }
+                    
+                    // 只有當有實際的數量變化時，才判斷為轉帳
+                    if (rawQty > 0 && quantityVal > 0) {
+                        type = TransactionType.TRANSFER_IN;
+                        noteVal = 'Batch Import - 轉入 (Firstrade)';
+                    } else if (rawQty < 0 && quantityVal > 0) {
+                        type = TransactionType.TRANSFER_OUT;
+                        noteVal = 'Batch Import - 轉出 (Firstrade)';
+                        amountVal = Math.abs(amountVal);
+                    } else {
+                        // 無法判斷為有效的股票交易，跳過
+                        return;
+                    }
+                }
+            } else if (actionLower.includes('wire funds') || actionLower.includes('xfer cas')) {
+                // 現金轉帳，跳過（不屬於股票交易）
+                return;
+            }
+
+            // 如果沒有找到有效的交易類型，跳過這筆記錄
+            if (!type) {
+                return;
+            }
+
+            // 為 Firstrade CSV 設置 amountVal（如果還沒設置的話）
             if (amountVal === 0 && amountIdx !== -1) {
                 amountVal = parseNumber(cols[amountIdx]);
             }
@@ -485,7 +940,9 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
               </div>
             ) : (
               <div className="space-y-3">
-                <label className="block text-sm text-slate-600">支援嘉信 (Charles Schwab) CSV 匯出檔</label>
+                <label className="block text-sm text-slate-600">
+                  支援 CSV 匯出檔：嘉信 (Charles Schwab)、Firstrade
+                </label>
                 <input 
                   type="file" 
                   accept=".csv"

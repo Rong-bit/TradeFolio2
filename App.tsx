@@ -1,7 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, Holding, PortfolioSummary, ChartDataPoint, Market, Account, CashFlow, TransactionType, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlowType, Currency, HistoricalData } from './types';
-import { calculateHoldings, calculateAccountBalances, generateAdvancedChartData, calculateAssetAllocation, calculateAnnualPerformance, calculateAccountPerformance, calculateXIRR } from './utils/calculations';
+import { Transaction, Holding, PortfolioSummary, ChartDataPoint, Market, Account, CashFlow, TransactionType, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlowType, Currency, HistoricalData, CombinedRecord, BaseCurrency, BASE_CURRENCIES } from './types';
+import { useLocalStorageDebounced, useLocalStorageDebouncedSimple } from './hooks/useLocalStorageDebounced';
+import { useFilters } from './hooks/useFilters';
+import { useDeleteState } from './hooks/useDeleteState';
+import { useUIState } from './hooks/useUIState';
+import { calculateHoldings, calculateAccountBalances, generateAdvancedChartData, calculateAssetAllocation, calculateAnnualPerformance, calculateAccountPerformance, calculateXIRR, getDisplayRateForBaseCurrency } from './utils/calculations';
 import TransactionForm from './components/TransactionForm';
 import HoldingsTable from './components/HoldingsTable';
 import Dashboard from './components/Dashboard';
@@ -20,20 +24,9 @@ import { Language, getLanguage, setLanguage as saveLanguage, t, translate } from
 
 type View = 'dashboard' | 'history' | 'funds' | 'accounts' | 'rebalance' | 'simulator' | 'help';
 
-// 全局覆蓋 confirm 函數
+// 全局除錯日誌（不再覆蓋 window.confirm 和 window.alert）
 let globalDebugLogs: string[] = [];
 let globalSetDebugLogs: ((logs: string[]) => void) | null = null;
-
-window.confirm = function(message?: string): boolean {
-  const logEntry = `🚨 CONFIRM() 調用 - ${new Date().toISOString()}\n訊息: ${message}`;
-  globalDebugLogs = [...globalDebugLogs.slice(-9), logEntry];
-  if (globalSetDebugLogs) globalSetDebugLogs([...globalDebugLogs]);
-  return false;
-};
-
-window.alert = function(message?: string): void {
-  console.warn('⚠️ ALERT() 被調用了！', message);
-};
 
 // 格式化數字，保留必要的小數位但不強制限制
 const formatNumber = (num: number): string => {
@@ -66,20 +59,42 @@ const App: React.FC = () => {
   const [priceDetails, setPriceDetails] = useState<Record<string, { change: number, changePercent: number }>>({});
   const [exchangeRate, setExchangeRate] = useState<number>(31.5);
   const [jpyExchangeRate, setJpyExchangeRate] = useState<number | undefined>(undefined);
+  const [baseCurrency, setBaseCurrency] = useState<BaseCurrency>('TWD');
   const [rebalanceTargets, setRebalanceTargets] = useState<Record<string, number>>({});
   const [rebalanceEnabledItems, setRebalanceEnabledItems] = useState<string[]>([]);
   const [historicalData, setHistoricalData] = useState<HistoricalData>({}); 
   
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isTransactionDeleteConfirmOpen, setIsTransactionDeleteConfirmOpen] = useState(false);
-  const [isCashFlowDeleteConfirmOpen, setIsCashFlowDeleteConfirmOpen] = useState(false);
-  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
-  const [isBatchUpdateMarketOpen, setIsBatchUpdateMarketOpen] = useState(false);
-  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
-  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
-  const [cashFlowToDelete, setCashFlowToDelete] = useState<string | null>(null);
+  // UI 狀態（使用 useReducer 管理）
+  const {
+    isFormOpen,
+    isImportOpen,
+    isDeleteConfirmOpen,
+    isTransactionDeleteConfirmOpen,
+    isCashFlowDeleteConfirmOpen,
+    isHistoricalModalOpen,
+    isBatchUpdateMarketOpen,
+    isMobileMenuOpen,
+    setIsFormOpen,
+    setIsImportOpen,
+    setIsDeleteConfirmOpen,
+    setIsTransactionDeleteConfirmOpen,
+    setIsCashFlowDeleteConfirmOpen,
+    setIsHistoricalModalOpen,
+    setIsBatchUpdateMarketOpen,
+    setIsMobileMenuOpen,
+  } = useUIState();
+  // 刪除操作狀態（使用自訂 Hook 管理）
+  const {
+    transactionToDelete,
+    transactionToEdit,
+    cashFlowToDelete,
+    setTransactionToDelete,
+    setTransactionToEdit,
+    setCashFlowToDelete,
+    clearTransactionDelete,
+    clearTransactionEdit,
+    clearCashFlowDelete,
+  } = useDeleteState();
   const [alertDialog, setAlertDialog] = useState<{isOpen: boolean, title: string, message: string, type: 'info' | 'success' | 'error'}>({
     isOpen: false, title: '', message: '', type: 'info'
   });
@@ -88,26 +103,24 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('dashboard');
   const [hasAutoUpdated, setHasAutoUpdated] = useState(false);
   const [language, setLanguage] = useState<Language>(getLanguage());
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // isMobileMenuOpen 已經從 useUIState hook 中取得
   
-  // 篩選狀態
-  const [filterAccount, setFilterAccount] = useState<string>('');
-  const [filterTicker, setFilterTicker] = useState<string>('');
-  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
-  const [filterDateTo, setFilterDateTo] = useState<string>('');
-  const [includeCashFlow, setIncludeCashFlow] = useState<boolean>(true);
+  // 篩選狀態（使用 useReducer 管理）
+  const {
+    filterAccount,
+    filterTicker,
+    filterDateFrom,
+    filterDateTo,
+    includeCashFlow,
+    setFilterAccount,
+    setFilterTicker,
+    setFilterDateFrom,
+    setFilterDateTo,
+    setIncludeCashFlow,
+    clearFilters,
+  } = useFilters();
 
-  // --- HelpView Confirm Override ---
-  useEffect(() => {
-    if (view === 'help') {
-      const tempConfirm = window.confirm;
-      window.confirm = (message?: string) => {
-        if (message && (message.includes('匯入') || message.includes('覆蓋') || message.includes('警告'))) return true;
-        return true;
-      };
-      return () => { window.confirm = tempConfirm; };
-    }
-  }, [view]);
+  // HelpView 不再需要覆蓋 window.confirm，因為已經移除全域覆蓋
 
   useEffect(() => {
     const lastUser = localStorage.getItem('tf_last_user');
@@ -165,7 +178,7 @@ const App: React.FC = () => {
   };
 
   const handleContactAdmin = () => {
-    const subject = encodeURIComponent("TradeFolio 購買/權限開通申請");
+    const subject = encodeURIComponent("TradeView 購買/權限開通申請");
     const body = encodeURIComponent(`Hi 管理員,\n\n我的帳號是: ${currentUser}\n\n我目前是非會員身份，希望申請/購買完整權限。\n\n請協助處理，謝謝。`);
     window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
   };
@@ -223,29 +236,37 @@ const App: React.FC = () => {
     const jpyRate = localStorage.getItem(getKey('jpyExchangeRate'));
     setJpyExchangeRate(jpyRate ? parseFloat(jpyRate) : undefined);
     
+    const savedBase = localStorage.getItem(getKey('baseCurrency'));
+    if (savedBase === 'TWD' || savedBase === 'USD' || savedBase === 'JPY') {
+      setBaseCurrency(savedBase);
+    } else {
+      const lang = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || '';
+      if (lang.startsWith('ja')) setBaseCurrency('JPY');
+      else if (lang.startsWith('en')) setBaseCurrency('USD');
+      else setBaseCurrency('TWD');
+    }
+    
     setRebalanceTargets(load('rebalanceTargets', {}));
     setRebalanceEnabledItems(load('rebalanceEnabledItems', []));
     setHistoricalData(load('historicalData', {}));
 
   }, [isAuthenticated, currentUser]);
 
-  // --- Persistence: SAVE DATA ---
-  useEffect(() => {
-    if (!isAuthenticated || !currentUser) return;
-    const getKey = (key: string) => `tf_${currentUser}_${key}`;
-    localStorage.setItem(getKey('transactions'), JSON.stringify(transactions));
-    localStorage.setItem(getKey('accounts'), JSON.stringify(accounts));
-    localStorage.setItem(getKey('cashFlows'), JSON.stringify(cashFlows));
-    localStorage.setItem(getKey('prices'), JSON.stringify(currentPrices));
-    localStorage.setItem(getKey('priceDetails'), JSON.stringify(priceDetails));
-    localStorage.setItem(getKey('exchangeRate'), exchangeRate.toString());
-    if (jpyExchangeRate !== undefined) {
-      localStorage.setItem(getKey('jpyExchangeRate'), jpyExchangeRate.toString());
-    }
-    localStorage.setItem(getKey('rebalanceTargets'), JSON.stringify(rebalanceTargets));
-    localStorage.setItem(getKey('rebalanceEnabledItems'), JSON.stringify(rebalanceEnabledItems));
-    localStorage.setItem(getKey('historicalData'), JSON.stringify(historicalData));
-  }, [transactions, accounts, cashFlows, currentPrices, priceDetails, exchangeRate, jpyExchangeRate, rebalanceTargets, rebalanceEnabledItems, historicalData, isAuthenticated, currentUser]);
+  // --- Persistence: SAVE DATA (使用防抖機制減少頻繁寫入) ---
+  const userPrefix = isAuthenticated && currentUser ? `tf_${currentUser}` : undefined;
+  
+  // 使用防抖的 localStorage hooks（只在已認證時才儲存）
+  useLocalStorageDebounced('transactions', transactions, 500, userPrefix);
+  useLocalStorageDebounced('accounts', accounts, 500, userPrefix);
+  useLocalStorageDebounced('cashFlows', cashFlows, 500, userPrefix);
+  useLocalStorageDebounced('prices', currentPrices, 500, userPrefix);
+  useLocalStorageDebounced('priceDetails', priceDetails, 500, userPrefix);
+  useLocalStorageDebouncedSimple('exchangeRate', exchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('jpyExchangeRate', jpyExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('baseCurrency', baseCurrency, 500, userPrefix);
+  useLocalStorageDebounced('rebalanceTargets', rebalanceTargets, 500, userPrefix);
+  useLocalStorageDebounced('rebalanceEnabledItems', rebalanceEnabledItems, 500, userPrefix);
+  useLocalStorageDebounced('historicalData', historicalData, 500, userPrefix);
 
   const showAlert = (message: string, title: string = '提示', type: 'info' | 'success' | 'error' = 'info') => {
     setAlertDialog({ isOpen: true, title, message, type });
@@ -292,7 +313,7 @@ const App: React.FC = () => {
       showAlert("交易記錄已刪除", "刪除成功", "success");
     }
     setIsTransactionDeleteConfirmOpen(false);
-    setTransactionToDelete(null);
+    clearTransactionDelete();
   };
   const handleClearAllTransactions = () => setIsDeleteConfirmOpen(true);
   const confirmDeleteAllTransactions = () => {
@@ -332,12 +353,12 @@ const App: React.FC = () => {
       showAlert(`現金流紀錄已刪除`, "刪除成功", "success");
     }
     setIsCashFlowDeleteConfirmOpen(false);
-    setCashFlowToDelete(null);
+    clearCashFlowDelete();
   };
   
   const cancelRemoveCashFlow = () => {
     setIsCashFlowDeleteConfirmOpen(false);
-    setCashFlowToDelete(null);
+    clearCashFlowDelete();
   };
   
   const handleClearAllCashFlows = () => {
@@ -356,16 +377,84 @@ const App: React.FC = () => {
 
   // 傳統下載方式（用於網頁瀏覽器）
   const fallbackDownload = (blob: Blob, filename: string) => {
+    // 在 Android WebView/TWA 環境中，使用多種方法嘗試下載
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
+    
+    // 方法1: 嘗試使用 <a> 標籤點擊（適用於一般瀏覽器）
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // 觸發點擊事件（添加多種方式以確保兼容性）
+      if (typeof link.click === 'function') {
+        link.click();
+      } else {
+        // 某些環境可能不支援 click()，使用 MouseEvent
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        });
+        link.dispatchEvent(clickEvent);
+      }
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      // 如果方法1成功，直接返回
+      return;
+    } catch (e) {
+      console.log("Method 1 (link.click) failed:", e);
+    }
+
+    // 方法2: 使用 window.open（適用於 Android WebView/TWA）
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        try {
+          const dataUrl = reader.result as string;
+          const newWindow = window.open(dataUrl, '_blank');
+          if (!newWindow) {
+            // 如果彈出視窗被阻止，嘗試在當前視窗打開
+            window.location.href = dataUrl;
+          }
+          // 延遲釋放 URL
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+        } catch (e) {
+          console.error("Method 2 (window.open) failed:", e);
+          URL.revokeObjectURL(url);
+          showAlert("下載失敗：無法打開下載視窗。請檢查瀏覽器是否阻止了彈出視窗。", "下載錯誤", "error");
+        }
+      };
+      reader.onerror = () => {
+        URL.revokeObjectURL(url);
+        showAlert("下載失敗：讀取檔案時發生錯誤。", "下載錯誤", "error");
+      };
+      reader.readAsDataURL(blob);
+      return;
+    } catch (e) {
+      console.error("Method 2 setup failed:", e);
       URL.revokeObjectURL(url);
-    }, 100);
+    }
+
+    // 方法3: 最後嘗試直接設置 location.href
+    try {
+      window.location.href = url;
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (e) {
+      console.error("All download methods failed:", e);
+      URL.revokeObjectURL(url);
+      showAlert("下載失敗：請嘗試使用瀏覽器開啟此頁面，或使用分享功能儲存備份。", "下載錯誤", "error");
+    }
   };
 
   const handleExportData = async () => {
@@ -380,6 +469,7 @@ const App: React.FC = () => {
         currentPrices, 
         priceDetails, 
         exchangeRate, 
+        baseCurrency,
         rebalanceTargets,
         rebalanceEnabledItems,
         historicalData 
@@ -391,21 +481,48 @@ const App: React.FC = () => {
       // Sanitize filename
       const safeUser = (currentUser || 'guest').replace(/[^a-zA-Z0-9@._-]/g, '_');
       const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `tradefolio_${safeUser}_${dateStr}.json`;
+      const filename = `TradeView_${safeUser}_${dateStr}.json`;
+
+      // 檢測是否在 Android WebView/TWA 環境中
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isStandalone = (window.navigator as any).standalone === true || 
+                          window.matchMedia('(display-mode: standalone)').matches;
+      const isAndroidWebView = isAndroid && (isStandalone || (window as any).Android !== undefined);
 
       // 優先使用 Web Share API（支援 Android WebView/TWA 環境）
       if (navigator.share) {
         try {
           const file = new File([blob], filename, { type: 'application/json' });
           
-          // 檢查是否可以分享檔案（某些環境可能不支援檔案分享）
+          // 檢查是否可以分享檔案
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
-              title: 'TradeFolio 備份檔案',
-              text: `TradeFolio 備份：${filename}`,
+              title: 'TradeView 備份檔案',
+              text: `TradeView 備份：${filename}`,
               files: [file]
             });
             return; // 成功分享，提前返回
+          } else if (isAndroidWebView) {
+            // 在 Android WebView 中，即使 canShare 不支援檔案，也嘗試分享文字和 URL
+            // 將 blob 轉換為 data URL 作為 fallback
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              try {
+                const dataUrl = reader.result as string;
+                await navigator.share({
+                  title: 'TradeView 備份檔案',
+                  text: `TradeView 備份：${filename}\n\n請點擊下方連結或使用「另存連結為」功能下載檔案。`,
+                  url: dataUrl
+                });
+              } catch (err: any) {
+                if (err.name !== 'AbortError') {
+                  console.log("Web Share API with data URL failed, trying fallback:", err);
+                  fallbackDownload(blob, filename);
+                }
+              }
+            };
+            reader.readAsDataURL(blob);
+            return;
           }
         } catch (shareErr: any) {
           // 如果使用者取消分享（AbortError），不執行任何操作
@@ -439,8 +556,8 @@ const App: React.FC = () => {
                 const dataUrl = `data:application/json;base64,${base64Data}`;
                 
                 await Share.share({
-                  title: 'TradeFolio 備份檔案',
-                  text: `TradeFolio 備份：${filename}`,
+                  title: 'TradeView 備份檔案',
+                  text: `TradeView 備份：${filename}`,
                   url: dataUrl,
                   dialogTitle: '儲存備份檔案'
                 });
@@ -481,6 +598,7 @@ const App: React.FC = () => {
         if (data.currentPrices) setCurrentPrices(data.currentPrices);
         if (data.priceDetails) setPriceDetails(data.priceDetails);
         if (data.exchangeRate) setExchangeRate(data.exchangeRate);
+        if (data.baseCurrency && (data.baseCurrency === 'TWD' || data.baseCurrency === 'USD' || data.baseCurrency === 'JPY')) setBaseCurrency(data.baseCurrency);
         if (data.rebalanceTargets) setRebalanceTargets(data.rebalanceTargets);
         if (data.rebalanceEnabledItems) setRebalanceEnabledItems(data.rebalanceEnabledItems);
         if (data.historicalData) setHistoricalData(data.historicalData);
@@ -670,11 +788,14 @@ const App: React.FC = () => {
         netInvestedTWD,
         annualizedReturn,
         exchangeRateUsdToTwd: exchangeRate,
+        jpyExchangeRate,
         accumulatedCashDividendsTWD,
         accumulatedStockDividendsTWD,
         avgExchangeRate
     };
-  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, accounts, transactions]);
+  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, jpyExchangeRate, accounts, transactions]);
+
+  const displayRate = useMemo(() => getDisplayRateForBaseCurrency(baseCurrency, { exchangeRateUsdToTwd: exchangeRate, jpyExchangeRate: jpyExchangeRate ?? 0.21 }), [baseCurrency, exchangeRate, jpyExchangeRate]);
 
   // Step 4: Final Holdings with Weights
   const holdings = useMemo(() => {
@@ -687,7 +808,7 @@ const App: React.FC = () => {
             weight: totalAssets > 0 ? (valTwd / totalAssets) * 100 : 0
         };
     });
-  }, [baseHoldings, summary, exchangeRate]);
+  }, [baseHoldings, summary.totalValueTWD, summary.cashBalanceTWD, exchangeRate]);
 
   // --- Auto Update Prices on Load ---
   useEffect(() => {
@@ -702,18 +823,20 @@ const App: React.FC = () => {
     }
   }, [isAuthenticated, baseHoldings.length, hasAutoUpdated]);
 
-  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate), [transactions, cashFlows, accounts, summary, exchangeRate, historicalData, jpyExchangeRate]);
-  const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate), [holdings, summary, exchangeRate, jpyExchangeRate]);
+  // 修復 useMemo 依賴項：只依賴 summary 中實際使用的屬性，而不是整個物件
+  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate), [transactions, cashFlows, accounts, summary.totalValueTWD, summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate]);
+  // 修復 useMemo 依賴項：只依賴 summary 中實際使用的屬性
+  const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate), [holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate]);
   const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
   const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate]);
 
   // --- Filtering & Balance Calculation Logic (Merged) ---
   const combinedRecords = useMemo(() => {
     // 1. Transform Transactions
-    const transactionRecords = transactions.map(tx => {
+    const transactionRecords: CombinedRecord[] = transactions.map(tx => {
       let calculatedAmount = 0;
-      if ((tx as any).amount !== undefined && (tx as any).amount !== null) {
-        calculatedAmount = (tx as any).amount;
+      if (tx.amount !== undefined && tx.amount !== null) {
+        calculatedAmount = tx.amount;
       } else {
         if (tx.type === TransactionType.BUY || tx.type === TransactionType.TRANSFER_OUT) {
           calculatedAmount = tx.price * tx.quantity + (tx.fees || 0);
@@ -741,7 +864,7 @@ const App: React.FC = () => {
     });
 
     // 2. Transform Cash Flows
-    const cashFlowRecords: any[] = [];
+    const cashFlowRecords: CombinedRecord[] = [];
     cashFlows.forEach(cf => {
       cashFlowRecords.push({
         id: cf.id,
@@ -791,7 +914,7 @@ const App: React.FC = () => {
       const dateB = new Date(b.date).getTime();
       if (dateA !== dateB) return dateB - dateA;
       
-      const getDisplayTypeOrder = (record: any) => {
+      const getDisplayTypeOrder = (record: CombinedRecord) => {
         if (record.type === 'CASHFLOW') {
           if (record.subType === 'WITHDRAW') return 1;
           if (record.subType === 'TRANSFER') return 1;
@@ -820,7 +943,7 @@ const App: React.FC = () => {
     });
 
     // 4. Calculate Balance Changes
-    const calculateBalanceChange = (record: any) => {
+    const calculateBalanceChange = (record: CombinedRecord) => {
       let balanceChange = 0;
       if (record.type === 'TRANSACTION') {
         const tx = record.originalRecord as Transaction;
@@ -919,13 +1042,7 @@ const App: React.FC = () => {
     });
   }, [combinedRecords, filterAccount, filterTicker, filterDateFrom, filterDateTo, includeCashFlow]);
 
-  const clearFilters = () => {
-    setFilterAccount('');
-    setFilterTicker('');
-    setFilterDateFrom('');
-    setFilterDateTo('');
-    setIncludeCashFlow(true);
-  };
+  // clearFilters 已經從 useFilters hook 中取得，不需要重新定義
 
   // --- View Logic (Guest vs Member) ---
   const availableViews: View[] = isGuest 
@@ -980,7 +1097,7 @@ const App: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-8">
+            <div className="mt-8 space-y-4">
               <div className="p-4 bg-blue-50 border-2 border-dashed border-blue-400 rounded-xl text-center shadow-sm">
                   <p className="text-sm font-bold text-blue-900 flex flex-col items-center gap-1">
                       <span className="flex items-center gap-1 text-blue-700">
@@ -990,6 +1107,17 @@ const App: React.FC = () => {
                         {t(language).login.privacy}
                       </span>
                       <span>{t(language).login.privacyDesc}</span>
+                  </p>
+              </div>
+              <div className="p-4 bg-red-50 border-2 border-dashed border-red-400 rounded-xl text-center shadow-sm">
+                  <p className="text-sm font-bold text-red-900 flex flex-col items-center gap-1">
+                      <span className="flex items-center gap-1 text-red-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {t(language).login.riskDisclaimer}
+                      </span>
+                      <span className="text-xs text-red-800 mt-1">{t(language).login.riskDisclaimerDesc}</span>
                   </p>
               </div>
             </div>
@@ -1036,7 +1164,7 @@ const App: React.FC = () => {
                   T
                </div>
                <div className="hidden sm:block">
-                  <h1 className="font-bold text-lg leading-none bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">TradeFolio</h1>
+                  <h1 className="font-bold text-lg leading-none bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">TradeView</h1>
                   <p className="text-[10px] text-slate-400 leading-none mt-0.5">{language === 'en' ? 'Portfolio Management' : '台美股資產管理'}</p>
                </div>
             </div>
@@ -1081,16 +1209,29 @@ const App: React.FC = () => {
                  </button>
                )}
 
-               {/* Exchange Rate Input */}
-               <div className="hidden sm:flex items-center bg-slate-800 rounded-md px-2 py-1 border border-slate-700">
-                  <span className="text-xs text-slate-400 mr-2">USD</span>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    value={exchangeRate}
-                    onChange={(e) => setExchangeRate(parseFloat(e.target.value))}
-                    className="w-14 bg-transparent text-sm text-white font-mono focus:outline-none text-right"
-                  />
+               {/* Base currency + main rate */}
+               <div className="hidden sm:flex items-center gap-2">
+                 <select
+                   value={baseCurrency}
+                   onChange={(e) => setBaseCurrency(e.target.value as BaseCurrency)}
+                   className="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                 >
+                   {BASE_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                 </select>
+                 <div className="flex items-center bg-slate-800 rounded-md px-2 py-1 border border-slate-700">
+                   <span className="text-xs text-slate-400 mr-2">{displayRate.label}</span>
+                   {baseCurrency === 'TWD' ? (
+                     <input
+                       type="number"
+                       step="0.01"
+                       value={exchangeRate}
+                       onChange={(e) => setExchangeRate(parseFloat(e.target.value))}
+                       className="w-14 bg-transparent text-sm text-white font-mono focus:outline-none text-right"
+                     />
+                   ) : (
+                     <span className="w-14 text-sm text-white font-mono text-right">{displayRate.value.toFixed(2)}</span>
+                   )}
+                 </div>
                </div>
                
                {/* User Profile */}
@@ -1154,6 +1295,7 @@ const App: React.FC = () => {
                  accountPerformance={accountPerformance}
                  cashFlows={cashFlows}
                  accounts={computedAccounts}
+                 baseCurrency={baseCurrency}
                  onUpdatePrice={updatePrice}
                  onAutoUpdate={handleAutoUpdatePrices}
                  isGuest={isGuest}
@@ -1283,16 +1425,32 @@ const App: React.FC = () => {
                   {/* 篩選結果統計 */}
                   <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                     <div className="text-sm text-slate-600">
-                      {translate('history.showingRecords', language, { count: filteredRecords.length })}
-                      {filteredRecords.length !== combinedRecords.length && (
-                        <span className="text-slate-500">
-                          {translate('history.totalRecords', language, { 
-                            total: combinedRecords.length, 
-                            transactionCount: transactions.length,
-                            hasCashFlow: includeCashFlow ? (language === 'zh-TW' ? ` + ${cashFlows.length} 筆現金流` : ` + ${cashFlows.length} cash flows`) : ''
-                          })}
-                        </span>
-                      )}
+                      {(() => {
+                        // 計算實際的顯示記錄數（內部轉帳只算一筆，去除重複的 isTargetRecord）
+                        const uniqueShowingCount = filteredRecords.filter(r => {
+                          // 如果是轉帳的目標記錄（isTargetRecord），不計算（因為已經在來源記錄中計算了）
+                          return !(r.type === 'CASHFLOW' && (r as any).isTargetRecord);
+                        }).length;
+                        
+                        // 計算實際的總記錄數（內部轉帳只算一筆）
+                        const actualTotal = transactions.length + cashFlows.length;
+                        const isFiltered = filteredRecords.length !== combinedRecords.length;
+                        
+                        return (
+                          <>
+                            {translate('history.showingRecords', language, { count: uniqueShowingCount })}
+                            {isFiltered && (
+                              <span className="text-slate-500">
+                                {translate('history.totalRecords', language, { 
+                                  total: actualTotal, 
+                                  transactionCount: transactions.length,
+                                  hasCashFlow: includeCashFlow ? (language === 'zh-TW' ? ` + ${cashFlows.length} 筆現金流` : ` + ${cashFlows.length} cash flows`) : ''
+                                })}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                       {!includeCashFlow && cashFlows.length > 0 && (
                         <span className="text-amber-600 ml-2">
                           {language === 'zh-TW' ? '（' : '('}{translate('history.hiddenCashFlowRecords', language, { count: cashFlows.length })}{language === 'zh-TW' ? '）' : ')'}
@@ -1331,21 +1489,23 @@ const App: React.FC = () => {
                    <table className="min-w-full text-xs sm:text-sm text-left">
                      <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
                        <tr>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">{t(language).labels.date}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden sm:table-cell">{t(language).labels.account}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">{t(language).labels.description}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden md:table-cell">{t(language).labels.category}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.price}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.quantity}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.fee}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap">{t(language).labels.amount}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-right whitespace-nowrap hidden md:table-cell">{t(language).labels.balance}</th>
-                         <th className="px-2 sm:px-4 py-2 sm:py-3 text-center whitespace-nowrap">{t(language).labels.action}</th>
+                         <th className="px-2 sm:px-3 py-2 whitespace-nowrap">{t(language).labels.date}</th>
+                         <th className="px-2 sm:px-3 py-2 whitespace-nowrap hidden sm:table-cell">{t(language).labels.account}</th>
+                         <th className="px-2 sm:px-3 py-2 whitespace-nowrap">{t(language).labels.description}</th>
+                         <th className="px-2 sm:px-3 py-2 whitespace-nowrap hidden md:table-cell">{t(language).labels.category}</th>
+                         <th className="px-2 sm:px-3 py-2 text-right whitespace-nowrap">{t(language).labels.price}</th>
+                         <th className="px-2 sm:px-3 py-2 text-right whitespace-nowrap">{t(language).labels.quantity}</th>
+                         <th className="px-2 sm:px-3 py-2 text-right whitespace-nowrap">{t(language).labels.fee}</th>
+                         <th className="px-2 sm:px-3 py-2 text-right whitespace-nowrap">{t(language).labels.amount}</th>
+                         <th className="px-2 sm:px-3 py-2 text-right whitespace-nowrap hidden md:table-cell">{t(language).labels.balance}</th>
+                         <th className="px-2 sm:px-3 py-2 text-center whitespace-nowrap">{t(language).labels.action}</th>
                        </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-100">
                        {filteredRecords.map(record => {
                          const accName = accounts.find(a => a.id === record.accountId)?.name;
+                         const balance = (record as any).balance || 0;
+                         const normalizedBalance = Math.abs(balance) < 0.0001 ? 0 : balance;
                          
                          // 根據記錄類型設定徽章顏色
                          let badgeColor = 'bg-gray-100 text-gray-700';
@@ -1385,9 +1545,9 @@ const App: React.FC = () => {
 
                          return (
                            <tr key={`${record.type}-${record.id}`} className="hover:bg-slate-50">
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-slate-600 text-xs sm:text-sm">{record.date}</td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-slate-500 text-[10px] sm:text-xs hidden sm:table-cell">{accName}</td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-slate-700 text-xs sm:text-sm">
+                             <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-slate-600 text-xs sm:text-sm">{record.date}</td>
+                             <td className="px-2 sm:px-3 py-2 text-slate-500 text-[10px] sm:text-xs hidden sm:table-cell">{accName}</td>
+                             <td className="px-2 sm:px-3 py-2 font-semibold text-slate-700 text-xs sm:text-sm">
                                 {record.type === 'TRANSACTION' ? (
                                   <div className="flex flex-col">
                                     <span><span className="text-[10px] sm:text-xs text-slate-400 mr-1">{record.market}</span>{record.ticker}</span>
@@ -1401,44 +1561,44 @@ const App: React.FC = () => {
                                   </div>
                                 )}
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell">
+                             <td className="px-2 sm:px-3 py-2 hidden md:table-cell">
                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badgeColor}`}>
                                  {displayType}
                                </span>
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
+                             <td className="px-2 sm:px-3 py-2 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' ? formatNumber(record.price) : 
                                 record.type === 'CASHFLOW' && record.exchangeRate ? record.exchangeRate : '-'}
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
+                             <td className="px-2 sm:px-3 py-2 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' ? formatNumber(record.quantity) : '-'}
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-mono text-slate-600 text-xs">
+                             <td className="px-2 sm:px-3 py-2 text-right font-mono text-slate-600 text-xs">
                                {record.type === 'TRANSACTION' && (record as any).fees > 0 ? formatNumber((record as any).fees) : '-'}
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold font-mono text-slate-700 text-xs sm:text-sm">
+                             <td className="px-2 sm:px-3 py-2 text-right font-bold font-mono text-slate-700 text-xs sm:text-sm">
                                {record.amount % 1 === 0 ? record.amount.toString() : record.amount.toFixed(2)}
                                <div className="md:hidden mt-0.5">
                                  <span className={`text-[10px] font-normal ${
-                                   (record as any).balance >= 0 ? 'text-green-600' : 'text-red-600'
+                                   normalizedBalance >= 0 ? 'text-green-600' : 'text-red-600'
                                  }`}>
-                                   {(record as any).balance?.toFixed(2) || '0.00'}
+                                   {normalizedBalance.toFixed(2)}
                                  </span>
                                </div>
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right hidden md:table-cell">
+                             <td className="px-2 sm:px-3 py-2 text-right hidden md:table-cell">
                                 <div className="flex flex-col items-end">
                                   <span className={`font-medium text-xs sm:text-sm ${
-                                    (record as any).balance >= 0 ? 'text-green-600' : 'text-red-600'
+                                    normalizedBalance >= 0 ? 'text-green-600' : 'text-red-600'
                                   }`}>
-                                    {(record as any).balance?.toFixed(2) || '0.00'}
+                                    {normalizedBalance.toFixed(2)}
                                   </span>
                                   <span className="text-[10px] text-slate-400">
                                     {accounts.find(a => a.id === record.accountId)?.currency || 'TWD'}
                                   </span>
                                 </div>
                              </td>
-                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                             <td className="px-2 sm:px-3 py-2 text-right">
                                 {!(record.type === 'CASHFLOW' && (record as any).isTargetRecord) && (
                                   <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 justify-end items-end sm:items-center">
                                     {record.type === 'TRANSACTION' && (
@@ -1507,6 +1667,7 @@ const App: React.FC = () => {
                 onBatchAdd={addBatchCashFlows}
                 onDelete={removeCashFlow}
                 onClearAll={handleClearAllCashFlows}
+                baseCurrency={baseCurrency}
                 currentExchangeRate={exchangeRate}
                 currentJpyExchangeRate={jpyExchangeRate}
                 language={language}
@@ -1517,6 +1678,7 @@ const App: React.FC = () => {
                <RebalanceView 
                  summary={summary}
                  holdings={holdings}
+                 baseCurrency={baseCurrency}
                  exchangeRate={exchangeRate}
                  jpyExchangeRate={jpyExchangeRate}
                  targets={rebalanceTargets}
@@ -1534,6 +1696,9 @@ const App: React.FC = () => {
                    market: h.market,
                    annualizedReturn: h.annualizedReturn
                  }))}
+                 baseCurrency={baseCurrency}
+                 exchangeRateUsdToTwd={exchangeRate}
+                 jpyExchangeRate={jpyExchangeRate}
                  language={language}
                />
             )}
@@ -1554,13 +1719,14 @@ const App: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex bg-black bg-opacity-50 animate-fade-in" onClick={() => setIsMobileMenuOpen(false)}>
           <div 
-            className="bg-slate-900 w-80 h-full shadow-2xl flex flex-col transform transition-transform animate-slide-right" 
+            className="bg-slate-900 w-80 h-full shadow-2xl flex flex-col animate-slide-right" 
             onClick={e => e.stopPropagation()}
+            style={{ willChange: 'transform' }}
           >
             {/* 選單標題 */}
             <div className="p-6 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
               <div>
-                <h3 className="text-white font-bold text-lg">TradeFolio</h3>
+                <h3 className="text-white font-bold text-lg">TradeView</h3>
                 <p className="text-slate-400 text-xs mt-1">{currentUser}</p>
               </div>
               <button 
@@ -1572,17 +1738,31 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* 匯率顯示 */}
+            {/* 基準幣 + 主要匯率 */}
             <div className="p-4 bg-slate-900/50 border-b border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold gap-2">
+                <span className="text-slate-500">{language === 'zh-TW' ? '基準幣' : 'Base'}</span>
+                <select
+                  value={baseCurrency}
+                  onChange={(e) => setBaseCurrency(e.target.value as BaseCurrency)}
+                  className="flex-1 bg-slate-800 rounded border border-slate-700 text-emerald-400 px-2 py-1"
+                >
+                  {BASE_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
               <div className="flex justify-between items-center text-xs font-bold">
-                <span className="text-slate-500">USD/TWD {language === 'zh-TW' ? '匯率' : 'Rate'}</span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  value={exchangeRate} 
-                  onChange={e => setExchangeRate(parseFloat(e.target.value))}
-                  className="w-20 bg-slate-800 rounded border border-slate-700 text-emerald-400 text-right px-2 py-1"
-                />
+                <span className="text-slate-500">{displayRate.label} {language === 'zh-TW' ? '匯率' : 'Rate'}</span>
+                {baseCurrency === 'TWD' ? (
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={exchangeRate}
+                    onChange={e => setExchangeRate(parseFloat(e.target.value))}
+                    className="w-20 bg-slate-800 rounded border border-slate-700 text-emerald-400 text-right px-2 py-1"
+                  />
+                ) : (
+                  <span className="text-emerald-400 font-mono">{displayRate.value.toFixed(2)}</span>
+                )}
               </div>
             </div>
 
@@ -1660,7 +1840,7 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-6 mt-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-sm">© 2025 TradeFolio. Designed & Developed by <span className="text-indigo-400 font-bold">Jun-rong, Huang</span></p>
+          <p className="text-sm">© 2025 TradeView. Designed & Developed by <span className="text-indigo-400 font-bold">Jun-rong, Huang</span></p>
           <p className="text-[10px] mt-2 text-slate-500">此應用程式所有交易數據皆儲存於本地端，保障您的隱私安全。</p>
         </div>
       </footer>
@@ -1676,7 +1856,8 @@ const App: React.FC = () => {
           onClose={() => {
             setIsFormOpen(false);
             setTransactionToEdit(null);
-          }} 
+          }}
+          language={language}
         />
       )}
       {isImportOpen && (

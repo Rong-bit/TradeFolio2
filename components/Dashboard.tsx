@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChartDataPoint, PortfolioSummary, Holding, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlow, Account, CashFlowType, Currency, Market } from '../types';
-import { formatCurrency } from '../utils/calculations';
+import { ChartDataPoint, PortfolioSummary, Holding, AssetAllocationItem, AnnualPerformanceItem, AccountPerformance, CashFlow, Account, CashFlowType, Currency, Market, BaseCurrency } from '../types';
+import { formatCurrency, valueInBaseCurrency, getDisplayRateForBaseCurrency } from '../utils/calculations';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { analyzePortfolio } from '../services/geminiService';
 import HoldingsTable from './HoldingsTable';
-import { Language, t } from '../utils/i18n';
+import { Language, t, translate } from '../utils/i18n';
 
 interface Props {
   summary: PortfolioSummary;
@@ -16,6 +16,7 @@ interface Props {
   accountPerformance: AccountPerformance[];
   cashFlows: CashFlow[];
   accounts: Account[];
+  baseCurrency: BaseCurrency;
   onUpdatePrice: (key: string, price: number) => void;
   onAutoUpdate: () => Promise<void>;
   isGuest?: boolean;
@@ -32,6 +33,7 @@ const Dashboard: React.FC<Props> = ({
   accountPerformance, 
   cashFlows, 
   accounts,
+  baseCurrency,
   onUpdatePrice,
   onAutoUpdate,
   isGuest = false,
@@ -45,7 +47,11 @@ const Dashboard: React.FC<Props> = ({
   const [isMounted, setIsMounted] = useState(false);
   const [showCostDetailModal, setShowCostDetailModal] = useState(false);
   const [showAccountInUSD, setShowAccountInUSD] = useState(false); 
-  const [showAnnualInUSD, setShowAnnualInUSD] = useState(false); 
+  const [showAnnualInUSD, setShowAnnualInUSD] = useState(false);
+
+  const rates = { exchangeRateUsdToTwd: summary.exchangeRateUsdToTwd, jpyExchangeRate: summary.jpyExchangeRate };
+  const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
+  const displayRate = getDisplayRateForBaseCurrency(baseCurrency, rates); 
 
 
   useEffect(() => {
@@ -139,7 +145,7 @@ const Dashboard: React.FC<Props> = ({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-purple-500 relative">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between items-center">
+          <h4 className="text-slate-500 text-xs sm:text-sm font-bold uppercase tracking-wider flex justify-between items-center">
             {translations.dashboard.netCost}
             <button 
               onClick={() => setShowCostDetailModal(true)}
@@ -150,35 +156,35 @@ const Dashboard: React.FC<Props> = ({
             </button>
           </h4>
           <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            {formatCurrency(summary.netInvestedTWD, 'TWD')}
+            {formatCurrency(toBase(summary.netInvestedTWD), baseCurrency)}
           </p>
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-green-500">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalAssets}</h4>
+          <h4 className="text-slate-500 text-xs sm:text-sm font-bold uppercase tracking-wider">{translations.dashboard.totalAssets}</h4>
           <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            {formatCurrency(summary.totalValueTWD + summary.cashBalanceTWD, 'TWD')}
+            {formatCurrency(toBase(summary.totalValueTWD + summary.cashBalanceTWD), baseCurrency)}
           </p>
           <div className="flex justify-between items-end mt-1">
-             <p className="text-[10px] sm:text-xs text-slate-400">{translations.dashboard.includeCash}: {formatCurrency(summary.cashBalanceTWD, 'TWD')}</p>
+             <p className="text-[10px] sm:text-xs text-slate-400">{translations.dashboard.includeCash}: {formatCurrency(toBase(summary.cashBalanceTWD), baseCurrency)}</p>
           </div>
         </div>
         <div className={`bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 ${summary.totalPLTWD >= 0 ? 'border-success' : 'border-danger'}`}>
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.totalPL}</h4>
+          <h4 className="text-slate-500 text-xs sm:text-sm font-bold uppercase tracking-wider">{translations.dashboard.totalPL}</h4>
           <div className="flex items-baseline gap-2 mt-2">
             <p className={`text-xl sm:text-2xl font-bold ${summary.totalPLTWD >= 0 ? 'text-success' : 'text-danger'}`}>
-               {summary.totalPLTWD >= 0 ? '+' : ''}{formatCurrency(summary.totalPLTWD, 'TWD')}
+               {summary.totalPLTWD >= 0 ? '+' : ''}{formatCurrency(toBase(summary.totalPLTWD), baseCurrency)}
             </p>
           </div>
-          <p className={`text-[10px] sm:text-xs font-bold mt-1 ${summary.totalPLTWD >= 0 ? 'text-success' : 'text-danger'}`}>
+          <p className={`text-xs sm:text-sm font-bold mt-1 ${summary.totalPLTWD >= 0 ? 'text-success' : 'text-danger'}`}>
              {summary.totalPLPercent.toFixed(2)}%
           </p>
         </div>
          <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-blue-500">
-          <h4 className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{translations.dashboard.annualizedReturn}</h4>
+          <h4 className="text-slate-500 text-xs sm:text-sm font-bold uppercase tracking-wider">{translations.dashboard.annualizedReturn}</h4>
           <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
             {summary.annualizedReturn.toFixed(1)}%
           </p>
-          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{translations.dashboard.estimatedGrowth8}: {formatCurrency(summary.netInvestedTWD * 1.08, 'TWD')}</p>
+          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{translations.dashboard.estimatedGrowth8}: {formatCurrency(toBase(summary.netInvestedTWD * 1.08), baseCurrency)}</p>
         </div>
       </div>
 
@@ -201,40 +207,40 @@ const Dashboard: React.FC<Props> = ({
         {showDetails && (
           <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 animate-fade-in border-t border-slate-100">
             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.totalCost}</p>
-              <p className="text-lg font-bold text-slate-800">{formatCurrency(summary.netInvestedTWD, 'TWD')}</p>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.totalCost}</p>
+              <p className="text-xl font-bold text-slate-800">{formatCurrency(toBase(summary.netInvestedTWD), baseCurrency)}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.totalPLAmount}</p>
-              <p className={`text-lg font-bold ${summary.totalPLTWD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(summary.totalPLTWD, 'TWD')}
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.totalPLAmount}</p>
+              <p className={`text-xl font-bold ${summary.totalPLTWD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(toBase(summary.totalPLTWD), baseCurrency)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.accumulatedCashDividends}</p>
-              <p className="text-lg font-bold text-yellow-600">{formatCurrency(summary.accumulatedCashDividendsTWD, 'TWD')}</p>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.accumulatedCashDividends}</p>
+              <p className="text-xl font-bold text-yellow-600">{formatCurrency(toBase(summary.accumulatedCashDividendsTWD), baseCurrency)}</p>
             </div>
              <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.accumulatedStockDividends}</p>
-              <p className="text-lg font-bold text-yellow-600">{formatCurrency(summary.accumulatedStockDividendsTWD, 'TWD')}</p>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.accumulatedStockDividends}</p>
+              <p className="text-xl font-bold text-yellow-600">{formatCurrency(toBase(summary.accumulatedStockDividendsTWD), baseCurrency)}</p>
             </div>
              <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.annualizedReturnRate}</p>
-              <p className={`text-lg font-bold ${summary.annualizedReturn >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.annualizedReturnRate}</p>
+              <p className={`text-xl font-bold ${summary.annualizedReturn >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                 {summary.annualizedReturn.toFixed(2)}%
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.avgExchangeRate}</p>
-              <p className="text-lg font-bold text-slate-700">{summary.avgExchangeRate > 0 ? summary.avgExchangeRate.toFixed(2) : '-'}</p>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.avgExchangeRate}</p>
+              <p className="text-xl font-bold text-slate-700">{summary.avgExchangeRate > 0 ? summary.avgExchangeRate.toFixed(2) : '-'}</p>
             </div>
              <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.currentExchangeRate}</p>
-              <p className="text-lg font-bold text-slate-700">{summary.exchangeRateUsdToTwd.toFixed(2)}</p>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.currentExchangeRate} ({displayRate.label})</p>
+              <p className="text-xl font-bold text-slate-700">{displayRate.value.toFixed(2)}</p>
             </div>
              <div>
-              <p className="text-xs text-slate-500 mb-1">{translations.dashboard.totalReturnRate}</p>
-              <p className={`text-lg font-bold ${summary.totalPLPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className="text-sm text-slate-500 mb-1">{translations.dashboard.totalReturnRate}</p>
+              <p className={`text-xl font-bold ${summary.totalPLPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {summary.totalPLPercent.toFixed(2)}%
               </p>
             </div>
@@ -246,7 +252,7 @@ const Dashboard: React.FC<Props> = ({
       {!isGuest && (
         <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
           <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold text-blue-600 text-lg">{translations.dashboard.assetVsCostTrend}</h3>
+              <h3 className="font-bold text-blue-600 text-xl">{translations.dashboard.assetVsCostTrend}</h3>
               {onUpdateHistorical && (
                 <button 
                   onClick={onUpdateHistorical}
@@ -284,10 +290,10 @@ const Dashboard: React.FC<Props> = ({
                          else if (name === translations.dashboard.chartLabels.totalAssets) suffix = translations.dashboard.chartLabels.estimated;
 
                          if (name.includes(translations.dashboard.chartLabels.accumulatedPL)) {
-                           return [formatCurrency(value, 'TWD'), translations.dashboard.chartLabels.accumulatedPL];
+                           return [formatCurrency(toBase(value), baseCurrency), translations.dashboard.chartLabels.accumulatedPL];
                          }
 
-                         return [formatCurrency(value, 'TWD'), name + suffix];
+                         return [formatCurrency(toBase(value), baseCurrency), name + suffix];
                       }}
                     />
                     <Legend 
@@ -355,7 +361,7 @@ const Dashboard: React.FC<Props> = ({
 
       {/* Market Distribution */}
       <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-        <h3 className="font-bold text-slate-800 text-lg mb-4">{language === 'zh-TW' ? '市場分佈比例' : 'Market Distribution'}</h3>
+        <h3 className="font-bold text-slate-800 text-xl mb-4">{language === 'zh-TW' ? '市場分佈比例' : 'Market Distribution'}</h3>
         {marketDistribution.length > 0 ? (
           <div className="space-y-3">
             {marketDistribution.map((item) => {
@@ -375,16 +381,18 @@ const Dashboard: React.FC<Props> = ({
               return (
                 <div key={item.market} className="flex items-center gap-4">
                   <div className="w-20 text-sm font-medium text-slate-700">{marketNames[item.market]}</div>
-                  <div className="flex-1 bg-slate-200 rounded-full h-6 overflow-hidden">
+                  <div className="flex-1 bg-slate-200 rounded-full h-6 overflow-hidden relative">
                     <div 
-                      className={`h-full ${marketColors[item.market]} transition-all duration-500 flex items-center justify-end pr-2`}
+                      className={`h-full ${marketColors[item.market]} transition-all duration-500`}
                       style={{ width: `${item.ratio}%` }}
                     >
-                      <span className="text-white text-xs font-bold">{item.ratio.toFixed(1)}%</span>
                     </div>
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-700 text-xs font-bold ml-2 whitespace-nowrap">
+                      {item.ratio.toFixed(1)}%
+                    </span>
                   </div>
                   <div className="w-24 text-right text-sm font-mono text-slate-600">
-                    {formatCurrency(item.value, 'TWD')}
+                    {formatCurrency(toBase(item.value), baseCurrency)}
                   </div>
                 </div>
               );
@@ -400,7 +408,7 @@ const Dashboard: React.FC<Props> = ({
       {/* Allocation Pie Chart */}
       {!isGuest && (
         <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-          <h3 className="font-bold text-slate-800 text-lg mb-4">{translations.dashboard.allocation}</h3>
+          <h3 className="font-bold text-slate-800 text-xl mb-4">{translations.dashboard.allocation}</h3>
           <div className="w-full flex justify-center">
             <div className="w-full max-w-md md:max-w-lg aspect-square">
               {isMounted && assetAllocation.length > 0 ? (
@@ -419,7 +427,7 @@ const Dashboard: React.FC<Props> = ({
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => formatCurrency(value, 'TWD')} />
+                      <Tooltip formatter={(value: number) => formatCurrency(toBase(value), baseCurrency)} />
                       <Legend 
                          layout="vertical" 
                          verticalAlign="middle" 
@@ -446,7 +454,7 @@ const Dashboard: React.FC<Props> = ({
       {!isGuest && annualPerformance.length > 0 && (
           <div className="bg-white rounded-xl shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.annualPerformance}</h3>
+              <h3 className="font-bold text-slate-800 text-xl">{translations.dashboard.annualPerformance}</h3>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-600">{translations.dashboard.displayCurrency}:</span>
                 <button
@@ -457,7 +465,7 @@ const Dashboard: React.FC<Props> = ({
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {translations.dashboard.ntd}
+                  {baseCurrency}
                 </button>
                 <button
                   onClick={() => setShowAnnualInUSD(true)}
@@ -485,11 +493,11 @@ const Dashboard: React.FC<Props> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {annualPerformance.map(item => {
-                    const displayCurrency = showAnnualInUSD ? 'USD' : 'TWD';
-                    const startAssets = showAnnualInUSD ? item.startAssets / summary.exchangeRateUsdToTwd : item.startAssets;
-                    const netInflow = showAnnualInUSD ? item.netInflow / summary.exchangeRateUsdToTwd : item.netInflow;
-                    const endAssets = showAnnualInUSD ? item.endAssets / summary.exchangeRateUsdToTwd : item.endAssets;
-                    const profit = showAnnualInUSD ? item.profit / summary.exchangeRateUsdToTwd : item.profit;
+                    const displayCurrency = showAnnualInUSD ? 'USD' : baseCurrency;
+                    const startAssets = showAnnualInUSD ? item.startAssets / summary.exchangeRateUsdToTwd : toBase(item.startAssets);
+                    const netInflow = showAnnualInUSD ? item.netInflow / summary.exchangeRateUsdToTwd : toBase(item.netInflow);
+                    const endAssets = showAnnualInUSD ? item.endAssets / summary.exchangeRateUsdToTwd : toBase(item.endAssets);
+                    const profit = showAnnualInUSD ? item.profit / summary.exchangeRateUsdToTwd : toBase(item.profit);
                     
                     return (
                       <tr key={item.year} className="hover:bg-slate-50">
@@ -518,7 +526,7 @@ const Dashboard: React.FC<Props> = ({
       {/* Account List Card */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 text-lg">{translations.dashboard.brokerageAccounts}</h3>
+          <h3 className="font-bold text-slate-800 text-xl">{translations.dashboard.brokerageAccounts}</h3>
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-600">{translations.dashboard.displayCurrency}:</span>
             <button
@@ -529,7 +537,7 @@ const Dashboard: React.FC<Props> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {translations.dashboard.ntd}
+              {baseCurrency}
             </button>
             <button
               onClick={() => setShowAccountInUSD(true)}
@@ -544,15 +552,15 @@ const Dashboard: React.FC<Props> = ({
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left">
+          <table className="min-w-full text-sm sm:text-base text-left">
             <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
               <tr>
-                <th className="px-6 py-3">{translations.dashboard.accountName}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.totalAssetsNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.marketValueNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.balanceNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.profitNT}</th>
-                <th className="px-6 py-3 text-right">{translations.dashboard.annualizedROI}</th>
+                <th className="px-3 py-2">{translations.dashboard.accountName}</th>
+                <th className="px-3 py-2 text-right">{translations.dashboard.totalAssetsNT}</th>
+                <th className="px-3 py-2 text-right">{translations.dashboard.marketValueNT}</th>
+                <th className="px-3 py-2 text-right">{translations.dashboard.balanceNT}</th>
+                <th className="px-3 py-2 text-right">{translations.dashboard.profitNT}</th>
+                <th className="px-3 py-2 text-right">{translations.dashboard.annualizedROI}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -566,37 +574,44 @@ const Dashboard: React.FC<Props> = ({
                   
                   if (showAccountInUSD) {
                     displayCurrency = 'USD';
-                    totalAssets = acc.totalAssetsNative || acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
-                    marketValue = acc.marketValueNative || acc.marketValueTWD / summary.exchangeRateUsdToTwd;
-                    cashBalance = acc.cashBalanceNative || acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
-                    profit = acc.profitNative || acc.profitTWD / summary.exchangeRateUsdToTwd;
+                    if (acc.currency === Currency.USD) {
+                      totalAssets = acc.totalAssetsNative || acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
+                      marketValue = acc.marketValueNative || acc.marketValueTWD / summary.exchangeRateUsdToTwd;
+                      cashBalance = acc.cashBalanceNative || acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
+                      profit = acc.profitNative || acc.profitTWD / summary.exchangeRateUsdToTwd;
+                    } else {
+                      totalAssets = acc.totalAssetsTWD / summary.exchangeRateUsdToTwd;
+                      marketValue = acc.marketValueTWD / summary.exchangeRateUsdToTwd;
+                      cashBalance = acc.cashBalanceTWD / summary.exchangeRateUsdToTwd;
+                      profit = acc.profitTWD / summary.exchangeRateUsdToTwd;
+                    }
                   } else {
-                    displayCurrency = 'TWD';
-                    totalAssets = acc.totalAssetsTWD;
-                    marketValue = acc.marketValueTWD;
-                    cashBalance = acc.cashBalanceTWD;
-                    profit = acc.profitTWD;
+                    displayCurrency = baseCurrency;
+                    totalAssets = toBase(acc.totalAssetsTWD);
+                    marketValue = toBase(acc.marketValueTWD);
+                    cashBalance = toBase(acc.cashBalanceTWD);
+                    profit = toBase(acc.profitTWD);
                   }
                   
                   return (
                     <tr key={acc.id} className="hover:bg-slate-50">
-                      <td className="px-6 py-3 font-semibold text-slate-700">
+                      <td className="px-3 py-2 font-semibold text-slate-700">
                         {acc.name} 
                         <span className="text-xs font-normal text-slate-400 ml-1">({acc.currency})</span>
                       </td>
-                      <td className="px-6 py-3 text-right font-bold text-slate-700">
+                      <td className="px-3 py-2 text-right font-bold text-slate-700">
                         {formatCurrency(totalAssets, displayCurrency)}
                       </td>
-                      <td className="px-6 py-3 text-right text-slate-600">
+                      <td className="px-3 py-2 text-right text-slate-600">
                         {formatCurrency(marketValue, displayCurrency)}
                       </td>
-                      <td className="px-6 py-3 text-right text-slate-600">
+                      <td className="px-3 py-2 text-right text-slate-600">
                         {formatCurrency(cashBalance, displayCurrency)}
                       </td>
-                      <td className={`px-6 py-3 text-right font-bold ${profit >= 0 ? 'text-success' : 'text-danger'}`}>
+                      <td className={`px-3 py-2 text-right font-bold ${profit >= 0 ? 'text-success' : 'text-danger'}`}>
                         {formatCurrency(profit, displayCurrency)}
                       </td>
-                      <td className={`px-6 py-3 text-right font-bold ${acc.roi >= 0 ? 'text-success' : 'text-danger'}`}>
+                      <td className={`px-3 py-2 text-right font-bold ${acc.roi >= 0 ? 'text-success' : 'text-danger'}`}>
                         {acc.roi.toFixed(2)}%
                       </td>
                     </tr>
@@ -604,7 +619,7 @@ const Dashboard: React.FC<Props> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">{translations.dashboard.noAccounts}</td>
+                  <td colSpan={6} className="px-3 py-4 text-center text-slate-400">{translations.dashboard.noAccounts}</td>
                 </tr>
               )}
             </tbody>
@@ -641,6 +656,12 @@ const Dashboard: React.FC<Props> = ({
             </button>
           </div>
 
+          <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-500/50 rounded-lg">
+            <p className="text-xs text-yellow-200 leading-relaxed">
+              <strong className="text-yellow-300">⚠️ {translations.dashboard.notInvestmentAdvice}</strong>
+            </p>
+          </div>
+
           {aiAnalysis && (
             <div className="bg-white/10 p-5 rounded-lg text-slate-100 text-sm leading-relaxed whitespace-pre-wrap border border-white/10 animate-fade-in">
               {aiAnalysis}
@@ -665,48 +686,48 @@ const Dashboard: React.FC<Props> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-0">
-              <table className="min-w-full text-sm text-left">
+              <table className="min-w-full text-sm sm:text-base text-left">
                 <thead className="bg-slate-100 sticky top-0 text-slate-600 font-bold border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-2">{translations.dashboard.date}</th>
-                    <th className="px-4 py-2">{translations.dashboard.category}</th>
-                    <th className="px-4 py-2">{translations.labels.account}</th>
-                    <th className="px-4 py-2 text-right">{translations.dashboard.originalAmount}</th>
-                    <th className="px-4 py-2 text-right">{translations.labels.exchangeRate}</th>
-                    <th className="px-4 py-2 text-right">{translations.dashboard.twdCost}</th>
+                    <th className="px-3 py-2">{translations.dashboard.date}</th>
+                    <th className="px-3 py-2">{translations.dashboard.category}</th>
+                    <th className="px-3 py-2">{translations.labels.account}</th>
+                    <th className="px-3 py-2 text-right">{translations.dashboard.originalAmount}</th>
+                    <th className="px-3 py-2 text-right">{translations.labels.exchangeRate}</th>
+                    <th className="px-3 py-2 text-right">{translate('dashboard.twdCost', language, { currency: baseCurrency })}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {costDetails.map((item, idx) => (
                     <tr key={item.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-2 whitespace-nowrap">{item.date}</td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2 whitespace-nowrap">{item.date}</td>
+                      <td className="px-3 py-2">
                         <span className={`px-2 py-0.5 rounded text-xs font-bold ${item.type === CashFlowType.DEPOSIT ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {item.type === CashFlowType.DEPOSIT ? translations.dashboard.deposit : translations.dashboard.withdraw}
                         </span>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         {item.accountName} <span className="text-xs text-slate-400">({item.currency})</span>
                       </td>
-                      <td className="px-4 py-2 text-right font-mono">
+                      <td className="px-3 py-2 text-right font-mono">
                         {item.currency === Currency.USD ? '$' : 'NT$'}{item.amount.toLocaleString()}
                       </td>
-                      <td className="px-4 py-2 text-right">
+                      <td className="px-3 py-2 text-right">
                         <div className="flex flex-col items-end">
                           <span>{item.rate.toFixed(2)}</span>
                           <span className="text-[10px] text-slate-400">{item.rateSource}</span>
                         </div>
                       </td>
-                      <td className={`px-4 py-2 text-right font-bold font-mono ${item.type === CashFlowType.DEPOSIT ? 'text-slate-800' : 'text-red-500'}`}>
-                        {item.type === CashFlowType.WITHDRAW ? '-' : ''}{formatCurrency(item.amountTWD, 'TWD')}
+                      <td className={`px-3 py-2 text-right font-bold font-mono ${item.type === CashFlowType.DEPOSIT ? 'text-slate-800' : 'text-red-500'}`}>
+                        {item.type === CashFlowType.WITHDRAW ? '-' : ''}{formatCurrency(toBase(item.amountTWD), baseCurrency)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-slate-50 sticky bottom-0 border-t-2 border-slate-300 font-bold text-slate-800">
                   <tr>
-                    <td colSpan={5} className="px-4 py-3 text-right">{translations.dashboard.totalNetInvested}</td>
-                    <td className="px-4 py-3 text-right text-lg">{formatCurrency(verifyTotal, 'TWD')}</td>
+                    <td colSpan={5} className="px-3 py-2 text-right">{translations.dashboard.totalNetInvested}</td>
+                    <td className="px-3 py-2 text-right text-lg">{formatCurrency(toBase(verifyTotal), baseCurrency)}</td>
                   </tr>
                 </tfoot>
               </table>

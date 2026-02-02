@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Market, Transaction, TransactionType, Account, Holding } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { Language, t } from '../utils/i18n';
 
 interface Props {
   accounts: Account[];
@@ -10,10 +11,13 @@ interface Props {
   onUpdate: (tx: Transaction) => void;
   onClose: () => void;
   editingTransaction: Transaction | null;
+  language: Language;
 }
 
-const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUpdate, onClose, editingTransaction }) => {
+const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUpdate, onClose, editingTransaction, language }) => {
   const isEditing = !!editingTransaction;
+  const translations = t(language);
+  const tf = translations.transactionForm;
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -26,6 +30,9 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
     accountId: accounts[0]?.id || '',
     note: ''
   });
+
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingTransaction, setPendingTransaction] = useState<Transaction | null>(null);
 
   // 當進入編輯模式時，載入現有交易資料
   useEffect(() => {
@@ -66,7 +73,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.accountId) return alert("請先建立並選擇證券帳戶");
+    if (!formData.accountId) return alert(tf.errorNoAccount);
 
     const price = parseFloat(formData.price);
     // 現金股息時，數量固定為 1
@@ -113,12 +120,53 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
       amount: finalAmount // 儲存計算後的總金額
     };
     
+    // 顯示確認對話框，不直接儲存
+    setPendingTransaction(newTx);
+    setShowConfirmDialog(true);
+  };
+
+  // 確認並儲存交易
+  const confirmAndSave = () => {
+    if (!pendingTransaction) return;
+    
     if (isEditing) {
-      onUpdate(newTx);
+      onUpdate(pendingTransaction);
     } else {
-      onAdd(newTx);
+      onAdd(pendingTransaction);
     }
+    setShowConfirmDialog(false);
+    setPendingTransaction(null);
     onClose();
+  };
+
+  // 取消確認，返回編輯
+  const cancelConfirm = () => {
+    setShowConfirmDialog(false);
+    setPendingTransaction(null);
+  };
+
+  // 取得交易類型的名稱
+  const getTypeName = (type: TransactionType): string => {
+    switch (type) {
+      case TransactionType.BUY: return tf.typeBuy;
+      case TransactionType.SELL: return tf.typeSell;
+      case TransactionType.CASH_DIVIDEND: return tf.typeCashDividend;
+      case TransactionType.DIVIDEND: return tf.typeDividend;
+      case TransactionType.TRANSFER_IN: return tf.typeTransferIn;
+      case TransactionType.TRANSFER_OUT: return tf.typeTransferOut;
+      default: return type;
+    }
+  };
+
+  // 取得市場的貨幣符號
+  const getCurrency = (market: Market): string => {
+    switch (market) {
+      case Market.TW: return 'TWD';
+      case Market.JP: return 'JPY';
+      case Market.UK: return 'USD';
+      case Market.US: return 'USD';
+      default: return 'USD';
+    }
   };
 
   // 從 holdings 中根據 ticker 查找對應的市場
@@ -176,18 +224,109 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
     return price * quantity;
   };
 
+  // 取得帳戶名稱
+  const getAccountName = (accountId: string): string => {
+    const account = accounts.find(a => a.id === accountId);
+    return account ? `${account.name} (${account.currency})` : accountId;
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
-        <div className="bg-slate-900 p-4 flex justify-between items-center">
-          <h2 className="text-white font-bold text-lg">{isEditing ? '編輯交易' : '新增交易'}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
+    <>
+      {/* 確認對話框 */}
+      {showConfirmDialog && pendingTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-slate-900 p-4">
+              <h3 className="text-white font-bold text-lg">{tf.confirmTitle}</h3>
+            </div>
+            <div className="p-6 space-y-3">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 font-medium">{tf.confirmMessage}</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.dateLabel}</span>
+                  <span className="font-medium">{pendingTransaction.date}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.accountLabel}</span>
+                  <span className="font-medium">{getAccountName(pendingTransaction.accountId)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.marketLabel}</span>
+                  <span className="font-medium">{pendingTransaction.market}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.tickerLabel}</span>
+                  <span className="font-medium">{pendingTransaction.ticker}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.typeLabel}</span>
+                  <span className="font-medium">{getTypeName(pendingTransaction.type)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.priceLabel}</span>
+                  <span className="font-medium">
+                    {pendingTransaction.price.toFixed(2)} {getCurrency(pendingTransaction.market)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.quantityLabel}</span>
+                  <span className="font-medium">{pendingTransaction.quantity} {tf.shares}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">{tf.feesLabel}</span>
+                  <span className="font-medium">
+                    {pendingTransaction.fees.toFixed(2)} {getCurrency(pendingTransaction.market)}
+                  </span>
+                </div>
+                {pendingTransaction.note && (
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-600">{tf.noteLabel}</span>
+                    <span className="font-medium text-right max-w-[60%]">{pendingTransaction.note}</span>
+                  </div>
+                )}
+                <div className="border-t-2 border-slate-300 pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-700 font-semibold">{tf.totalAmount}</span>
+                    <span className="font-bold text-lg text-slate-900">
+                      {pendingTransaction.amount?.toFixed(2) || '0.00'} {getCurrency(pendingTransaction.market)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={cancelConfirm}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
+                >
+                  {tf.backToEdit}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmAndSave}
+                  className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800"
+                >
+                  {tf.confirmSave}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+      )}
+
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+          <div className="bg-slate-900 p-4 flex justify-between items-center">
+            <h2 className="text-white font-bold text-lg">{isEditing ? tf.editTransaction : tf.addTransaction}</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
+          </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700">日期</label>
+              <label className="block text-sm font-medium text-slate-700">{tf.date}</label>
               <input 
                 type="date" name="date" required
                 value={formData.date} onChange={handleChange}
@@ -195,7 +334,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
               />
             </div>
              <div>
-              <label className="block text-sm font-medium text-slate-700">交易帳戶</label>
+              <label className="block text-sm font-medium text-slate-700">{tf.account}</label>
               <select 
                 name="accountId" required
                 value={formData.accountId} onChange={handleChange}
@@ -210,22 +349,22 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
 
           <div className="grid grid-cols-2 gap-4">
              <div>
-              <label className="block text-sm font-medium text-slate-700">市場</label>
+              <label className="block text-sm font-medium text-slate-700">{tf.market}</label>
               <select 
                 name="market" 
                 value={formData.market} onChange={handleChange}
                 className="mt-1 w-full border border-slate-300 rounded-md p-2"
               >
-                <option value={Market.TW}>台股 (TW)</option>
-                <option value={Market.US}>美股 (US)</option>
-                <option value={Market.UK}>英國股 (UK)</option>
-                <option value={Market.JP}>日本股 (JP)</option>
+                <option value={Market.TW}>{tf.marketTW}</option>
+                <option value={Market.US}>{tf.marketUS}</option>
+                <option value={Market.UK}>{tf.marketUK}</option>
+                <option value={Market.JP}>{tf.marketJP}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700">代號 (Ticker)</label>
+              <label className="block text-sm font-medium text-slate-700">{tf.ticker}</label>
               <input 
-                type="text" name="ticker" required placeholder="e.g. 2330, AAPL, or DTLA"
+                type="text" name="ticker" required placeholder={tf.tickerPlaceholder}
                 value={formData.ticker} onChange={handleChange}
                 className="mt-1 w-full border border-slate-300 rounded-md p-2 uppercase"
               />
@@ -234,22 +373,22 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700">類別</label>
+              <label className="block text-sm font-medium text-slate-700">{tf.category}</label>
               <select 
                 name="type" 
                 value={formData.type} onChange={handleChange}
                 className="mt-1 w-full border border-slate-300 rounded-md p-2"
               >
-                <option value={TransactionType.BUY}>買入 (Buy)</option>
-                <option value={TransactionType.SELL}>賣出 (Sell)</option>
-                <option value={TransactionType.DIVIDEND}>股票股息 (Reinvest)</option>
-                <option value={TransactionType.CASH_DIVIDEND}>現金股息 (Cash)</option>
-                <option value={TransactionType.TRANSFER_IN}>匯入持股 (Transfer In)</option>
-                <option value={TransactionType.TRANSFER_OUT}>匯出持股 (Transfer Out)</option>
+                <option value={TransactionType.BUY}>{tf.typeBuy}</option>
+                <option value={TransactionType.SELL}>{tf.typeSell}</option>
+                <option value={TransactionType.DIVIDEND}>{tf.typeDividend}</option>
+                <option value={TransactionType.CASH_DIVIDEND}>{tf.typeCashDividend}</option>
+                <option value={TransactionType.TRANSFER_IN}>{tf.typeTransferIn}</option>
+                <option value={TransactionType.TRANSFER_OUT}>{tf.typeTransferOut}</option>
               </select>
             </div>
              <div>
-              <label className="block text-sm font-medium text-slate-700">價格 ({
+              <label className="block text-sm font-medium text-slate-700">{tf.price} ({
                 formData.market === Market.TW ? 'TWD' : 
                 formData.market === Market.UK ? 'USD' : 
                 formData.market === Market.JP ? 'JPY' : 
@@ -258,7 +397,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
               <input 
                 type="number" name="price" required step="any" min="0"
                 value={formData.price} onChange={handleChange}
-                placeholder={formData.type === TransactionType.CASH_DIVIDEND ? '股息總額' : '單價'}
+                placeholder={formData.type === TransactionType.CASH_DIVIDEND ? tf.placeholderQuantity : tf.placeholderPrice}
                 className="mt-1 w-full border border-slate-300 rounded-md p-2"
               />
             </div>
@@ -267,7 +406,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
           <div className="grid grid-cols-2 gap-4">
              <div>
               <label className="block text-sm font-medium text-slate-700">
-                {formData.type === TransactionType.CASH_DIVIDEND ? '數量 (固定為 1)' : '數量 (股)'}
+                {formData.type === TransactionType.CASH_DIVIDEND ? tf.quantityFixed : tf.quantity}
               </label>
               <input 
                 type="number" name="quantity" required step="any" min="0"
@@ -278,7 +417,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
               />
             </div>
              <div>
-              <label className="block text-sm font-medium text-slate-700">手續費 / 稅金</label>
+              <label className="block text-sm font-medium text-slate-700">{tf.fees}</label>
               <input 
                 type="number" name="fees" step="0.01" min="0"
                 value={formData.fees} onChange={handleChange}
@@ -288,7 +427,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">備註</label>
+            <label className="block text-sm font-medium text-slate-700">{tf.note}</label>
             <input 
               type="text" name="note"
               value={formData.note} onChange={handleChange}
@@ -299,7 +438,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
           {/* 計算金額預覽 */}
           {formData.price && formData.quantity && (
             <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-              <div className="text-xs text-slate-600 mb-1">計算金額預覽：</div>
+              <div className="text-xs text-slate-600 mb-1">{tf.previewTitle}</div>
               <div className="text-lg font-bold text-slate-800">
                 {calculatePreviewAmount().toFixed(2)}
                 <span className="text-xs text-slate-500 ml-2">
@@ -307,10 +446,10 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 </span>
               </div>
               <div className="text-xs text-slate-500 mt-1">
-                計算公式：{formData.price} × {formData.quantity} 
-                {formData.market === Market.TW ? ' (台股向下取整)' : ''} 
+                {tf.calculationFormula}{formData.price} × {formData.quantity} 
+                {formData.market === Market.TW ? tf.formulaNote : ''} 
                 {formData.type === TransactionType.BUY ? ' + ' : formData.type === TransactionType.SELL ? ' - ' : ''}
-                {formData.fees || 0} (手續費)
+                {formData.fees || 0} ({tf.feesShort})
               </div>
             </div>
           )}
@@ -320,18 +459,19 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
               type="button" onClick={onClose}
               className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
             >
-              取消
+              {tf.cancel}
             </button>
             <button 
               type="submit"
               className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800"
             >
-              {isEditing ? '更新交易' : '儲存交易'}
+              {isEditing ? tf.updateTransaction : tf.saveTransaction}
             </button>
           </div>
         </form>
       </div>
     </div>
+    </>
   );
 };
 

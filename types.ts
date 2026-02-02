@@ -1,4 +1,9 @@
 
+/** 基準顯示幣別（儀表板總額等用此幣顯示） */
+export type BaseCurrency = 'TWD' | 'USD' | 'JPY';
+
+export const BASE_CURRENCIES: BaseCurrency[] = ['TWD', 'USD', 'JPY'];
+
 export enum Market {
   US = 'US',
   TW = 'TW',
@@ -9,7 +14,28 @@ export enum Market {
 export enum Currency {
   TWD = 'TWD',
   USD = 'USD',
-  JPY = 'JPY'
+  JPY = 'JPY',
+  HKD = 'HKD',
+  SGD = 'SGD',
+  CNY = 'CNY',
+  KRW = 'KRW',
+  THB = 'THB',
+  MYR = 'MYR',
+  IDR = 'IDR',
+  VND = 'VND',
+  PHP = 'PHP',
+  EUR = 'EUR',
+  GBP = 'GBP',
+  CHF = 'CHF',
+  SEK = 'SEK',
+  NOK = 'NOK',
+  DKK = 'DKK',
+  AUD = 'AUD',
+  CAD = 'CAD',
+  NZD = 'NZD',
+  ZAR = 'ZAR',
+  BRL = 'BRL',
+  MXN = 'MXN'
 }
 
 export enum TransactionType {
@@ -195,6 +221,31 @@ export interface YearlyProjection {
   returnPercent: number; // 該年度的報酬率 (%)
   regularInvestment?: number; // 該年度的定期定額投入
   cumulativeInvestment?: number; // 累積總投入（包含初始和定期定額）
+}
+
+// 用於交易記錄和資金流動記錄的統一型別
+export interface CombinedRecord {
+  id: string;
+  date: string;
+  accountId: string;
+  type: 'TRANSACTION' | 'CASHFLOW';
+  subType: TransactionType | CashFlowType | 'TRANSFER_IN';
+  ticker: string;
+  market: Market | '';
+  price: number;
+  quantity: number;
+  amount: number;
+  fees: number;
+  description: string;
+  originalRecord: Transaction | CashFlow;
+  balance?: number;
+  balanceChange?: number;
+  // 僅用於 CASHFLOW 的欄位
+  targetAccountId?: string;
+  sourceAccountId?: string;
+  exchangeRate?: number;
+  isSourceRecord?: boolean;
+  isTargetRecord?: boolean;
 }
 
 

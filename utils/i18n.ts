@@ -46,6 +46,8 @@ export interface Translations {
     login: string;
     privacy: string;
     privacyDesc: string;
+    riskDisclaimer: string;
+    riskDisclaimerDesc: string;
   };
   // 儀表板
   dashboard: {
@@ -122,6 +124,7 @@ export interface Translations {
     startAnalysis: string;
     analyzing: string;
     viewCalculationDetails: string;
+    notInvestmentAdvice: string;
   };
   // 資金管理
   funds: {
@@ -146,6 +149,9 @@ export interface Translations {
     totalRecords: string;
     last30Days: string;
     thisYear: string;
+    confirmClearAll: string;
+    confirmClearAllMessage: string;
+    confirmClear: string;
   };
   // 交易記錄
   history: {
@@ -370,6 +376,100 @@ export interface Translations {
     androidPublishTitle: string;
     androidPublishDesc: string;
   };
+  // 交易表單
+  transactionForm: {
+    addTransaction: string;
+    editTransaction: string;
+    date: string;
+    account: string;
+    market: string;
+    ticker: string;
+    tickerPlaceholder: string;
+    category: string;
+    price: string;
+    quantity: string;
+    quantityFixed: string;
+    fees: string;
+    note: string;
+    cancel: string;
+    saveTransaction: string;
+    updateTransaction: string;
+    confirmTitle: string;
+    confirmMessage: string;
+    dateLabel: string;
+    accountLabel: string;
+    marketLabel: string;
+    tickerLabel: string;
+    typeLabel: string;
+    priceLabel: string;
+    quantityLabel: string;
+    feesLabel: string;
+    noteLabel: string;
+    totalAmount: string;
+    shares: string;
+    backToEdit: string;
+    confirmSave: string;
+    previewTitle: string;
+    calculationFormula: string;
+    marketTW: string;
+    marketUS: string;
+    marketUK: string;
+    marketJP: string;
+    typeBuy: string;
+    typeSell: string;
+    typeDividend: string;
+    typeCashDividend: string;
+    typeTransferIn: string;
+    typeTransferOut: string;
+    placeholderPrice: string;
+    placeholderQuantity: string;
+    errorNoAccount: string;
+    feesShort: string;
+    formulaNote: string;
+  };
+  // 資金管理表單
+  fundForm: {
+    addFundRecord: string;
+    editFundRecord: string;
+    date: string;
+    type: string;
+    account: string;
+    sourceAccount: string;
+    amount: string;
+    targetAccount: string;
+    selectAccount: string;
+    exchangeRate: string;
+    exchangeRateUSD: string;
+    exchangeRateJPY: string;
+    crossCurrencyTransfer: string;
+    usdConversion: string;
+    jpyConversion: string;
+    sameCurrencyTransfer: string;
+    fees: string;
+    feesNote: string;
+    note: string;
+    cancel: string;
+    updateRecord: string;
+    confirmExecute: string;
+    typeDeposit: string;
+    typeWithdraw: string;
+    typeTransfer: string;
+    typeInterest: string;
+    confirmTitle: string;
+    confirmMessage: string;
+    dateLabel: string;
+    typeLabel: string;
+    accountLabel: string;
+    targetAccountLabel: string;
+    amountLabel: string;
+    exchangeRateLabel: string;
+    feesLabel: string;
+    noteLabel: string;
+    totalTWD: string;
+    backToEdit: string;
+    confirmSave: string;
+    errorNoAccount: string;
+  };
 }
 
 // 繁體中文翻譯
@@ -405,13 +505,15 @@ const zhTW: Translations = {
     help: '系統管理與備份',
   },
   login: {
-    title: 'TradeFolio 登入',
+    title: 'TradeView 登入',
     subtitle: '台美股資產管理系統',
     email: 'Email',
     password: 'Password',
     login: '登入',
     privacy: '隱私聲明',
     privacyDesc: '資料都在個人電腦與手機，系統不涉及個資問題，記得定時備份。',
+    riskDisclaimer: '風險聲明',
+    riskDisclaimerDesc: '投資有風險，過往績效不代表未來表現，請謹慎評估自身風險承受能力。',
   },
   dashboard: {
     netCost: '淨投入成本',
@@ -466,7 +568,7 @@ const zhTW: Translations = {
     date: '日期',
     category: '類別',
     originalAmount: '原始金額',
-    twdCost: '台幣成本',
+    twdCost: '成本 ({currency})',
     totalNetInvested: '總計',
     deposit: '匯入 (+)',
     withdraw: '匯出 (-)',
@@ -487,6 +589,7 @@ const zhTW: Translations = {
     startAnalysis: '開始分析',
     analyzing: '分析中...',
     viewCalculationDetails: '查看計算明細',
+    notInvestmentAdvice: '本應用程式不提供投資建議，所有分析結果僅供參考。',
   },
   funds: {
     title: '資金管理',
@@ -510,6 +613,9 @@ const zhTW: Translations = {
     totalRecords: '共 {total} 筆',
     last30Days: '最近30天',
     thisYear: '今年',
+    confirmClearAll: '確認清空所有資金紀錄？',
+    confirmClearAllMessage: '此操作將刪除所有的入金、出金、轉帳與利息紀錄，且無法復原。建議先備份資料。',
+    confirmClear: '確認清空',
   },
   history: {
     operations: '操作選項',
@@ -722,13 +828,13 @@ const zhTW: Translations = {
     confirmImportMessage: '您即將匯入 {fileName}。',
     confirmImportWarning: '這將會完全清除目前的交易紀錄與設定，且無法復原。',
     confirmOverride: '確認覆蓋',
-    documentationContent: `# TradeFolio 使用說明書
+    documentationContent: `# TradeView 使用說明書
 
 > **隱私與安全聲明** :
 > 本系統採用離線優先架構，**所有交易資料皆儲存於您的個人電腦或手機瀏覽器中**，不會上傳至任何伺服器。**系統不涉及收集個人資料**，請安心使用。
 
 ## 1. 系統簡介
-TradeFolio 是一個支援台股與美股的資產管理工具，協助投資人追蹤資產變化、計算報酬率並管理資金流向。
+TradeView 是一個支援台股與美股的資產管理工具，協助投資人追蹤資產變化、計算報酬率並管理資金流向。
 
 ## 2. 快速開始
 1. **建立帳戶**: 前往「證券戶管理」新增您的銀行或證券帳戶。
@@ -772,10 +878,121 @@ Q: 會員的年度績效表為何有勾勾？
 A: 具勾勾部份是顯示該年度年底的績效表現，無勾勾部份是按你的報酬率反推的你績效表現，僅是預估效果。
 
 Q: 股價與匯率為何與按「AI聯網更新股價&匯率」得到現價為何不同？
-A: 股價與匯率因為是抓取網頁現值，故現值會慢三分鐘至五分鐘不等，所以勿拿來當買賣的參考值，建議買賣的參考仍以証券公司為主，此軟體僅適用作統計資產功能，例如有緊急預備金、旅遊基金、退休金、定存、股債券等統計參考，並無証券交易買賣功能；另外投資有賺有賠，記得預留緊急預備金，感謝您的使用。`,
+A: 股價與匯率因為是抓取網頁現值，故現值會慢三分鐘至五分鐘不等，所以勿拿來當買賣的參考值，建議買賣的參考仍以証券公司為主，此軟體僅適用作統計資產功能，例如有緊急預備金、旅遊基金、退休金、定存、股債券等統計參考，並無証券交易買賣功能；另外投資有賺有賠，記得預留緊急預備金，感謝您的使用。
+
+## 5. 重要免責聲明
+
+**投資風險警告**：
+- ⚠️ 投資有風險，過往績效不代表未來表現。
+- 本應用程式僅提供資產統計與管理功能，不提供投資建議。
+- 本應用程式不具備證券交易功能，無法進行實際買賣操作。
+- 所有投資決策應由使用者自行判斷，並承擔相關風險。
+- 使用者應自行評估投資風險，並在需要時諮詢專業財務顧問。
+
+**非投資建議聲明**：
+- 本應用程式提供的所有資訊、分析、圖表與 AI 建議僅供參考，不構成任何投資建議。
+- 本應用程式不保證任何投資結果或報酬率。
+- 使用者應根據自身情況做出投資決策，並對所有投資決策負責。
+
+**資料準確性**：
+- 本應用程式提供的股價、匯率等資料可能因網路延遲而與實際市場價格有所差異。
+- 使用者不應將本應用程式的資料作為實際買賣的唯一參考依據。
+- 建議以證券公司或金融機構提供的即時報價為準。`,
     androidPublish: '上架安卓商店指南',
     androidPublishTitle: '如何將此工具上架到 Google Play？',
     androidPublishDesc: '您可以透過 TWA 技術將網頁轉為 Android App：\n1. 註冊 Google 開發者帳號 ($25)。\n2. 使用 Bubblewrap CLI 工具封裝您的網站網址。\n3. 在 Play Console 上傳 AAB 檔並提交審核。',
+  },
+  transactionForm: {
+    addTransaction: '新增交易',
+    editTransaction: '編輯交易',
+    date: '日期',
+    account: '交易帳戶',
+    market: '市場',
+    ticker: '代號 (Ticker)',
+    tickerPlaceholder: 'e.g. 2330, AAPL, or DTLA',
+    category: '類別',
+    price: '價格',
+    quantity: '數量 (股)',
+    quantityFixed: '數量 (固定為 1)',
+    fees: '手續費 / 稅金',
+    note: '備註',
+    cancel: '取消',
+    saveTransaction: '儲存交易',
+    updateTransaction: '更新交易',
+    confirmTitle: '確認交易資訊',
+    confirmMessage: '請仔細確認以下資訊是否正確：',
+    dateLabel: '日期：',
+    accountLabel: '交易帳戶：',
+    marketLabel: '市場：',
+    tickerLabel: '代號：',
+    typeLabel: '類型：',
+    priceLabel: '價格：',
+    quantityLabel: '數量：',
+    feesLabel: '手續費：',
+    noteLabel: '備註：',
+    totalAmount: '總金額：',
+    shares: '股',
+    backToEdit: '返回修改',
+    confirmSave: '確認儲存',
+    previewTitle: '計算金額預覽：',
+    calculationFormula: '計算公式：',
+    marketTW: '台股 (TW)',
+    marketUS: '美股 (US)',
+    marketUK: '英國股 (UK)',
+    marketJP: '日本股 (JP)',
+    typeBuy: '買入 (Buy)',
+    typeSell: '賣出 (Sell)',
+    typeDividend: '股票股息 (Reinvest)',
+    typeCashDividend: '現金股息 (Cash)',
+    typeTransferIn: '匯入持股 (Transfer In)',
+    typeTransferOut: '匯出持股 (Transfer Out)',
+    placeholderPrice: '單價',
+    placeholderQuantity: '股息總額',
+    errorNoAccount: '請先建立並選擇證券帳戶',
+    feesShort: '手續費',
+    formulaNote: ' (台股向下取整)',
+  },
+  fundForm: {
+    addFundRecord: '新增資金紀錄',
+    editFundRecord: '編輯資金紀錄',
+    date: '日期',
+    type: '類型',
+    account: '帳戶',
+    sourceAccount: '來源帳戶',
+    amount: '金額',
+    targetAccount: '轉入目標帳戶',
+    selectAccount: '選擇帳戶...',
+    exchangeRate: '匯率',
+    exchangeRateUSD: '匯率 (TWD/USD)',
+    exchangeRateJPY: '匯率 (TWD/JPY)',
+    crossCurrencyTransfer: '不同幣別轉帳',
+    usdConversion: '美金換算',
+    jpyConversion: '日幣換算',
+    sameCurrencyTransfer: '同幣別轉帳 (匯率 1.0)',
+    fees: '手續費 ({currency})',
+    feesNote: '匯費/轉帳費',
+    note: '備註',
+    cancel: '取消',
+    updateRecord: '更新記錄',
+    confirmExecute: '確認執行',
+    typeDeposit: '匯入資金 (Import/Salary)',
+    typeWithdraw: '匯出資金 (Export/Living)',
+    typeTransfer: '內部轉帳 (Transfer)',
+    typeInterest: '利息收入 (Interest)',
+    confirmTitle: '確認資金記錄',
+    confirmMessage: '請仔細確認以下資訊是否正確：',
+    dateLabel: '日期：',
+    typeLabel: '類型：',
+    accountLabel: '帳戶：',
+    targetAccountLabel: '目標帳戶：',
+    amountLabel: '金額：',
+    exchangeRateLabel: '匯率：',
+    feesLabel: '手續費：',
+    noteLabel: '備註：',
+    totalTWD: '總金額 ({currency})：',
+    backToEdit: '返回修改',
+    confirmSave: '確認儲存',
+    errorNoAccount: '請先建立帳戶',
   },
 };
 
@@ -812,13 +1029,15 @@ const en: Translations = {
     help: 'System Management & Backup',
   },
   login: {
-    title: 'TradeFolio Login',
+    title: 'TradeView Login',
     subtitle: 'Taiwan & US Stock Portfolio Management',
     email: 'Email',
     password: 'Password',
     login: 'Login',
     privacy: 'Privacy Notice',
     privacyDesc: 'All data is stored locally on your device. The system does not collect personal information. Please remember to backup regularly.',
+    riskDisclaimer: 'Risk Disclaimer',
+    riskDisclaimerDesc: 'Investing involves risks. Past performance does not guarantee future results. Please carefully assess your risk tolerance.',
   },
   dashboard: {
     netCost: 'Net Cost',
@@ -873,7 +1092,7 @@ const en: Translations = {
     date: 'Date',
     category: 'Category',
     originalAmount: 'Original Amount',
-    twdCost: 'TWD Cost',
+    twdCost: 'Cost ({currency})',
     totalNetInvested: 'Total (Net Invested)',
     deposit: 'Deposit (+)',
     withdraw: 'Withdraw (-)',
@@ -894,6 +1113,7 @@ const en: Translations = {
     startAnalysis: 'Start Analysis',
     analyzing: 'Analyzing...',
     viewCalculationDetails: 'View Details',
+    notInvestmentAdvice: 'This application does not provide investment advice. All analysis results are for reference only.',
   },
   funds: {
     title: 'Fund Management',
@@ -917,6 +1137,9 @@ const en: Translations = {
     totalRecords: 'Total {total}',
     last30Days: 'Last 30 Days',
     thisYear: 'This Year',
+    confirmClearAll: 'Confirm Clear All Fund Records?',
+    confirmClearAllMessage: 'This will delete all deposit, withdrawal, transfer and interest records. This action cannot be undone. Please backup your data first.',
+    confirmClear: 'Confirm Clear',
   },
   history: {
     operations: 'Operations',
@@ -1130,13 +1353,13 @@ const en: Translations = {
     confirmImportMessage: 'You are about to import {fileName}.',
     confirmImportWarning: 'This will completely clear your current transaction records and settings, and cannot be undone.',
     confirmOverride: 'Confirm Override',
-    documentationContent: `# TradeFolio User Manual
+    documentationContent: `# TradeView User Manual
 
 > **Privacy & Security Statement**:
 > This system adopts an offline-first architecture. **All transaction data is stored on your personal computer or mobile browser** and is not uploaded to any server. **The system does not involve collecting personal information**. Please use with confidence.
 
 ## 1. System Introduction
-TradeFolio is an asset management tool that supports Taiwan and US stocks, helping investors track asset changes, calculate returns, and manage fund flows.
+TradeView is an asset management tool that supports Taiwan and US stocks, helping investors track asset changes, calculate returns, and manage fund flows.
 
 ## 2. Quick Start
 1. **Create Account**: Go to "Account Management" to add your bank or brokerage account.
@@ -1180,10 +1403,121 @@ Q: Why are there checkmarks in the member's annual performance table?
 A: The parts with checkmarks show the performance at the end of that year. The parts without checkmarks are performance estimates calculated by reverse-engineering based on your return rate, which are only estimated effects.
 
 Q: Why are stock prices and exchange rates different from the current prices obtained by clicking "AI Update Prices & Exchange Rates"?
-A: Stock prices and exchange rates are scraped from web current values, so the current values may lag by three to five minutes. Therefore, do not use them as references for buying and selling. It is recommended to use securities companies as the main reference for buying and selling. This software is only suitable for statistical asset functions, such as emergency funds, travel funds, retirement funds, fixed deposits, stocks and bonds, etc. It does not have securities trading functions. Additionally, investments have profits and losses. Remember to reserve emergency funds. Thank you for using.`,
+A: Stock prices and exchange rates are scraped from web current values, so the current values may lag by three to five minutes. Therefore, do not use them as references for buying and selling. It is recommended to use securities companies as the main reference for buying and selling. This software is only suitable for statistical asset functions, such as emergency funds, travel funds, retirement funds, fixed deposits, stocks and bonds, etc. It does not have securities trading functions. Additionally, investments have profits and losses. Remember to reserve emergency funds. Thank you for using.
+
+## 5. Important Disclaimers
+
+**Investment Risk Warning**:
+- ⚠️ Investments carry risk. Past performance does not guarantee future results.
+- This application provides asset tracking and management features only. It does not provide investment advice.
+- This application does not have securities trading functionality and cannot perform actual buy/sell operations.
+- All investment decisions should be made by users at their own discretion, and users bear all related risks.
+- Users should evaluate investment risks independently and consult professional financial advisors when needed.
+
+**Not Investment Advice Statement**:
+- All information, analysis, charts, and AI suggestions provided by this application are for reference only and do not constitute investment advice.
+- This application does not guarantee any investment results or returns.
+- Users should make investment decisions based on their own circumstances and are responsible for all investment decisions.
+
+**Data Accuracy**:
+- Stock prices, exchange rates, and other data provided by this application may differ from actual market prices due to network delays.
+- Users should not use data from this application as the sole reference for actual trading.
+- It is recommended to use real-time quotes provided by securities companies or financial institutions.`,
     androidPublish: 'Android Store Publishing Guide',
     androidPublishTitle: 'How to publish this tool on Google Play?',
     androidPublishDesc: 'You can convert the web app to an Android App using TWA:\n1. Register for a Google Developer account ($25).\n2. Use Bubblewrap CLI to wrap your website URL.\n3. Upload the AAB file to Play Console and submit for review.',
+  },
+  transactionForm: {
+    addTransaction: 'Add Transaction',
+    editTransaction: 'Edit Transaction',
+    date: 'Date',
+    account: 'Account',
+    market: 'Market',
+    ticker: 'Ticker',
+    tickerPlaceholder: 'e.g. 2330, AAPL, or DTLA',
+    category: 'Category',
+    price: 'Price',
+    quantity: 'Quantity (Shares)',
+    quantityFixed: 'Quantity (Fixed at 1)',
+    fees: 'Fees / Taxes',
+    note: 'Note',
+    cancel: 'Cancel',
+    saveTransaction: 'Save Transaction',
+    updateTransaction: 'Update Transaction',
+    confirmTitle: 'Confirm Transaction',
+    confirmMessage: 'Please carefully review the following information:',
+    dateLabel: 'Date:',
+    accountLabel: 'Account:',
+    marketLabel: 'Market:',
+    tickerLabel: 'Ticker:',
+    typeLabel: 'Type:',
+    priceLabel: 'Price:',
+    quantityLabel: 'Quantity:',
+    feesLabel: 'Fees:',
+    noteLabel: 'Note:',
+    totalAmount: 'Total Amount:',
+    shares: 'shares',
+    backToEdit: 'Back to Edit',
+    confirmSave: 'Confirm & Save',
+    previewTitle: 'Amount Preview:',
+    calculationFormula: 'Calculation Formula:',
+    marketTW: 'Taiwan (TW)',
+    marketUS: 'US (US)',
+    marketUK: 'UK (UK)',
+    marketJP: 'Japan (JP)',
+    typeBuy: 'Buy',
+    typeSell: 'Sell',
+    typeDividend: 'Stock Dividend (Reinvest)',
+    typeCashDividend: 'Cash Dividend',
+    typeTransferIn: 'Transfer In',
+    typeTransferOut: 'Transfer Out',
+    placeholderPrice: 'Price per Share',
+    placeholderQuantity: 'Total Dividend',
+    errorNoAccount: 'Please create and select a brokerage account first',
+    feesShort: 'fees',
+    formulaNote: ' (TW floor)',
+  },
+  fundForm: {
+    addFundRecord: 'Add Fund Record',
+    editFundRecord: 'Edit Fund Record',
+    date: 'Date',
+    type: 'Type',
+    account: 'Account',
+    sourceAccount: 'Source Account',
+    amount: 'Amount',
+    targetAccount: 'Target Account',
+    selectAccount: 'Select Account...',
+    exchangeRate: 'Exchange Rate',
+    exchangeRateUSD: 'Exchange Rate (TWD/USD)',
+    exchangeRateJPY: 'Exchange Rate (TWD/JPY)',
+    crossCurrencyTransfer: 'Cross-currency Transfer',
+    usdConversion: 'USD Conversion',
+    jpyConversion: 'JPY Conversion',
+    sameCurrencyTransfer: 'Same Currency Transfer (Rate 1.0)',
+    fees: 'Fees ({currency})',
+    feesNote: 'Transfer/Wire Fee',
+    note: 'Note',
+    cancel: 'Cancel',
+    updateRecord: 'Update Record',
+    confirmExecute: 'Confirm & Save',
+    typeDeposit: 'Deposit',
+    typeWithdraw: 'Withdraw',
+    typeTransfer: 'Transfer',
+    typeInterest: 'Interest',
+    confirmTitle: 'Confirm Fund Record',
+    confirmMessage: 'Please carefully confirm the following information:',
+    dateLabel: 'Date:',
+    typeLabel: 'Type:',
+    accountLabel: 'Account:',
+    targetAccountLabel: 'Target Account:',
+    amountLabel: 'Amount:',
+    exchangeRateLabel: 'Exchange Rate:',
+    feesLabel: 'Fees:',
+    noteLabel: 'Note:',
+    totalTWD: 'Total ({currency}):',
+    backToEdit: 'Back to Edit',
+    confirmSave: 'Confirm Save',
+    errorNoAccount: 'Please create an account first',
   },
 };
 
@@ -1221,7 +1555,10 @@ export const translate = (key: string, lang: Language, params?: Record<string, s
   
   if (typeof value === 'string' && params) {
     return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
-      return params[paramKey]?.toString() || match;
+      if (paramKey in params) {
+        return params[paramKey]?.toString() ?? '';
+      }
+      return match;
     });
   }
   

@@ -1,17 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { AssetSimulationItem, SimulationResult, Market, YearlyProjection } from '../types';
-import { formatCurrency } from '../utils/calculations';
+import { AssetSimulationItem, SimulationResult, Market, YearlyProjection, BaseCurrency } from '../types';
+import { formatCurrency, valueInBaseCurrency } from '../utils/calculations';
 import { v4 as uuidv4 } from 'uuid';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { fetchAnnualizedReturn } from '../services/yahooFinanceService';
 import { Language, t, translate } from '../utils/i18n';
 
 interface Props {
-  holdings?: Array<{ ticker: string; market: Market; annualizedReturn: number }>; // 可選：從現有持倉導入
+  holdings?: Array<{ ticker: string; market: Market; annualizedReturn: number }>;
+  baseCurrency?: BaseCurrency;
+  exchangeRateUsdToTwd?: number;
+  jpyExchangeRate?: number;
   language: Language;
 }
 
-const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) => {
+const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency = 'TWD', exchangeRateUsdToTwd = 31.5, jpyExchangeRate = 0.21, language }) => {
+  const rates = { exchangeRateUsdToTwd, jpyExchangeRate };
+  const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const translations = t(language);
   const [assets, setAssets] = useState<AssetSimulationItem[]>([]);
   const [initialAmount, setInitialAmount] = useState<number>(1000000); // 預設 100 萬
@@ -366,7 +371,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              {translations.simulator.initialAmount} {language === 'zh-TW' ? '' : '(TWD)'}
+              {translations.simulator.initialAmount} {language === 'zh-TW' ? '' : `(${baseCurrency})`}
             </label>
             <input
               type="number"
@@ -470,7 +475,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                {translations.simulator.regularAmount} {language === 'zh-TW' ? '' : '(TWD)'}
+                {translations.simulator.regularAmount} {language === 'zh-TW' ? '' : `(${baseCurrency})`}
               </label>
               <input
                 type="number"
@@ -533,14 +538,14 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                 <p className="text-lg font-bold text-slate-800">
                   {regularInvestment > 0 
                     ? formatCurrency(
-                        regularFrequency === 'monthly' 
+                        toBase(regularFrequency === 'monthly' 
                           ? regularInvestment * 12 
                           : regularFrequency === 'quarterly'
                           ? regularInvestment * 4
-                          : regularInvestment,
-                        'TWD'
+                          : regularInvestment),
+                        baseCurrency
                       )
-                    : formatCurrency(0, 'TWD')
+                    : formatCurrency(0, baseCurrency)
                   }
                 </p>
               </div>
@@ -606,20 +611,20 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
 
         {/* 多行輸入表格 */}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+          <table className="min-w-full text-xs sm:text-sm">
             <thead className="bg-slate-50 text-slate-600 uppercase font-medium">
               <tr>
-                <th className="px-4 py-3 text-left">{translations.simulator.ticker}</th>
-                <th className="px-4 py-3 text-left">{translations.simulator.market}</th>
-                <th className="px-4 py-3 text-left">{translations.simulator.annualReturn}</th>
-                <th className="px-4 py-3 text-left">{translations.simulator.allocation}</th>
-                <th className="px-4 py-3 text-center">{language === 'zh-TW' ? '操作' : 'Action'}</th>
+                <th className="px-3 py-2 text-left">{translations.simulator.ticker}</th>
+                <th className="px-3 py-2 text-left">{translations.simulator.market}</th>
+                <th className="px-3 py-2 text-left">{translations.simulator.annualReturn}</th>
+                <th className="px-3 py-2 text-left">{translations.simulator.allocation}</th>
+                <th className="px-3 py-2 text-center">{language === 'zh-TW' ? '操作' : 'Action'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {inputRows.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <input
                       type="text"
                       value={row.ticker}
@@ -628,7 +633,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <select
                       value={row.market}
                       onChange={(e) => updateInputRow(row.id, 'market', e.target.value as Market)}
@@ -640,7 +645,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                       <option value={Market.JP}>{translations.simulator.marketJP}</option>
                     </select>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -673,7 +678,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <input
                       type="number"
                       value={row.allocation === 0 ? '' : row.allocation}
@@ -711,7 +716,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                       placeholder="0"
                     />
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-2 text-center">
                     <button
                       onClick={() => removeInputRow(row.id)}
                       disabled={inputRows.length === 1}
@@ -758,14 +763,14 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className="min-w-full text-xs sm:text-sm">
               <thead className="bg-slate-50 text-slate-600 uppercase font-medium">
                 <tr>
-                  <th className="px-4 py-3 text-left">{translations.simulator.ticker}</th>
-                  <th className="px-4 py-3 text-left">{translations.simulator.market}</th>
-                  <th className="px-4 py-3 text-right">{translations.simulator.annualReturn}</th>
-                  <th className="px-4 py-3 text-right">{translations.simulator.allocation}</th>
-                  <th className="px-4 py-3 text-right">{language === 'zh-TW' ? '操作' : 'Action'}</th>
+                  <th className="px-3 py-2 text-left">{translations.simulator.ticker}</th>
+                  <th className="px-3 py-2 text-left">{translations.simulator.market}</th>
+                  <th className="px-3 py-2 text-right">{translations.simulator.annualReturn}</th>
+                  <th className="px-3 py-2 text-right">{translations.simulator.allocation}</th>
+                  <th className="px-3 py-2 text-right">{language === 'zh-TW' ? '操作' : 'Action'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -773,12 +778,12 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                   const currentTotal = assets.reduce((sum, a) => sum + a.allocation, 0);
                   return (
                     <tr key={asset.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-semibold text-slate-800">
+                      <td className="px-3 py-2 font-semibold text-slate-800">
                         {asset.ticker}
                         {asset.name && <span className="text-xs text-slate-500 ml-2">({asset.name})</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{getMarketDisplayText(asset.market)}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-slate-600">{getMarketDisplayText(asset.market)}</td>
+                      <td className="px-3 py-2 text-right">
                         <input
                           type="number"
                           value={asset.annualizedReturn}
@@ -787,7 +792,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                           step="0.1"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right">
                         <input
                           type="number"
                           value={asset.allocation === 0 ? '' : asset.allocation}
@@ -830,7 +835,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                           placeholder="0"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right">
                         <button
                           onClick={() => removeAsset(asset.id)}
                           className="text-red-500 hover:text-red-700 active:text-red-900 active:scale-95 transition-all duration-150 text-sm px-2 py-1 rounded hover:bg-red-50 active:bg-red-100"
@@ -844,8 +849,8 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
               </tbody>
               <tfoot className="bg-slate-50 font-bold">
                 <tr>
-                  <td colSpan={3} className="px-4 py-3 text-right">{translations.simulator.allocationSum}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td colSpan={3} className="px-3 py-2 text-right">{translations.simulator.allocationSum}</td>
+                  <td className="px-3 py-2 text-right">
                     <span className={Math.abs(assets.reduce((sum, a) => sum + a.allocation, 0) - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}>
                       {assets.reduce((sum, a) => sum + a.allocation, 0).toFixed(1)}%
                     </span>
@@ -869,28 +874,28 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
               </h4>
               <p className="text-2xl font-bold text-slate-800 mt-2">
                 {formatCurrency(
-                  simulationResult.regularInvestment 
+                  toBase(simulationResult.regularInvestment 
                     ? simulationResult.regularInvestment.totalInvested 
-                    : simulationResult.initialAmount,
-                  'TWD'
+                    : simulationResult.initialAmount),
+                  baseCurrency
                 )}
               </p>
               {simulationResult.regularInvestment && (
                 <p className="text-xs text-slate-500 mt-1">
-                  {translations.simulator.initial}: {formatCurrency(simulationResult.initialAmount, 'TWD')}
+                  {translations.simulator.initial}: {formatCurrency(toBase(simulationResult.initialAmount), baseCurrency)}
                 </p>
               )}
             </div>
             <div className="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
               <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">{translations.simulator.finalValue}</h4>
               <p className="text-2xl font-bold text-slate-800 mt-2">
-                {formatCurrency(simulationResult.finalValue, 'TWD')}
+                {formatCurrency(toBase(simulationResult.finalValue), baseCurrency)}
               </p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
               <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">{translations.simulator.totalReturn}</h4>
               <p className="text-2xl font-bold text-slate-800 mt-2">
-                {formatCurrency(simulationResult.totalReturn, 'TWD')}
+                {formatCurrency(toBase(simulationResult.totalReturn), baseCurrency)}
               </p>
               <p className="text-sm font-bold text-blue-600 mt-1">
                 {simulationResult.totalReturnPercent.toFixed(2)}%
@@ -919,7 +924,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                   />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    formatter={(value: number) => formatCurrency(value, 'TWD')}
+                    formatter={(value: number) => formatCurrency(toBase(value), baseCurrency)}
                   />
                   <Legend />
                   <Line 
@@ -968,7 +973,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                   />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    formatter={(value: number) => formatCurrency(value, 'TWD')}
+                    formatter={(value: number) => formatCurrency(toBase(value), baseCurrency)}
                   />
                   <Legend />
                   <Bar dataKey={language === 'zh-TW' ? '年度報酬' : 'Yearly Return'} fill="#10b981" name={translations.simulator.yearlyReturn} />
@@ -983,7 +988,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
               <h3 className="font-bold text-slate-800 text-lg">{translations.simulator.detailedYearlyProjection}</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left">
+              <table className="min-w-full text-xs sm:text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
                   <tr>
                     <th className="px-6 py-3">{translations.simulator.year}</th>
@@ -1001,18 +1006,18 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], language }) 
                     <tr key={yp.year} className="hover:bg-slate-50">
                       <td className="px-6 py-3 font-bold text-slate-700">{translations.simulator.yearPrefix} {yp.year} {translations.simulator.yearSuffix}</td>
                       <td className="px-6 py-3 text-right font-medium">
-                        {formatCurrency(yp.value, 'TWD')}
+                        {formatCurrency(toBase(yp.value), baseCurrency)}
                       </td>
                       {simulationResult.regularInvestment && (
                         <td className="px-6 py-3 text-right text-slate-600">
-                          {yp.regularInvestment ? formatCurrency(yp.regularInvestment, 'TWD') : '-'}
+                          {yp.regularInvestment ? formatCurrency(toBase(yp.regularInvestment), baseCurrency) : '-'}
                         </td>
                       )}
                       <td className="px-6 py-3 text-right text-slate-600">
-                        {yp.cumulativeInvestment ? formatCurrency(yp.cumulativeInvestment, 'TWD') : formatCurrency(initialAmount, 'TWD')}
+                        {yp.cumulativeInvestment ? formatCurrency(toBase(yp.cumulativeInvestment), baseCurrency) : formatCurrency(toBase(initialAmount), baseCurrency)}
                       </td>
                       <td className={`px-6 py-3 text-right font-bold ${yp.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(yp.return, 'TWD')}
+                        {formatCurrency(toBase(yp.return), baseCurrency)}
                       </td>
                       <td className={`px-6 py-3 text-right font-bold ${yp.returnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {yp.returnPercent.toFixed(2)}%
