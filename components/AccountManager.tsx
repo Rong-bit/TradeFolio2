@@ -171,7 +171,7 @@ const AccountManager: React.FC<Props> = ({ accounts, onAdd, onUpdate, onDelete, 
     }
   };
 
-  const accountCurrencies: Currency[] = [...BASE_CURRENCIES.map(code => code as Currency), Currency.CNY, Currency.INR, Currency.CAD];
+  const accountCurrencies: Currency[] = [...BASE_CURRENCIES.map(code => code as Currency), Currency.CNY];
 
   return (
     <div className="space-y-6">
