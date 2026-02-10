@@ -276,7 +276,7 @@ const App: React.FC = () => {
       if (lang.startsWith('ja')) setBaseCurrency('JPY');
       else if (lang.startsWith('ko')) setBaseCurrency('KRW');
       else if (lang.startsWith('de')) setBaseCurrency('EUR');
-      else if (lang.startsWith('en') || lang.startsWith('zh')) setBaseCurrency('USD');
+      else if (lang.startsWith('ar') || lang.startsWith('pt') || lang.startsWith('en') || lang.startsWith('zh')) setBaseCurrency('USD');
       else setBaseCurrency('TWD');
     }
     
@@ -1221,7 +1221,7 @@ const App: React.FC = () => {
                   className="mt-1 w-full border border-slate-300 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                   placeholder="name@example.com"
                 />
-                <p className="mt-1 text-xs text-slate-500">{(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'Please enter your E-mail' : '初次使用，請輸入您的 E-mail'}</p>
+                <p className="mt-1 text-xs text-slate-500">{(language === 'en' || language === 'de' || language === 'fr' || language === 'hi' || language === 'ar' || language === 'pt') ? 'Please enter your E-mail' : '初次使用，請輸入您的 E-mail'}</p>
               </div>
 
               {loginEmail === ADMIN_EMAIL && (
@@ -1232,7 +1232,7 @@ const App: React.FC = () => {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     className="mt-1 w-full border border-slate-300 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    placeholder={(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'Enter password' : '請輸入密碼'}
+                    placeholder={(language === 'en' || language === 'de' || language === 'fr' || language === 'hi' || language === 'ar' || language === 'pt') ? 'Enter password' : '請輸入密碼'}
                   />
                 </div>
               )}
@@ -1342,7 +1342,7 @@ const App: React.FC = () => {
                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                    </svg>
-                   <span>{(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : language === 'zh-CN' ? '升级' : '申請開通'}</span>
+                   <span>{(language === 'en' || language === 'de' || language === 'fr' || language === 'hi' || language === 'ar' || language === 'pt') ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : language === 'zh-CN' ? '升级' : '申請開通'}</span>
                  </button>
                )}
 
@@ -1414,7 +1414,7 @@ const App: React.FC = () => {
                      onClick={handleContactAdmin}
                      className="sm:hidden px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow"
                    >
-                     {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : language === 'zh-CN' ? '升级' : '申請開通'}
+                     {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi' || language === 'ar' || language === 'pt') ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : language === 'zh-CN' ? '升级' : '申請開通'}
                    </button>
                 )}
             </h2>
@@ -1507,7 +1507,7 @@ const App: React.FC = () => {
                         type="text"
                         value={filterTicker}
                         onChange={(e) => setFilterTicker(e.target.value)}
-                        placeholder={(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'e.g., 0050, AAPL' : '例如: 0050, AAPL'}
+                        placeholder={(language === 'en' || language === 'de' || language === 'fr' || language === 'hi' || language === 'ar' || language === 'pt') ? 'e.g., 0050, AAPL' : '例如: 0050, AAPL'}
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       />
                     </div>
@@ -1971,7 +1971,7 @@ const App: React.FC = () => {
                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
-                  {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : language === 'zh-CN' ? '升级' : '申請開通'}
+                  {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi' || language === 'ar' || language === 'pt') ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : language === 'zh-CN' ? '升级' : '申請開通'}
                 </button>
               )}
               <button 
