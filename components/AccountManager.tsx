@@ -167,11 +167,14 @@ const AccountManager: React.FC<Props> = ({ accounts, onAdd, onUpdate, onDelete, 
       case Currency.CNY: return a.currencyCNY;
       case Currency.INR: return a.currencyINR;
       case Currency.CAD: return a.currencyCAD;
+      case Currency.AUD: return a.currencyAUD;
+      case Currency.SAR: return a.currencySAR;
+      case Currency.BRL: return a.currencyBRL;
       default: return c;
     }
   };
 
-  const accountCurrencies: Currency[] = [...BASE_CURRENCIES.map(code => code as Currency), Currency.CNY];
+  const accountCurrencies: Currency[] = [...BASE_CURRENCIES.map(code => code as Currency), Currency.CNY, Currency.AUD, Currency.SAR, Currency.BRL];
 
   return (
     <div className="space-y-6">
@@ -236,6 +239,9 @@ const AccountManager: React.FC<Props> = ({ accounts, onAdd, onUpdate, onDelete, 
                     acc.currency === Currency.CNY ? 'bg-red-50 text-red-700 border-red-100' :
                     acc.currency === Currency.INR ? 'bg-sky-50 text-sky-700 border-sky-100' :
                     acc.currency === Currency.CAD ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                    acc.currency === Currency.AUD ? 'bg-lime-50 text-lime-700 border-lime-100' :
+                    acc.currency === Currency.SAR ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                    acc.currency === Currency.BRL ? 'bg-cyan-50 text-cyan-700 border-cyan-100' :
                     'bg-green-50 text-green-700 border-green-100'
                   }`}>
                     {acc.currency}
