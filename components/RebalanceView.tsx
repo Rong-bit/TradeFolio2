@@ -131,9 +131,16 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
       if (h.market === Market.US || h.market === Market.UK) valTwd = h.currentValue * exchangeRate;
       else if (h.market === Market.JP) valTwd = (jpyExchangeRate ?? exchangeRate) * h.currentValue;
       else if (h.market === Market.CN) valTwd = (summary.cnyExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.SZ) valTwd = (summary.cnyExchangeRate ?? 0) * h.currentValue;
       else if (h.market === Market.IN) valTwd = (summary.inrExchangeRate ?? 0) * h.currentValue;
       else if (h.market === Market.CA) valTwd = (summary.cadExchangeRate ?? 0) * h.currentValue;
       else if (h.market === Market.FR) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.HK) valTwd = (summary.hkdExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.KR) valTwd = (summary.krwExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.DE) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.AU) valTwd = (summary.audExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.SA) valTwd = (summary.sarExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.BR) valTwd = (summary.brlExchangeRate ?? 0) * h.currentValue;
       else valTwd = h.currentValue;
       if (!mergedMap.has(mergedKey)) {
         mergedMap.set(mergedKey, { holdings: [], totalValTwd: 0 });
@@ -248,9 +255,16 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
       if (h.market === Market.US || h.market === Market.UK) valTwd = h.currentValue * exchangeRate;
       else if (h.market === Market.JP) valTwd = (jpyExchangeRate ?? exchangeRate) * h.currentValue;
       else if (h.market === Market.CN) valTwd = (summary.cnyExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.SZ) valTwd = (summary.cnyExchangeRate ?? 0) * h.currentValue;
       else if (h.market === Market.IN) valTwd = (summary.inrExchangeRate ?? 0) * h.currentValue;
       else if (h.market === Market.CA) valTwd = (summary.cadExchangeRate ?? 0) * h.currentValue;
       else if (h.market === Market.FR) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.HK) valTwd = (summary.hkdExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.KR) valTwd = (summary.krwExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.DE) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.AU) valTwd = (summary.audExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.SA) valTwd = (summary.sarExchangeRate ?? 0) * h.currentValue;
+      else if (h.market === Market.BR) valTwd = (summary.brlExchangeRate ?? 0) * h.currentValue;
       else valTwd = h.currentValue;
       
       if (!mergedMap.has(mergedKey)) {
