@@ -256,6 +256,7 @@ const App: React.FC = () => {
     } else {
       const lang = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || '';
       if (lang.startsWith('ja')) setBaseCurrency('JPY');
+      else if (lang.startsWith('ko')) setBaseCurrency('KRW');
       else if (lang.startsWith('en')) setBaseCurrency('USD');
       else setBaseCurrency('TWD');
     }
@@ -1208,7 +1209,7 @@ const App: React.FC = () => {
                </div>
                <div className="hidden sm:block">
                   <h1 className="font-bold text-lg leading-none bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">TradeView</h1>
-                  <p className="text-[10px] text-slate-400 leading-none mt-0.5">{language === 'en' ? 'Portfolio Management' : '台美股資產管理'}</p>
+                  <p className="text-[10px] text-slate-400 leading-none mt-0.5">{t(language).login.subtitle}</p>
                </div>
             </div>
 
@@ -1216,26 +1217,17 @@ const App: React.FC = () => {
             <div className="flex items-center gap-2 sm:gap-3">
                {/* Language Selector */}
                <div className="hidden sm:flex items-center bg-slate-800 rounded-md border border-slate-700 overflow-hidden">
-                 <button
-                   onClick={() => handleLanguageChange('zh-TW')}
-                   className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                     language === 'zh-TW' 
-                       ? 'bg-indigo-600 text-white' 
-                       : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                   }`}
-                 >
-                   繁
-                 </button>
-                 <button
-                   onClick={() => handleLanguageChange('en')}
-                   className={`px-2.5 py-1 text-xs font-medium transition-colors border-l border-slate-700 ${
-                     language === 'en' 
-                       ? 'bg-indigo-600 text-white' 
-                       : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                   }`}
-                 >
-                   EN
-                 </button>
+                 {(['zh-TW', 'en', 'ja', 'ko'] as const).map((lang) => (
+                   <button
+                     key={lang}
+                     onClick={() => handleLanguageChange(lang)}
+                     className={`px-2 py-1 text-xs font-medium transition-colors ${
+                       language === lang ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                     } ${lang !== 'zh-TW' ? 'border-l border-slate-700' : ''}`}
+                   >
+                     {lang === 'zh-TW' ? '繁' : lang === 'en' ? 'EN' : lang === 'ja' ? '日' : '한'}
+                   </button>
+                 ))}
                </div>
 
                {/* Guest Upgrade Button */}
@@ -1248,7 +1240,7 @@ const App: React.FC = () => {
                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                    </svg>
-                   <span>{language === 'en' ? 'Upgrade' : '申請開通'}</span>
+                   <span>{language === 'en' ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : '申請開通'}</span>
                  </button>
                )}
 
@@ -1320,7 +1312,7 @@ const App: React.FC = () => {
                      onClick={handleContactAdmin}
                      className="sm:hidden px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow"
                    >
-                     {language === 'en' ? 'Upgrade' : '申請開通'}
+                     {language === 'en' ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : '申請開通'}
                    </button>
                 )}
             </h2>
@@ -1802,7 +1794,7 @@ const App: React.FC = () => {
                 </select>
               </div>
               <div className="flex justify-between items-center text-xs font-bold">
-                <span className="text-slate-500">{displayRate.label} {language === 'zh-TW' ? '匯率' : 'Rate'}</span>
+                <span className="text-slate-500">{displayRate.label} {language === 'zh-TW' ? '匯率' : language === 'ja' ? '為替' : language === 'ko' ? '환율' : 'Rate'}</span>
                 {baseCurrency === 'TWD' ? (
                   <input
                     type="number"
@@ -1847,15 +1839,19 @@ const App: React.FC = () => {
 
             {/* 底部操作 */}
             <div className="p-4 border-t border-slate-800 space-y-2">
-              <button 
-                onClick={() => {
-                  const newLang = language === 'zh-TW' ? 'en' : 'zh-TW';
-                  handleLanguageChange(newLang);
-                }}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition"
-              >
-                🌐 {language === 'zh-TW' ? 'Switch to English' : '切換為繁體中文'}
-              </button>
+              <div className="flex items-center bg-slate-800 rounded-xl overflow-hidden">
+                {(['zh-TW', 'en', 'ja', 'ko'] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => { handleLanguageChange(lang); setIsMobileMenuOpen(false); }}
+                    className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
+                      language === lang ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+                    } ${lang !== 'zh-TW' ? 'border-l border-slate-700' : ''}`}
+                  >
+                    {lang === 'zh-TW' ? '繁' : lang === 'en' ? 'EN' : lang === 'ja' ? '日' : '한'}
+                  </button>
+                ))}
+              </div>
               {isGuest && (
                 <button
                   onClick={() => {
@@ -1868,7 +1864,7 @@ const App: React.FC = () => {
                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
-                  {language === 'en' ? 'Upgrade' : '申請開通'}
+                  {language === 'en' ? 'Upgrade' : language === 'ja' ? 'アップグレード' : language === 'ko' ? '업그레이드' : '申請開通'}
                 </button>
               )}
               <button 
