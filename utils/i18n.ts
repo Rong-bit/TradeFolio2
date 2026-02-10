@@ -9,7 +9,7 @@ export const LANGUAGES: { code: Language; label: string }[] = [
   { code: 'en', label: 'EN' },
   { code: 'ja', label: '日' },
   { code: 'ko', label: '한' },
-  { code: 'de', label: '德' },
+  { code: 'de', label: 'DE' },
 ];
 
 // 基準幣別代碼
@@ -1688,3 +1688,4 @@ export const getBaseCurrencyLabel = (code: BaseCurrencyCode, lang: Language): st
   const tr = translations[lang] || translations['zh-TW'];
   return tr?.baseCurrency?.[code] ?? code;
 };
+
