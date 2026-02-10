@@ -406,7 +406,7 @@ const Dashboard: React.FC<Props> = ({
 
       {/* Market Distribution */}
       <div className="bg-white p-6 rounded-xl shadow overflow-hidden">
-        <h3 className="font-bold text-slate-800 text-xl mb-4">{language === 'zh-TW' ? '市場分佈比例' : 'Market Distribution'}</h3>
+        <h3 className="font-bold text-slate-800 text-xl mb-4">{translations.dashboard.marketDistribution}</h3>
         {marketDistribution.length > 0 ? (
           <div className="space-y-3">
             {marketDistribution.map((item) => {
