@@ -369,7 +369,12 @@ export const generateAdvancedChartData = (
   eurExchangeRate?: number,
   cnyExchangeRate?: number,
   inrExchangeRate?: number,
-  cadExchangeRate?: number
+  cadExchangeRate?: number,
+  hkdExchangeRate?: number,
+  krwExchangeRate?: number,
+  audExchangeRate?: number,
+  sarExchangeRate?: number,
+  brlExchangeRate?: number
 ): ChartDataPoint[] => {
   const years = new Set<string>();
   const allDates = [...transactions.map(t => t.date), ...cashFlows.map(c => c.date)];
@@ -488,6 +493,18 @@ export const generateAdvancedChartData = (
                       stockValueTWD += qty * price * (cadExchangeRate ?? 0);
                   } else if (market === Market.FR) {
                       stockValueTWD += qty * price * (eurExchangeRate ?? 0);
+                  } else if (market === Market.HK) {
+                      stockValueTWD += qty * price * (hkdExchangeRate ?? 0);
+                  } else if (market === Market.KR) {
+                      stockValueTWD += qty * price * (krwExchangeRate ?? 0);
+                  } else if (market === Market.DE) {
+                      stockValueTWD += qty * price * (eurExchangeRate ?? 0);
+                  } else if (market === Market.AU) {
+                      stockValueTWD += qty * price * (audExchangeRate ?? 0);
+                  } else if (market === Market.SA) {
+                      stockValueTWD += qty * price * (sarExchangeRate ?? 0);
+                  } else if (market === Market.BR) {
+                      stockValueTWD += qty * price * (brlExchangeRate ?? 0);
                   } else {
                       stockValueTWD += Math.round(qty * price);
                   }
@@ -599,7 +616,12 @@ export const calculateAssetAllocation = (
   eurExchangeRate?: number,
   cnyExchangeRate?: number,
   inrExchangeRate?: number,
-  cadExchangeRate?: number
+  cadExchangeRate?: number,
+  hkdExchangeRate?: number,
+  krwExchangeRate?: number,
+  audExchangeRate?: number,
+  sarExchangeRate?: number,
+  brlExchangeRate?: number
 ): AssetAllocationItem[] => {
   const tickerMap: Record<string, number> = {};
   let totalValue = cashBalanceTWD;
@@ -618,6 +640,18 @@ export const calculateAssetAllocation = (
       valTWD = (cadExchangeRate ?? 0) * h.currentValue;
     } else if (h.market === Market.FR) {
       valTWD = (eurExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.HK) {
+      valTWD = (hkdExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.KR) {
+      valTWD = (krwExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.DE) {
+      valTWD = (eurExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.AU) {
+      valTWD = (audExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.SA) {
+      valTWD = (sarExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.BR) {
+      valTWD = (brlExchangeRate ?? 0) * h.currentValue;
     } else {
       valTWD = h.currentValue;
     }
@@ -700,7 +734,12 @@ export const calculateAccountPerformance = (
   eurExchangeRate?: number,
   cnyExchangeRate?: number,
   inrExchangeRate?: number,
-  cadExchangeRate?: number
+  cadExchangeRate?: number,
+  hkdExchangeRate?: number,
+  krwExchangeRate?: number,
+  audExchangeRate?: number,
+  sarExchangeRate?: number,
+  brlExchangeRate?: number
 ): AccountPerformance[] => {
   return accounts.map(acc => {
     const isUSD = acc.currency === Currency.USD;
@@ -716,6 +755,12 @@ export const calculateAccountPerformance = (
       if (h.market === Market.IN) return sum + h.currentValue * (inrExchangeRate ?? 0);
       if (h.market === Market.CA) return sum + h.currentValue * (cadExchangeRate ?? 0);
       if (h.market === Market.FR) return sum + h.currentValue * (eurExchangeRate ?? 0);
+      if (h.market === Market.HK) return sum + h.currentValue * (hkdExchangeRate ?? 0);
+      if (h.market === Market.KR) return sum + h.currentValue * (krwExchangeRate ?? 0);
+      if (h.market === Market.DE) return sum + h.currentValue * (eurExchangeRate ?? 0);
+      if (h.market === Market.AU) return sum + h.currentValue * (audExchangeRate ?? 0);
+      if (h.market === Market.SA) return sum + h.currentValue * (sarExchangeRate ?? 0);
+      if (h.market === Market.BR) return sum + h.currentValue * (brlExchangeRate ?? 0);
       return sum + h.currentValue;
     }, 0);
     const stockValueNative = accountHoldings.reduce((sum, h) => sum + h.currentValue, 0);
@@ -781,6 +826,18 @@ export const calculateAccountPerformance = (
               valTWD = val * (cadExchangeRate ?? 0);
           } else if (tx.market === Market.FR) {
               valTWD = val * (eurExchangeRate ?? 0);
+          } else if (tx.market === Market.HK) {
+              valTWD = val * (hkdExchangeRate ?? 0);
+          } else if (tx.market === Market.KR) {
+              valTWD = val * (krwExchangeRate ?? 0);
+          } else if (tx.market === Market.DE) {
+              valTWD = val * (eurExchangeRate ?? 0);
+          } else if (tx.market === Market.AU) {
+              valTWD = val * (audExchangeRate ?? 0);
+          } else if (tx.market === Market.SA) {
+              valTWD = val * (sarExchangeRate ?? 0);
+          } else if (tx.market === Market.BR) {
+              valTWD = val * (brlExchangeRate ?? 0);
           } else {
               valTWD = val;
           }

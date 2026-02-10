@@ -66,6 +66,9 @@ const App: React.FC = () => {
   const [cnyExchangeRate, setCnyExchangeRate] = useState<number | undefined>(undefined);
   const [inrExchangeRate, setInrExchangeRate] = useState<number | undefined>(undefined);
   const [cadExchangeRate, setCadExchangeRate] = useState<number | undefined>(undefined);
+  const [audExchangeRate, setAudExchangeRate] = useState<number | undefined>(undefined);
+  const [sarExchangeRate, setSarExchangeRate] = useState<number | undefined>(undefined);
+  const [brlExchangeRate, setBrlExchangeRate] = useState<number | undefined>(undefined);
   const [baseCurrency, setBaseCurrency] = useState<BaseCurrency>('TWD');
   const [rebalanceTargets, setRebalanceTargets] = useState<Record<string, number>>({});
   const [rebalanceEnabledItems, setRebalanceEnabledItems] = useState<string[]>([]);
@@ -257,6 +260,12 @@ const App: React.FC = () => {
     setInrExchangeRate(inrRate ? parseFloat(inrRate) : undefined);
     const cadRate = localStorage.getItem(getKey('cadExchangeRate'));
     setCadExchangeRate(cadRate ? parseFloat(cadRate) : undefined);
+    const audRate = localStorage.getItem(getKey('audExchangeRate'));
+    setAudExchangeRate(audRate ? parseFloat(audRate) : undefined);
+    const sarRate = localStorage.getItem(getKey('sarExchangeRate'));
+    setSarExchangeRate(sarRate ? parseFloat(sarRate) : undefined);
+    const brlRate = localStorage.getItem(getKey('brlExchangeRate'));
+    setBrlExchangeRate(brlRate ? parseFloat(brlRate) : undefined);
     
     const savedBase = localStorage.getItem(getKey('baseCurrency'));
     const validBaseCurrencies: BaseCurrency[] = ['TWD', 'USD', 'JPY', 'EUR', 'GBP', 'HKD', 'KRW', 'CAD', 'INR'];
@@ -295,6 +304,9 @@ const App: React.FC = () => {
   useLocalStorageDebouncedSimple('cnyExchangeRate', cnyExchangeRate, 500, userPrefix);
   useLocalStorageDebouncedSimple('inrExchangeRate', inrExchangeRate, 500, userPrefix);
   useLocalStorageDebouncedSimple('cadExchangeRate', cadExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('audExchangeRate', audExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('sarExchangeRate', sarExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('brlExchangeRate', brlExchangeRate, 500, userPrefix);
   useLocalStorageDebouncedSimple('baseCurrency', baseCurrency, 500, userPrefix);
   useLocalStorageDebounced('rebalanceTargets', rebalanceTargets, 500, userPrefix);
   useLocalStorageDebounced('rebalanceEnabledItems', rebalanceEnabledItems, 500, userPrefix);
@@ -506,6 +518,12 @@ const App: React.FC = () => {
         gbpExchangeRate,
         hkdExchangeRate,
         krwExchangeRate,
+        cnyExchangeRate,
+        inrExchangeRate,
+        cadExchangeRate,
+        audExchangeRate,
+        sarExchangeRate,
+        brlExchangeRate,
         baseCurrency,
         rebalanceTargets,
         rebalanceEnabledItems,
@@ -643,6 +661,9 @@ const App: React.FC = () => {
         if (data.cnyExchangeRate) setCnyExchangeRate(data.cnyExchangeRate);
         if (data.inrExchangeRate) setInrExchangeRate(data.inrExchangeRate);
         if (data.cadExchangeRate) setCadExchangeRate(data.cadExchangeRate);
+        if (data.audExchangeRate) setAudExchangeRate(data.audExchangeRate);
+        if (data.sarExchangeRate) setSarExchangeRate(data.sarExchangeRate);
+        if (data.brlExchangeRate) setBrlExchangeRate(data.brlExchangeRate);
         if (data.rebalanceTargets) setRebalanceTargets(data.rebalanceTargets);
         if (data.rebalanceEnabledItems) setRebalanceEnabledItems(data.rebalanceEnabledItems);
         if (data.historicalData) setHistoricalData(data.historicalData);
@@ -660,7 +681,7 @@ const App: React.FC = () => {
     const holdingKeys = holdingsToUse.map((h: Holding) => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
     
     // 建立 ticker 到 market 的對應關係，同時建立原始 ticker 到查詢 ticker 的映射
-    type MarketStr = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR';
+    type MarketStr = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
     const tickerMarketMap = new Map<string, MarketStr>();
     const tickerToQueryTickerMap = new Map<string, string>(); // 原始 ticker -> 查詢用的 ticker
     
@@ -680,6 +701,12 @@ const App: React.FC = () => {
       else if (h.market === Market.IN) marketStr = 'IN';
       else if (h.market === Market.CA) marketStr = 'CA';
       else if (h.market === Market.FR) marketStr = 'FR';
+      else if (h.market === Market.HK) marketStr = 'HK';
+      else if (h.market === Market.KR) marketStr = 'KR';
+      else if (h.market === Market.DE) marketStr = 'DE';
+      else if (h.market === Market.AU) marketStr = 'AU';
+      else if (h.market === Market.SA) marketStr = 'SA';
+      else if (h.market === Market.BR) marketStr = 'BR';
       tickerMarketMap.set(queryTicker, marketStr);
       tickerToQueryTickerMap.set(h.key, queryTicker);
     });
@@ -746,6 +773,9 @@ const App: React.FC = () => {
       if (result.cnyExchangeRate && result.cnyExchangeRate > 0) setCnyExchangeRate(result.cnyExchangeRate);
       if (result.inrExchangeRate && result.inrExchangeRate > 0) setInrExchangeRate(result.inrExchangeRate);
       if (result.cadExchangeRate && result.cadExchangeRate > 0) setCadExchangeRate(result.cadExchangeRate);
+      if (result.audExchangeRate && result.audExchangeRate > 0) setAudExchangeRate(result.audExchangeRate);
+      if (result.sarExchangeRate && result.sarExchangeRate > 0) setSarExchangeRate(result.sarExchangeRate);
+      if (result.brlExchangeRate && result.brlExchangeRate > 0) setBrlExchangeRate(result.brlExchangeRate);
 
       // 只有在非靜默模式下才顯示提示
       if (!silent) {
@@ -814,6 +844,12 @@ const App: React.FC = () => {
       if (h.market === Market.IN) return sum + h.currentValue * (inrExchangeRate ?? 0);
       if (h.market === Market.CA) return sum + h.currentValue * (cadExchangeRate ?? 0);
       if (h.market === Market.FR) return sum + h.currentValue * (eurExchangeRate ?? 0);
+      if (h.market === Market.HK) return sum + h.currentValue * (hkdExchangeRate ?? 0);
+      if (h.market === Market.KR) return sum + h.currentValue * (krwExchangeRate ?? 0);
+      if (h.market === Market.DE) return sum + h.currentValue * (eurExchangeRate ?? 0);
+      if (h.market === Market.AU) return sum + h.currentValue * (audExchangeRate ?? 0);
+      if (h.market === Market.SA) return sum + h.currentValue * (sarExchangeRate ?? 0);
+      if (h.market === Market.BR) return sum + h.currentValue * (brlExchangeRate ?? 0);
       return sum + h.currentValue; // TW
     }, 0);
     const cashValueTWD = computedAccounts.reduce((sum: number, a: Account) => sum + (a.currency === Currency.USD ? a.balance * exchangeRate : a.balance), 0);
@@ -831,6 +867,12 @@ const App: React.FC = () => {
         if (t.market === Market.IN) return sum + amt * (inrExchangeRate ?? 0);
         if (t.market === Market.CA) return sum + amt * (cadExchangeRate ?? 0);
         if (t.market === Market.FR) return sum + amt * (eurExchangeRate ?? 0);
+        if (t.market === Market.HK) return sum + amt * (hkdExchangeRate ?? 0);
+        if (t.market === Market.KR) return sum + amt * (krwExchangeRate ?? 0);
+        if (t.market === Market.DE) return sum + amt * (eurExchangeRate ?? 0);
+        if (t.market === Market.AU) return sum + amt * (audExchangeRate ?? 0);
+        if (t.market === Market.SA) return sum + amt * (sarExchangeRate ?? 0);
+        if (t.market === Market.BR) return sum + amt * (brlExchangeRate ?? 0);
         return sum + amt; // TW
     }, 0);
 
@@ -842,6 +884,12 @@ const App: React.FC = () => {
         if (t.market === Market.IN) return sum + amt * (inrExchangeRate ?? 0);
         if (t.market === Market.CA) return sum + amt * (cadExchangeRate ?? 0);
         if (t.market === Market.FR) return sum + amt * (eurExchangeRate ?? 0);
+        if (t.market === Market.HK) return sum + amt * (hkdExchangeRate ?? 0);
+        if (t.market === Market.KR) return sum + amt * (krwExchangeRate ?? 0);
+        if (t.market === Market.DE) return sum + amt * (eurExchangeRate ?? 0);
+        if (t.market === Market.AU) return sum + amt * (audExchangeRate ?? 0);
+        if (t.market === Market.SA) return sum + amt * (sarExchangeRate ?? 0);
+        if (t.market === Market.BR) return sum + amt * (brlExchangeRate ?? 0);
         return sum + amt; // TW
     }, 0);
 
@@ -864,11 +912,14 @@ const App: React.FC = () => {
         cnyExchangeRate,
         inrExchangeRate,
         cadExchangeRate,
+        audExchangeRate,
+        sarExchangeRate,
+        brlExchangeRate,
         accumulatedCashDividendsTWD,
         accumulatedStockDividendsTWD,
         avgExchangeRate
     };
-  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, jpyExchangeRate, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, accounts, transactions]);
+  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, jpyExchangeRate, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate, accounts, transactions]);
 
   const displayRate = useMemo(() => getDisplayRateForBaseCurrency(baseCurrency, {
     exchangeRateUsdToTwd: exchangeRate,
@@ -892,12 +943,18 @@ const App: React.FC = () => {
         else if (h.market === Market.IN) valTwd = h.currentValue * (inrExchangeRate ?? 0);
         else if (h.market === Market.CA) valTwd = h.currentValue * (cadExchangeRate ?? 0);
         else if (h.market === Market.FR) valTwd = h.currentValue * (eurExchangeRate ?? 0);
+        else if (h.market === Market.HK) valTwd = h.currentValue * (hkdExchangeRate ?? 0);
+        else if (h.market === Market.KR) valTwd = h.currentValue * (krwExchangeRate ?? 0);
+        else if (h.market === Market.DE) valTwd = h.currentValue * (eurExchangeRate ?? 0);
+        else if (h.market === Market.AU) valTwd = h.currentValue * (audExchangeRate ?? 0);
+        else if (h.market === Market.SA) valTwd = h.currentValue * (sarExchangeRate ?? 0);
+        else if (h.market === Market.BR) valTwd = h.currentValue * (brlExchangeRate ?? 0);
         return {
             ...h,
             weight: totalAssets > 0 ? (valTwd / totalAssets) * 100 : 0
         };
     });
-  }, [baseHoldings, summary.totalValueTWD, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate]);
+  }, [baseHoldings, summary.totalValueTWD, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate]);
 
   // --- Auto Update Prices on Load ---
   useEffect(() => {
@@ -913,10 +970,13 @@ const App: React.FC = () => {
   }, [isAuthenticated, baseHoldings.length, hasAutoUpdated]);
 
   // 修復 useMemo 依賴項：只依賴 summary 中實際使用的屬性，而不是整個物件
-  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate), [transactions, cashFlows, accounts, summary.totalValueTWD, summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate]);
-  const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate), [holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate]);
+  // eslint-disable-next-line max-params -- 多市場匯率參數
+  const chartData = useMemo(() => generateAdvancedChartData(transactions, cashFlows, accounts, summary.totalValueTWD + summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate), [transactions, cashFlows, accounts, summary.totalValueTWD, summary.cashBalanceTWD, exchangeRate, historicalData, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate]);
+  // eslint-disable-next-line max-params -- 多市場匯率參數
+  const assetAllocation = useMemo(() => calculateAssetAllocation(holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate), [holdings, summary.cashBalanceTWD, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate]);
   const annualPerformance = useMemo(() => calculateAnnualPerformance(chartData), [chartData]);
-  const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate]);
+  // eslint-disable-next-line max-params -- 多市場匯率參數
+  const accountPerformance = useMemo(() => calculateAccountPerformance(computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate), [computedAccounts, holdings, cashFlows, transactions, exchangeRate, jpyExchangeRate, eurExchangeRate, cnyExchangeRate, inrExchangeRate, cadExchangeRate, hkdExchangeRate, krwExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate]);
 
   // --- Filtering & Balance Calculation Logic (Merged) ---
   const combinedRecords = useMemo(() => {
@@ -1788,6 +1848,9 @@ const App: React.FC = () => {
                  krwExchangeRate={krwExchangeRate}
                  cadExchangeRate={cadExchangeRate}
                  inrExchangeRate={inrExchangeRate}
+                 audExchangeRate={audExchangeRate}
+                 sarExchangeRate={sarExchangeRate}
+                 brlExchangeRate={brlExchangeRate}
                  language={language}
                />
             )}

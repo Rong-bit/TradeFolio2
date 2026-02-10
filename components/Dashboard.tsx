@@ -58,6 +58,9 @@ const Dashboard: React.FC<Props> = ({
     krwExchangeRate: summary.krwExchangeRate,
     cadExchangeRate: summary.cadExchangeRate,
     inrExchangeRate: summary.inrExchangeRate,
+    audExchangeRate: summary.audExchangeRate,
+    sarExchangeRate: summary.sarExchangeRate,
+    brlExchangeRate: summary.brlExchangeRate,
   };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const displayRate = getDisplayRateForBaseCurrency(baseCurrency, rates); 
@@ -85,6 +88,12 @@ const Dashboard: React.FC<Props> = ({
       [Market.IN]: 0,
       [Market.CA]: 0,
       [Market.FR]: 0,
+      [Market.HK]: 0,
+      [Market.KR]: 0,
+      [Market.DE]: 0,
+      [Market.AU]: 0,
+      [Market.SA]: 0,
+      [Market.BR]: 0,
     };
 
     holdings.forEach(h => {
@@ -101,6 +110,18 @@ const Dashboard: React.FC<Props> = ({
         valTwd = h.currentValue * (summary.cadExchangeRate ?? 0);
       } else if (h.market === Market.FR) {
         valTwd = h.currentValue * (summary.eurExchangeRate ?? 0);
+      } else if (h.market === Market.HK) {
+        valTwd = h.currentValue * (summary.hkdExchangeRate ?? 0);
+      } else if (h.market === Market.KR) {
+        valTwd = h.currentValue * (summary.krwExchangeRate ?? 0);
+      } else if (h.market === Market.DE) {
+        valTwd = h.currentValue * (summary.eurExchangeRate ?? 0);
+      } else if (h.market === Market.AU) {
+        valTwd = h.currentValue * (summary.audExchangeRate ?? 0);
+      } else if (h.market === Market.SA) {
+        valTwd = h.currentValue * (summary.sarExchangeRate ?? 0);
+      } else if (h.market === Market.BR) {
+        valTwd = h.currentValue * (summary.brlExchangeRate ?? 0);
       }
       marketValues[h.market] = (marketValues[h.market] || 0) + valTwd;
     });
@@ -112,7 +133,7 @@ const Dashboard: React.FC<Props> = ({
       value,
       ratio: totalMarketValue > 0 ? (value / totalMarketValue) * 100 : 0,
     })).filter(item => item.value > 0);
-  }, [holdings, summary.exchangeRateUsdToTwd, summary.jpyExchangeRate, summary.eurExchangeRate, summary.cnyExchangeRate, summary.inrExchangeRate, summary.cadExchangeRate]);
+  }, [holdings, summary.exchangeRateUsdToTwd, summary.jpyExchangeRate, summary.eurExchangeRate, summary.cnyExchangeRate, summary.inrExchangeRate, summary.cadExchangeRate, summary.hkdExchangeRate, summary.krwExchangeRate, summary.audExchangeRate, summary.sarExchangeRate, summary.brlExchangeRate]);
 
   const costDetails = useMemo(() => {
     return cashFlows
@@ -395,6 +416,12 @@ const Dashboard: React.FC<Props> = ({
                 [Market.IN]: language === 'zh-TW' ? '印度' : 'India',
                 [Market.CA]: language === 'zh-TW' ? '加拿大' : 'Canada',
                 [Market.FR]: language === 'zh-TW' ? '法國' : 'France',
+                [Market.HK]: language === 'zh-TW' ? '香港' : 'HK',
+                [Market.KR]: language === 'zh-TW' ? '韓國' : 'Korea',
+                [Market.DE]: language === 'zh-TW' ? '德國' : 'Germany',
+                [Market.AU]: language === 'zh-TW' ? '澳洲' : 'Australia',
+                [Market.SA]: language === 'zh-TW' ? '沙烏地' : 'Saudi',
+                [Market.BR]: language === 'zh-TW' ? '巴西' : 'Brazil',
               };
               const marketColors: Record<Market, string> = {
                 [Market.TW]: 'bg-blue-500',
@@ -405,6 +432,12 @@ const Dashboard: React.FC<Props> = ({
                 [Market.IN]: 'bg-teal-500',
                 [Market.CA]: 'bg-rose-500',
                 [Market.FR]: 'bg-indigo-500',
+                [Market.HK]: 'bg-sky-500',
+                [Market.KR]: 'bg-orange-600',
+                [Market.DE]: 'bg-yellow-600',
+                [Market.AU]: 'bg-lime-600',
+                [Market.SA]: 'bg-emerald-700',
+                [Market.BR]: 'bg-cyan-600',
               };
               
               return (

@@ -5,7 +5,7 @@ export interface PriceData {
   changePercent: number;
 }
 
-export type YahooMarket = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR';
+export type YahooMarket = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
 
 /**
  * 將股票代號轉換為 Yahoo Finance 格式
@@ -21,7 +21,7 @@ const convertToYahooSymbol = (ticker: string, market?: YahooMarket): string => {
   cleanTicker = cleanTicker.replace(/\(BAK\)/gi, '').trim();
   
   // 移除已知交易所後綴（若已有則移除再依 market 加上）
-  cleanTicker = cleanTicker.replace(/\.(L|T|SS|SZ|NS|BO|TO|PA|HK)$/i, '').trim();
+  cleanTicker = cleanTicker.replace(/\.(L|T|SS|SZ|NS|BO|TO|PA|HK|KS|KQ|DE|F|AX|SR|SA)$/i, '').trim();
   
   // 判斷市場類型
   // 優先檢查明確的 market 參數（避免誤判，例如日本股票 9984 不應被誤判為台股）
@@ -41,6 +41,18 @@ const convertToYahooSymbol = (ticker: string, market?: YahooMarket): string => {
     return `${cleanTicker}.TO`;
   } else if (market === 'FR') {
     return `${cleanTicker}.PA`;
+  } else if (market === 'HK') {
+    return `${cleanTicker}.HK`;
+  } else if (market === 'KR') {
+    return `${cleanTicker}.KS`;
+  } else if (market === 'DE') {
+    return `${cleanTicker}.DE`;
+  } else if (market === 'AU') {
+    return `${cleanTicker}.AX`;
+  } else if (market === 'SA') {
+    return `${cleanTicker}.SR`;
+  } else if (market === 'BR') {
+    return `${cleanTicker}.SA`;
   }
   
   // 如果 market 未指定，則根據 ticker 格式推斷
@@ -70,6 +82,24 @@ const convertToYahooSymbol = (ticker: string, market?: YahooMarket): string => {
   }
   if (ticker.toUpperCase().includes('.PA') || ticker.toUpperCase().includes('PAR')) {
     return `${cleanTicker}.PA`;
+  }
+  if (ticker.toUpperCase().includes('.HK') || ticker.toUpperCase().includes('HKG')) {
+    return `${cleanTicker}.HK`;
+  }
+  if (ticker.toUpperCase().includes('.KS') || ticker.toUpperCase().includes('.KQ') || ticker.toUpperCase().includes('KRX')) {
+    return `${cleanTicker}.KS`;
+  }
+  if (ticker.toUpperCase().includes('.DE') || ticker.toUpperCase().includes('XETRA')) {
+    return `${cleanTicker}.DE`;
+  }
+  if (ticker.toUpperCase().includes('.AX') || ticker.toUpperCase().includes('ASX')) {
+    return `${cleanTicker}.AX`;
+  }
+  if (ticker.toUpperCase().includes('.SR') || ticker.toUpperCase().includes('Tadawul')) {
+    return `${cleanTicker}.SR`;
+  }
+  if (ticker.toUpperCase().includes('.SA') && !ticker.toUpperCase().includes('SAR')) {
+    return `${cleanTicker}.SA`;
   }
   
   return cleanTicker;
@@ -516,6 +546,9 @@ const fetchKRWExchangeRate = () => fetchXTWDExchangeRate('KRWTWD=X', 0.023);
 const fetchCNYExchangeRate = () => fetchXTWDExchangeRate('CNYTWD=X', 4.3);
 const fetchINRExchangeRate = () => fetchXTWDExchangeRate('INRTWD=X', 0.38);
 const fetchCADExchangeRate = () => fetchXTWDExchangeRate('CADTWD=X', 23);
+const fetchAUDExchangeRate = () => fetchXTWDExchangeRate('AUDTWD=X', 20);
+const fetchSARExchangeRate = () => fetchXTWDExchangeRate('SARTWD=X', 8.2);
+const fetchBRLExchangeRate = () => fetchXTWDExchangeRate('BRLTWD=X', 5.5);
 
 /**
  * 取得指定年份的歷史日幣匯率（年底匯率）
@@ -759,6 +792,9 @@ export const fetchCurrentPrices = async (
   cnyExchangeRate?: number;
   inrExchangeRate?: number;
   cadExchangeRate?: number;
+  audExchangeRate?: number;
+  sarExchangeRate?: number;
+  brlExchangeRate?: number;
 }> => {
   try {
     console.log(`[調試] ===== 開始批次取得股價與匯率 =====`);
@@ -807,6 +843,12 @@ export const fetchCurrentPrices = async (
     const hasIN = markets?.some(m => m === 'IN') || false;
     const hasCA = markets?.some(m => m === 'CA') || false;
     const hasFR = markets?.some(m => m === 'FR') || false;
+    const hasHK = markets?.some(m => m === 'HK') || false;
+    const hasKR = markets?.some(m => m === 'KR') || false;
+    const hasDE = markets?.some(m => m === 'DE') || false;
+    const hasAU = markets?.some(m => m === 'AU') || false;
+    const hasSA = markets?.some(m => m === 'SA') || false;
+    const hasBR = markets?.some(m => m === 'BR') || false;
     
     console.log(`[調試] 開始取得匯率資訊...`);
     const [
@@ -819,6 +861,9 @@ export const fetchCurrentPrices = async (
       cnyExchangeRate,
       inrExchangeRate,
       cadExchangeRate,
+      audExchangeRate,
+      sarExchangeRate,
+      brlExchangeRate,
     ] = await Promise.all([
       fetchExchangeRate(),
       hasJP ? fetchJPYExchangeRate() : Promise.resolve(undefined),
@@ -829,6 +874,9 @@ export const fetchCurrentPrices = async (
       hasCN ? fetchCNYExchangeRate() : Promise.resolve(undefined),
       hasIN ? fetchINRExchangeRate() : Promise.resolve(undefined),
       hasCA ? fetchCADExchangeRate() : Promise.resolve(undefined),
+      hasAU ? fetchAUDExchangeRate() : Promise.resolve(undefined),
+      hasSA ? fetchSARExchangeRate() : Promise.resolve(undefined),
+      hasBR ? fetchBRLExchangeRate() : Promise.resolve(undefined),
     ]);
 
     const successCount = Object.keys(result).length;
@@ -858,6 +906,9 @@ export const fetchCurrentPrices = async (
       cnyExchangeRate: hasCN ? cnyExchangeRate : undefined,
       inrExchangeRate: hasIN ? inrExchangeRate : undefined,
       cadExchangeRate: hasCA ? cadExchangeRate : undefined,
+      audExchangeRate: hasAU ? audExchangeRate : undefined,
+      sarExchangeRate: hasSA ? sarExchangeRate : undefined,
+      brlExchangeRate: hasBR ? brlExchangeRate : undefined,
     };
   } catch (error) {
     console.error('批次取得股價時發生錯誤:', error);

@@ -12,7 +12,13 @@ export enum Market {
   CN = 'CN',
   IN = 'IN',
   CA = 'CA',
-  FR = 'FR'
+  FR = 'FR',
+  HK = 'HK',
+  KR = 'KR',
+  DE = 'DE',
+  AU = 'AU',
+  SA = 'SA',
+  BR = 'BR'
 }
 
 export enum Currency {
@@ -40,7 +46,8 @@ export enum Currency {
   NZD = 'NZD',
   ZAR = 'ZAR',
   BRL = 'BRL',
-  MXN = 'MXN'
+  MXN = 'MXN',
+  SAR = 'SAR'
 }
 
 export enum TransactionType {
@@ -142,6 +149,9 @@ export interface PortfolioSummary {
   cnyExchangeRate?: number; // CNY to TWD (1 CNY = N TWD)
   inrExchangeRate?: number; // INR to TWD (1 INR = N TWD)
   cadExchangeRate?: number; // CAD to TWD (1 CAD = N TWD)
+  audExchangeRate?: number; // AUD to TWD (1 AUD = N TWD)
+  sarExchangeRate?: number; // SAR to TWD (1 SAR = N TWD)
+  brlExchangeRate?: number; // BRL to TWD (1 BRL = N TWD)
   // Detailed fields
   accumulatedCashDividendsTWD: number;
   accumulatedStockDividendsTWD: number;

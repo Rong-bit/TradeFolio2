@@ -169,6 +169,12 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
       case Market.IN: return 'INR';
       case Market.CA: return 'CAD';
       case Market.FR: return 'EUR';
+      case Market.HK: return 'HKD';
+      case Market.KR: return 'KRW';
+      case Market.DE: return 'EUR';
+      case Market.AU: return 'AUD';
+      case Market.SA: return 'SAR';
+      case Market.BR: return 'BRL';
       default: return 'USD';
     }
   };
@@ -367,6 +373,12 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 <option value={Market.IN}>{tf.marketIN}</option>
                 <option value={Market.CA}>{tf.marketCA}</option>
                 <option value={Market.FR}>{tf.marketFR}</option>
+                <option value={Market.HK}>{tf.marketHK}</option>
+                <option value={Market.KR}>{tf.marketKR}</option>
+                <option value={Market.DE}>{tf.marketDE}</option>
+                <option value={Market.AU}>{tf.marketAU}</option>
+                <option value={Market.SA}>{tf.marketSA}</option>
+                <option value={Market.BR}>{tf.marketBR}</option>
               </select>
             </div>
             <div>
@@ -404,6 +416,12 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 formData.market === Market.IN ? 'INR' :
                 formData.market === Market.CA ? 'CAD' :
                 formData.market === Market.FR ? 'EUR' :
+                formData.market === Market.HK ? 'HKD' :
+                formData.market === Market.KR ? 'KRW' :
+                formData.market === Market.DE ? 'EUR' :
+                formData.market === Market.AU ? 'AUD' :
+                formData.market === Market.SA ? 'SAR' :
+                formData.market === Market.BR ? 'BRL' :
                 'USD'
               })</label>
               <input 
@@ -454,7 +472,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
               <div className="text-lg font-bold text-slate-800">
                 {calculatePreviewAmount().toFixed(2)}
                 <span className="text-xs text-slate-500 ml-2">
-                  ({formData.market === Market.TW ? 'TWD' : formData.market === Market.JP ? 'JPY' : formData.market === Market.CN ? 'CNY' : formData.market === Market.IN ? 'INR' : formData.market === Market.CA ? 'CAD' : formData.market === Market.FR ? 'EUR' : 'USD'})
+                  ({getCurrency(formData.market)})
                 </span>
               </div>
               <div className="text-xs text-slate-500 mt-1">

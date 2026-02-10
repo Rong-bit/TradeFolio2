@@ -29,6 +29,9 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
     krwExchangeRate: summary.krwExchangeRate,
     cadExchangeRate: summary.cadExchangeRate,
     inrExchangeRate: summary.inrExchangeRate,
+    audExchangeRate: summary.audExchangeRate,
+    sarExchangeRate: summary.sarExchangeRate,
+    brlExchangeRate: summary.brlExchangeRate,
   };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   
@@ -79,6 +82,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
         else if (h.market === Market.IN) valTwd = (summary.inrExchangeRate ?? 0) * h.currentValue;
         else if (h.market === Market.CA) valTwd = (summary.cadExchangeRate ?? 0) * h.currentValue;
         else if (h.market === Market.FR) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.HK) valTwd = (summary.hkdExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.KR) valTwd = (summary.krwExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.DE) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.AU) valTwd = (summary.audExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.SA) valTwd = (summary.sarExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.BR) valTwd = (summary.brlExchangeRate ?? 0) * h.currentValue;
         else valTwd = h.currentValue;
         return sum + valTwd;
       }, 0);
@@ -91,6 +100,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
           else if (h.market === Market.IN) valTwd = (summary.inrExchangeRate ?? 0) * h.currentValue;
           else if (h.market === Market.CA) valTwd = (summary.cadExchangeRate ?? 0) * h.currentValue;
           else if (h.market === Market.FR) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.HK) valTwd = (summary.hkdExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.KR) valTwd = (summary.krwExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.DE) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.AU) valTwd = (summary.audExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.SA) valTwd = (summary.sarExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.BR) valTwd = (summary.brlExchangeRate ?? 0) * h.currentValue;
           else valTwd = h.currentValue;
           const ratio = valTwd / totalValTwd;
           const oldKey = `${h.accountId}-${h.ticker}`;
@@ -152,6 +167,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
           else if (h.market === Market.IN) valTwd = (summary.inrExchangeRate ?? 0) * h.currentValue;
           else if (h.market === Market.CA) valTwd = (summary.cadExchangeRate ?? 0) * h.currentValue;
           else if (h.market === Market.FR) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.HK) valTwd = (summary.hkdExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.KR) valTwd = (summary.krwExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.DE) valTwd = (summary.eurExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.AU) valTwd = (summary.audExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.SA) valTwd = (summary.sarExchangeRate ?? 0) * h.currentValue;
+        else if (h.market === Market.BR) valTwd = (summary.brlExchangeRate ?? 0) * h.currentValue;
           else valTwd = h.currentValue;
           const ratio = merged.totalValTwd > 0 ? valTwd / merged.totalValTwd : 0;
           const oldKey = `${h.accountId}-${h.ticker}`;
@@ -304,6 +325,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
           : merged.market === Market.IN ? (summary.inrExchangeRate ?? 0)
           : merged.market === Market.CA ? (summary.cadExchangeRate ?? 0)
           : merged.market === Market.FR ? (summary.eurExchangeRate ?? 0)
+          : merged.market === Market.HK ? (summary.hkdExchangeRate ?? 0)
+          : merged.market === Market.KR ? (summary.krwExchangeRate ?? 0)
+          : merged.market === Market.DE ? (summary.eurExchangeRate ?? 0)
+          : merged.market === Market.AU ? (summary.audExchangeRate ?? 0)
+          : merged.market === Market.SA ? (summary.sarExchangeRate ?? 0)
+          : merged.market === Market.BR ? (summary.brlExchangeRate ?? 0)
           : 1;
         diffShares = rate > 0 ? diffValTwd / rate / avgPrice : 0;
       }
@@ -446,6 +473,12 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
                           row.market === Market.IN ? 'bg-teal-100 text-teal-800' :
                           row.market === Market.CA ? 'bg-rose-100 text-rose-800' :
                           row.market === Market.FR ? 'bg-indigo-100 text-indigo-800' :
+                          row.market === Market.HK ? 'bg-sky-100 text-sky-800' :
+                          row.market === Market.KR ? 'bg-orange-100 text-orange-800' :
+                          row.market === Market.DE ? 'bg-yellow-100 text-yellow-800' :
+                          row.market === Market.AU ? 'bg-lime-100 text-lime-800' :
+                          row.market === Market.SA ? 'bg-emerald-100 text-emerald-800' :
+                          row.market === Market.BR ? 'bg-cyan-100 text-cyan-800' :
                           'bg-green-100 text-green-800'
                         }`}>
                           {row.market}

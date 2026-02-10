@@ -17,10 +17,13 @@ interface Props {
   krwExchangeRate?: number;
   cadExchangeRate?: number;
   inrExchangeRate?: number;
+  audExchangeRate?: number;
+  sarExchangeRate?: number;
+  brlExchangeRate?: number;
   language: Language;
 }
 
-const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency = 'TWD', exchangeRateUsdToTwd = 31.5, jpyExchangeRate = 0.21, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate, cadExchangeRate, inrExchangeRate, language }) => {
+const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency = 'TWD', exchangeRateUsdToTwd = 31.5, jpyExchangeRate = 0.21, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate, cadExchangeRate, inrExchangeRate, audExchangeRate, sarExchangeRate, brlExchangeRate, language }) => {
   const rates = {
     exchangeRateUsdToTwd,
     jpyExchangeRate,
@@ -30,6 +33,9 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
     krwExchangeRate,
     cadExchangeRate,
     inrExchangeRate,
+    audExchangeRate,
+    sarExchangeRate,
+    brlExchangeRate,
   };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const translations = t(language);
@@ -58,6 +64,18 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
         return translations.simulator.marketCA;
       case Market.FR:
         return translations.simulator.marketFR;
+      case Market.HK:
+        return translations.simulator.marketHK;
+      case Market.KR:
+        return translations.simulator.marketKR;
+      case Market.DE:
+        return translations.simulator.marketDE;
+      case Market.AU:
+        return translations.simulator.marketAU;
+      case Market.SA:
+        return translations.simulator.marketSA;
+      case Market.BR:
+        return translations.simulator.marketBR;
       default:
         return market;
     }
@@ -670,6 +688,12 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                       <option value={Market.IN}>{translations.simulator.marketIN}</option>
                       <option value={Market.CA}>{translations.simulator.marketCA}</option>
                       <option value={Market.FR}>{translations.simulator.marketFR}</option>
+                      <option value={Market.HK}>{translations.simulator.marketHK}</option>
+                      <option value={Market.KR}>{translations.simulator.marketKR}</option>
+                      <option value={Market.DE}>{translations.simulator.marketDE}</option>
+                      <option value={Market.AU}>{translations.simulator.marketAU}</option>
+                      <option value={Market.SA}>{translations.simulator.marketSA}</option>
+                      <option value={Market.BR}>{translations.simulator.marketBR}</option>
                     </select>
                   </td>
                   <td className="px-3 py-2">
