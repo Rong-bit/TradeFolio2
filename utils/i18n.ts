@@ -578,7 +578,7 @@ const zhTW: Translations = {
   },
   login: {
     title: 'TradeView 登入',
-    subtitle: '台美股資產管理系統',
+    subtitle: '資產管理系統',
     email: 'Email',
     password: 'Password',
     login: '登入',
@@ -1831,7 +1831,7 @@ const zhCN: Translations = JSON.parse(JSON.stringify(zhTW));
 zhCN.baseCurrency = { TWD: '台币', USD: '美元', JPY: '日元', EUR: '欧元', GBP: '英镑', HKD: '港币', KRW: '韩元', CAD: '加元', INR: '印度卢比' };
 zhCN.common = { confirm: '确认', cancel: '取消', delete: '删除', edit: '编辑', save: '保存', close: '关闭', loading: '加载中...', search: '搜索', logoutConfirm: '确定要登出系统吗？' };
 zhCN.nav = { dashboard: '仪表板', history: '交易记录', funds: '资金管理', accounts: '证券户', rebalance: '再平衡', simulator: '配置模拟', help: '系统管理', logout: '登出' };
-zhCN.login = { title: 'TradeView 登录', subtitle: '台美股资产管理', email: 'Email', password: 'Password', login: '登录', privacy: '隐私声明', privacyDesc: '数据存储在个人设备，不涉及个人隐私，请定时备份。', riskDisclaimer: '风险声明', riskDisclaimerDesc: '投资有风险，过往绩效不代表未来表现。' };
+zhCN.login = { title: 'TradeView 登录', subtitle: '资产管理', email: 'Email', password: 'Password', login: '登录', privacy: '隐私声明', privacyDesc: '数据存储在个人设备，不涉及个人隐私，请定时备份。', riskDisclaimer: '风险声明', riskDisclaimerDesc: '投资有风险，过往绩效不代表未来表现。' };
 zhCN.dashboard = { ...zhTW.dashboard, netCost: '净投入', totalAssets: '总资产', totalPL: '总损益', includeCash: '含现金', formulaNote: '美元账户优先使用历史汇率，转账与利息不计入成本。', deposit: '汇入(+)', withdraw: '汇出(-)', fixedTWD: '指定台币金额', taiwanDollar: '台币' };
 zhCN.funds = { ...zhTW.funds, title: '资金管理', deposit: '汇入', withdraw: '汇出', transfer: '转账', interest: '利息' };
 zhCN.accounts = { ...zhTW.accounts, currencyTWD: '台币', currencyUSD: '美元', currencyJPY: '日元', currencyEUR: '欧元', currencyGBP: '英镑', currencyHKD: '港币', currencyKRW: '韩元', currencyCNY: '人民币', currencyINR: '印度卢比', currencyCAD: '加元', currencyAUD: '澳元', currencySAR: '沙特里亚尔', currencyBRL: '巴西雷亚尔', subBrokerage: '海外券商' };
