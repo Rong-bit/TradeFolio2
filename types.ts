@@ -8,7 +8,11 @@ export enum Market {
   US = 'US',
   TW = 'TW',
   UK = 'UK',
-  JP = 'JP'
+  JP = 'JP',
+  CN = 'CN',
+  IN = 'IN',
+  CA = 'CA',
+  FR = 'FR'
 }
 
 export enum Currency {
@@ -134,6 +138,9 @@ export interface PortfolioSummary {
   gbpExchangeRate?: number; // GBP to TWD (1 GBP = N TWD)
   hkdExchangeRate?: number; // HKD to TWD (1 HKD = N TWD)
   krwExchangeRate?: number; // KRW to TWD (1 KRW = N TWD)
+  cnyExchangeRate?: number; // CNY to TWD (1 CNY = N TWD)
+  inrExchangeRate?: number; // INR to TWD (1 INR = N TWD)
+  cadExchangeRate?: number; // CAD to TWD (1 CAD = N TWD)
   // Detailed fields
   accumulatedCashDividendsTWD: number;
   accumulatedStockDividendsTWD: number;

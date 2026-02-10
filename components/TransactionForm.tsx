@@ -165,6 +165,10 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
       case Market.JP: return 'JPY';
       case Market.UK: return 'USD';
       case Market.US: return 'USD';
+      case Market.CN: return 'CNY';
+      case Market.IN: return 'INR';
+      case Market.CA: return 'CAD';
+      case Market.FR: return 'EUR';
       default: return 'USD';
     }
   };
@@ -359,6 +363,10 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 <option value={Market.US}>{tf.marketUS}</option>
                 <option value={Market.UK}>{tf.marketUK}</option>
                 <option value={Market.JP}>{tf.marketJP}</option>
+                <option value={Market.CN}>{tf.marketCN}</option>
+                <option value={Market.IN}>{tf.marketIN}</option>
+                <option value={Market.CA}>{tf.marketCA}</option>
+                <option value={Market.FR}>{tf.marketFR}</option>
               </select>
             </div>
             <div>
@@ -392,6 +400,10 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 formData.market === Market.TW ? 'TWD' : 
                 formData.market === Market.UK ? 'USD' : 
                 formData.market === Market.JP ? 'JPY' : 
+                formData.market === Market.CN ? 'CNY' :
+                formData.market === Market.IN ? 'INR' :
+                formData.market === Market.CA ? 'CAD' :
+                formData.market === Market.FR ? 'EUR' :
                 'USD'
               })</label>
               <input 
@@ -442,7 +454,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
               <div className="text-lg font-bold text-slate-800">
                 {calculatePreviewAmount().toFixed(2)}
                 <span className="text-xs text-slate-500 ml-2">
-                  ({formData.market === Market.TW ? 'TWD' : formData.market === Market.JP ? 'JPY' : 'USD'})
+                  ({formData.market === Market.TW ? 'TWD' : formData.market === Market.JP ? 'JPY' : formData.market === Market.CN ? 'CNY' : formData.market === Market.IN ? 'INR' : formData.market === Market.CA ? 'CAD' : formData.market === Market.FR ? 'EUR' : 'USD'})
                 </span>
               </div>
               <div className="text-xs text-slate-500 mt-1">

@@ -79,6 +79,10 @@ const Dashboard: React.FC<Props> = ({
       [Market.US]: 0,
       [Market.UK]: 0,
       [Market.JP]: 0,
+      [Market.CN]: 0,
+      [Market.IN]: 0,
+      [Market.CA]: 0,
+      [Market.FR]: 0,
     };
 
     holdings.forEach(h => {
@@ -87,6 +91,14 @@ const Dashboard: React.FC<Props> = ({
         valTwd = h.currentValue * summary.exchangeRateUsdToTwd;
       } else if (h.market === Market.JP) {
         valTwd = h.currentValue * (summary.jpyExchangeRate || summary.exchangeRateUsdToTwd);
+      } else if (h.market === Market.CN) {
+        valTwd = h.currentValue * (summary.cnyExchangeRate ?? 0);
+      } else if (h.market === Market.IN) {
+        valTwd = h.currentValue * (summary.inrExchangeRate ?? 0);
+      } else if (h.market === Market.CA) {
+        valTwd = h.currentValue * (summary.cadExchangeRate ?? 0);
+      } else if (h.market === Market.FR) {
+        valTwd = h.currentValue * (summary.eurExchangeRate ?? 0);
       }
       marketValues[h.market] = (marketValues[h.market] || 0) + valTwd;
     });
@@ -98,7 +110,7 @@ const Dashboard: React.FC<Props> = ({
       value,
       ratio: totalMarketValue > 0 ? (value / totalMarketValue) * 100 : 0,
     })).filter(item => item.value > 0);
-  }, [holdings, summary.exchangeRateUsdToTwd, summary.jpyExchangeRate]);
+  }, [holdings, summary.exchangeRateUsdToTwd, summary.jpyExchangeRate, summary.eurExchangeRate, summary.cnyExchangeRate, summary.inrExchangeRate, summary.cadExchangeRate]);
 
   const costDetails = useMemo(() => {
     return cashFlows
@@ -377,12 +389,20 @@ const Dashboard: React.FC<Props> = ({
                 [Market.US]: language === 'zh-TW' ? '美股' : 'US',
                 [Market.UK]: language === 'zh-TW' ? '英國股' : 'UK',
                 [Market.JP]: language === 'zh-TW' ? '日本股' : 'Japan',
+                [Market.CN]: language === 'zh-TW' ? '中國滬' : 'China',
+                [Market.IN]: language === 'zh-TW' ? '印度' : 'India',
+                [Market.CA]: language === 'zh-TW' ? '加拿大' : 'Canada',
+                [Market.FR]: language === 'zh-TW' ? '法國' : 'France',
               };
               const marketColors: Record<Market, string> = {
                 [Market.TW]: 'bg-blue-500',
                 [Market.US]: 'bg-green-500',
                 [Market.UK]: 'bg-purple-500',
                 [Market.JP]: 'bg-red-500',
+                [Market.CN]: 'bg-amber-500',
+                [Market.IN]: 'bg-teal-500',
+                [Market.CA]: 'bg-rose-500',
+                [Market.FR]: 'bg-indigo-500',
               };
               
               return (

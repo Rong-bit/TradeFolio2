@@ -269,7 +269,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, accounts, onUpdatePrice, onA
   // 渲染持倉行的輔助函數
   function renderHoldingRow(h: Holding, isDetailedMode: boolean = false) {
     const isProfit = h.unrealizedPL >= 0;
-    const currency = h.market === Market.TW ? 'TWD' : h.market === Market.JP ? 'JPY' : 'USD';
+    const currency = h.market === Market.TW ? 'TWD' : h.market === Market.JP ? 'JPY' : h.market === Market.CN ? 'CNY' : h.market === Market.IN ? 'INR' : h.market === Market.CA ? 'CAD' : h.market === Market.FR ? 'EUR' : 'USD';
     const plColor = isProfit ? 'text-emerald-600' : 'text-rose-600';
     const roiColor = h.annualizedReturn >= 0 ? 'text-blue-600' : 'text-orange-600';
     // 只有當 dailyChange 不是 undefined/null 時才根據正負值決定顏色，否則保持預設顏色
@@ -286,6 +286,10 @@ const HoldingsTable: React.FC<Props> = ({ holdings, accounts, onUpdatePrice, onA
             h.market === Market.US ? 'bg-blue-50 text-blue-600 border-blue-100' : 
             h.market === Market.UK ? 'bg-purple-50 text-purple-600 border-purple-100' : 
             h.market === Market.JP ? 'bg-orange-50 text-orange-600 border-orange-100' :
+            h.market === Market.CN ? 'bg-amber-50 text-amber-600 border-amber-100' :
+            h.market === Market.IN ? 'bg-teal-50 text-teal-600 border-teal-100' :
+            h.market === Market.CA ? 'bg-rose-50 text-rose-600 border-rose-100' :
+            h.market === Market.FR ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
             'bg-green-50 text-green-600 border-green-100'
           }`}>
             {h.market}
@@ -332,6 +336,10 @@ const HoldingsTable: React.FC<Props> = ({ holdings, accounts, onUpdatePrice, onA
                   h.market === Market.US ? 'bg-blue-400' : 
                   h.market === Market.UK ? 'bg-purple-400' : 
                   h.market === Market.JP ? 'bg-orange-400' :
+                  h.market === Market.CN ? 'bg-amber-400' :
+                  h.market === Market.IN ? 'bg-teal-400' :
+                  h.market === Market.CA ? 'bg-rose-400' :
+                  h.market === Market.FR ? 'bg-indigo-400' :
                   'bg-green-400'
                 }`} 
                 style={{ width: `${Math.min(h.weight, 100)}%` }}

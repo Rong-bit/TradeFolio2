@@ -5,66 +5,73 @@ export interface PriceData {
   changePercent: number;
 }
 
+export type YahooMarket = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR';
+
 /**
  * 將股票代號轉換為 Yahoo Finance 格式
  * @param ticker 原始股票代號（如 "TPE:2330" 或 "AAPL" 或 "DTLA" 或 "7203"）
  * @param market 市場類型
  * @returns Yahoo Finance 格式的代號（如 "2330.TW" 或 "AAPL" 或 "DTLA.L" 或 "7203.T"）
  */
-const convertToYahooSymbol = (ticker: string, market?: 'US' | 'TW' | 'UK' | 'JP'): string => {
+const convertToYahooSymbol = (ticker: string, market?: YahooMarket): string => {
   // 移除可能的 TPE: 前綴
   let cleanTicker = ticker.replace(/^TPE:/i, '').trim();
   
   // 移除 (BAK) 後綴（備份股票代號）
   cleanTicker = cleanTicker.replace(/\(BAK\)/gi, '').trim();
   
-  // 移除可能的 .L 後綴（如果已經有）
-  cleanTicker = cleanTicker.replace(/\.L$/i, '').trim();
-  
-  // 移除可能的 .T 後綴（如果已經有）
-  cleanTicker = cleanTicker.replace(/\.T$/i, '').trim();
+  // 移除已知交易所後綴（若已有則移除再依 market 加上）
+  cleanTicker = cleanTicker.replace(/\.(L|T|SS|SZ|NS|BO|TO|PA|HK)$/i, '').trim();
   
   // 判斷市場類型
   // 優先檢查明確的 market 參數（避免誤判，例如日本股票 9984 不應被誤判為台股）
   if (market === 'TW') {
-    // 台股格式：數字代號 + .TW
     return `${cleanTicker}.TW`;
   } else if (market === 'UK') {
-    // 英國股票格式：代號 + .L (London)
     return `${cleanTicker}.L`;
   } else if (market === 'JP') {
-    // 日本股票格式：代號 + .T (Tokyo)
     return `${cleanTicker}.T`;
   } else if (market === 'US') {
-    // 美股格式：保持原樣
     return cleanTicker;
+  } else if (market === 'CN') {
+    return `${cleanTicker}.SS`;
+  } else if (market === 'IN') {
+    return `${cleanTicker}.NS`;
+  } else if (market === 'CA') {
+    return `${cleanTicker}.TO`;
+  } else if (market === 'FR') {
+    return `${cleanTicker}.PA`;
   }
   
   // 如果 market 未指定，則根據 ticker 格式推斷
   if (/^\d{4}$/.test(cleanTicker)) {
-    // 4 位數字代號，預設視為台股
     return `${cleanTicker}.TW`;
   } else if (/^[A-Z]{1,5}$/.test(cleanTicker)) {
-    // 1-5 個字母，預設視為美股
     return cleanTicker;
   }
   
-  // 如果包含 TPE 或 TW 標記，視為台股
   if (ticker.toUpperCase().includes('TPE') || ticker.toUpperCase().includes('TW')) {
     return `${cleanTicker}.TW`;
   }
-  
-  // 如果包含 .L 或 LON 標記，視為英國股票
   if (ticker.toUpperCase().includes('.L') || ticker.toUpperCase().includes('LON')) {
     return `${cleanTicker}.L`;
   }
-  
-  // 如果包含 .T 或 TYO 標記，視為日本股票
   if (ticker.toUpperCase().includes('.T') || ticker.toUpperCase().includes('TYO')) {
     return `${cleanTicker}.T`;
   }
+  if (ticker.toUpperCase().includes('.SS') || ticker.toUpperCase().includes('SHA')) {
+    return `${cleanTicker}.SS`;
+  }
+  if (ticker.toUpperCase().includes('.NS') || ticker.toUpperCase().includes('NSE')) {
+    return `${cleanTicker}.NS`;
+  }
+  if (ticker.toUpperCase().includes('.TO')) {
+    return `${cleanTicker}.TO`;
+  }
+  if (ticker.toUpperCase().includes('.PA') || ticker.toUpperCase().includes('PAR')) {
+    return `${cleanTicker}.PA`;
+  }
   
-  // 預設視為美股
   return cleanTicker;
 };
 
@@ -506,6 +513,9 @@ const fetchEURExchangeRate = () => fetchXTWDExchangeRate('EURTWD=X', 34);
 const fetchGBPExchangeRate = () => fetchXTWDExchangeRate('GBPTWD=X', 40);
 const fetchHKDExchangeRate = () => fetchXTWDExchangeRate('HKDTWD=X', 4);
 const fetchKRWExchangeRate = () => fetchXTWDExchangeRate('KRWTWD=X', 0.023);
+const fetchCNYExchangeRate = () => fetchXTWDExchangeRate('CNYTWD=X', 4.3);
+const fetchINRExchangeRate = () => fetchXTWDExchangeRate('INRTWD=X', 0.38);
+const fetchCADExchangeRate = () => fetchXTWDExchangeRate('CADTWD=X', 23);
 
 /**
  * 取得指定年份的歷史日幣匯率（年底匯率）
@@ -737,7 +747,7 @@ const fetchHistoricalExchangeRate = async (year: number): Promise<number> => {
  */
 export const fetchCurrentPrices = async (
   tickers: string[],
-  markets?: ('US' | 'TW' | 'UK' | 'JP')[]
+  markets?: YahooMarket[]
 ): Promise<{
   prices: Record<string, PriceData>;
   exchangeRate: number;
@@ -746,6 +756,9 @@ export const fetchCurrentPrices = async (
   gbpExchangeRate?: number;
   hkdExchangeRate?: number;
   krwExchangeRate?: number;
+  cnyExchangeRate?: number;
+  inrExchangeRate?: number;
+  cadExchangeRate?: number;
 }> => {
   try {
     console.log(`[調試] ===== 開始批次取得股價與匯率 =====`);
@@ -762,23 +775,19 @@ export const fetchCurrentPrices = async (
     });
 
     // 逐個處理請求，避免速率限制
-    // 每個請求之間延遲 1500ms（1.5秒），避免觸發 Cloudflare Edge 的速率限制
     const delayMs = 1500;
     const prices: (PriceData | null)[] = [];
     
-    // 逐個處理每個股票，避免同時發送太多請求
     for (let i = 0; i < yahooSymbols.length; i++) {
       const symbol = yahooSymbols[i];
       const price = await fetchSingleStockPrice(symbol);
       prices.push(price);
       
-      // 如果不是最後一個，添加延遲
       if (i < yahooSymbols.length - 1) {
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
 
-    // 建立結果物件，使用原始 ticker 作為 key
     const result: Record<string, PriceData> = {};
     const successTickers: string[] = [];
     const failedTickers: string[] = [];
@@ -793,21 +802,35 @@ export const fetchCurrentPrices = async (
       }
     });
 
-    // 檢查是否有日本市場的股票
     const hasJP = markets?.some(m => m === 'JP') || false;
+    const hasCN = markets?.some(m => m === 'CN') || false;
+    const hasIN = markets?.some(m => m === 'IN') || false;
+    const hasCA = markets?.some(m => m === 'CA') || false;
+    const hasFR = markets?.some(m => m === 'FR') || false;
     
-    // 同時取得匯率
     console.log(`[調試] 開始取得匯率資訊...`);
-    const [exchangeRate, jpyExchangeRate, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate] = await Promise.all([
+    const [
+      exchangeRate,
+      jpyExchangeRate,
+      eurExchangeRate,
+      gbpExchangeRate,
+      hkdExchangeRate,
+      krwExchangeRate,
+      cnyExchangeRate,
+      inrExchangeRate,
+      cadExchangeRate,
+    ] = await Promise.all([
       fetchExchangeRate(),
       hasJP ? fetchJPYExchangeRate() : Promise.resolve(undefined),
       fetchEURExchangeRate(),
       fetchGBPExchangeRate(),
       fetchHKDExchangeRate(),
       fetchKRWExchangeRate(),
+      hasCN ? fetchCNYExchangeRate() : Promise.resolve(undefined),
+      hasIN ? fetchINRExchangeRate() : Promise.resolve(undefined),
+      hasCA ? fetchCADExchangeRate() : Promise.resolve(undefined),
     ]);
 
-    // 統計成功取得的數據
     const successCount = Object.keys(result).length;
     const totalCount = tickers.length;
     console.log(`[調試] ===== 股價與匯率更新完成 =====`);
@@ -832,6 +855,9 @@ export const fetchCurrentPrices = async (
       gbpExchangeRate,
       hkdExchangeRate,
       krwExchangeRate,
+      cnyExchangeRate: hasCN ? cnyExchangeRate : undefined,
+      inrExchangeRate: hasIN ? inrExchangeRate : undefined,
+      cadExchangeRate: hasCA ? cadExchangeRate : undefined,
     };
   } catch (error) {
     console.error('批次取得股價時發生錯誤:', error);
@@ -849,7 +875,7 @@ export const fetchCurrentPrices = async (
 export const fetchHistoricalYearEndData = async (
   year: number,
   tickers: string[],
-  markets?: ('US' | 'TW' | 'UK' | 'JP')[]
+  markets?: YahooMarket[]
 ): Promise<{ prices: Record<string, number>, exchangeRate: number, jpyExchangeRate?: number }> => {
   try {
     const endDate = Math.floor(new Date(`${year}-12-31`).getTime() / 1000);
@@ -970,7 +996,7 @@ export const fetchHistoricalYearEndData = async (
  */
 const fetchAnnualizedReturnFromStockAnalysis = async (
   ticker: string,
-  market?: 'US' | 'TW' | 'UK' | 'JP'
+  market?: YahooMarket
 ): Promise<number | null> => {
   try {
     // 清理 ticker，處理各種前綴格式
@@ -1080,7 +1106,7 @@ const fetchAnnualizedReturnFromStockAnalysis = async (
  */
 export const fetchAnnualizedReturn = async (
   ticker: string,
-  market?: 'US' | 'TW' | 'UK' | 'JP'
+  market?: YahooMarket
 ): Promise<number | null> => {
   // 優先嘗試從 StockAnalysis.com 取得（數據準確且包含成立以來的年化報酬率）
   const stockAnalysisReturn = await fetchAnnualizedReturnFromStockAnalysis(ticker, market);

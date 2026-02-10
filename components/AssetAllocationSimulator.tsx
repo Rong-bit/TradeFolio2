@@ -46,6 +46,14 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
         return translations.simulator.marketUK;
       case Market.JP:
         return translations.simulator.marketJP;
+      case Market.CN:
+        return translations.simulator.marketCN;
+      case Market.IN:
+        return translations.simulator.marketIN;
+      case Market.CA:
+        return translations.simulator.marketCA;
+      case Market.FR:
+        return translations.simulator.marketFR;
       default:
         return market;
     }
@@ -654,6 +662,10 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                       <option value={Market.US}>{translations.simulator.marketUS}</option>
                       <option value={Market.UK}>{translations.simulator.marketUK}</option>
                       <option value={Market.JP}>{translations.simulator.marketJP}</option>
+                      <option value={Market.CN}>{translations.simulator.marketCN}</option>
+                      <option value={Market.IN}>{translations.simulator.marketIN}</option>
+                      <option value={Market.CA}>{translations.simulator.marketCA}</option>
+                      <option value={Market.FR}>{translations.simulator.marketFR}</option>
                     </select>
                   </td>
                   <td className="px-3 py-2">
