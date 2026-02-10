@@ -1,6 +1,6 @@
 {
-  "short_name": "TradeFolio",
-  "name": "TradeFolio: 台美股資產管家",
+  "short_name": "TradeView",
+  "name": "TradeView: 資產管理系統",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3314/3314353.png",
@@ -13,8 +13,8 @@
       "type": "image/png"
     }
   ],
-  "start_url": "https://rong-bit.github.io/TradeFolio/index.html",
-  "scope": "https://rong-bit.github.io/TradeFolio/",
+  "start_url": "https://rong-bit.github.io/TradeView/",
+  "scope": "https://rong-bit.github.io/TradeView/",
   "display": "standalone",
   "theme_color": "#0f172a",
   "background_color": "#f8fafc"
