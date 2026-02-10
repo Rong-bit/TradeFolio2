@@ -371,6 +371,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 <option value={Market.UK}>{tf.marketUK}</option>
                 <option value={Market.JP}>{tf.marketJP}</option>
                 <option value={Market.CN}>{tf.marketCN}</option>
+                <option value={Market.SZ}>{tf.marketSZ}</option>
                 <option value={Market.IN}>{tf.marketIN}</option>
                 <option value={Market.CA}>{tf.marketCA}</option>
                 <option value={Market.FR}>{tf.marketFR}</option>
