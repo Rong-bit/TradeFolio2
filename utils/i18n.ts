@@ -2040,6 +2040,9 @@ const de: Translations = {
     delete: 'Löschen',
     addAll: 'Alle hinzufügen',
     yearlyInvestment: 'Jährliche Investition',
+    autoQuery: '🔍 Automatische Abfrage',
+    autoQueryTitle: 'Automatische Abfrage der annualisierten Rendite seit Börsengang',
+    querying: 'Abfrage läuft',
     cagrExplanation: '📊 Erklärung zur Berechnung der annualisierten Rendite:',
     cagrFormulaDesc: 'Das System verwendet die CAGR-Formel (Compound Annual Growth Rate):',
     cagrFormula: 'CAGR = ((Aktueller Preis / Anfangspreis) ^ (1 / Jahre)) - 1',
@@ -2285,6 +2288,9 @@ const fr: Translations = {
     delete: 'Supprimer',
     addAll: 'Tout ajouter',
     yearlyInvestment: 'Investissement annuel',
+    autoQuery: '🔍 Requête automatique',
+    autoQueryTitle: 'Requête automatique du rendement annualisé depuis l\'introduction en bourse',
+    querying: 'Requête en cours',
     cagrExplanation: '📊 Explication du calcul du rendement annualisé :',
     cagrFormulaDesc: 'Le système utilise la formule CAGR (Taux de croissance annuel composé) :',
     cagrFormula: 'CAGR = ((Prix actuel / Prix initial) ^ (1 / Années)) - 1',
@@ -2530,6 +2536,9 @@ const hi: Translations = {
     delete: 'हटाएं',
     addAll: 'सभी जोड़ें',
     yearlyInvestment: 'वार्षिक निवेश',
+    autoQuery: '🔍 स्वचालित क्वेरी',
+    autoQueryTitle: 'IPO के बाद से वार्षिक रिटर्न स्वचालित क्वेरी',
+    querying: 'क्वेरी कर रहे हैं',
   },
   help: {
     dataManagement: 'डेटा प्रबंधन',
@@ -2701,12 +2710,211 @@ const ar: Translations = {
   nav: { dashboard: 'لوحة التحكم', history: 'السجل', funds: 'الأموال', accounts: 'الحسابات', rebalance: 'إعادة التوازن', simulator: 'المحاكي', help: 'النظام', logout: 'تسجيل الخروج' },
   pages: { ...en.pages, dashboard: 'لوحة المحفظة', history: 'السجل (المعاملات والتدفق)', funds: 'إدارة الأموال', accounts: 'إدارة الحسابات', rebalance: 'إعادة التوازن', simulator: 'محاكي التخصيص', help: 'النظام والنسخ' },
   login: { title: 'تسجيل الدخول TradeView', subtitle: 'محفظة أسهم تايوان والولايات المتحدة', email: 'البريد', password: 'كلمة المرور', login: 'دخول', privacy: 'الخصوصية', privacyDesc: 'البيانات مخزنة محلياً. لا جمع للبيانات الشخصية.', riskDisclaimer: 'إخلاء المسؤولية', riskDisclaimerDesc: 'الاستثمار ينطوي على مخاطر.' },
-  dashboard: { ...en.dashboard, netCost: 'صافي الاستثمار', totalAssets: 'إجمالي الأصول', totalPL: 'الربح/الخسارة', deposit: 'إيداع(+)', withdraw: 'سحب(-)', displayCurrency: 'عملة العرض', ntd: 'دولار تايواني', usd: 'دولار أمريكي', taiwanDollar: 'TWD', aiAdvisor: 'مستشار Gemini AI', notInvestmentAdvice: 'ليس نصيحة استثمارية.' },
-  funds: { ...en.funds, title: 'إدارة الأموال', deposit: 'إيداع', withdraw: 'سحب', transfer: 'تحويل', interest: 'فائدة' },
-  history: { ...en.history },
-  labels: { ...en.labels, date: 'التاريخ', account: 'الحساب', amount: 'المبلغ', balance: 'الرصيد', currency: 'العملة', fee: 'العمولة', exchangeRate: 'سعر الصرف' },
-  holdings: { ...en.holdings, portfolioHoldings: 'المراكز', aiUpdatePrices: 'تحديث الأسعار (AI)', market: 'السوق', ticker: 'الرمز', noHoldings: 'لا مراكز. أضف معاملات.' },
-  accounts: { ...en.accounts, addAccount: 'إضافة حساب', accountName: 'اسم الحساب', currency: 'العملة', currencyAUD: 'دولار أسترالي', currencySAR: 'ريال سعودي', currencyBRL: 'ريال برازيلي', add: 'إضافة', update: 'تحديث', balance: 'الرصيد', cancel: 'إلغاء', noAccounts: 'لا حسابات. أضف من الأعلى.' },
+  dashboard: { 
+    ...en.dashboard, 
+    netCost: 'صافي الاستثمار', 
+    totalAssets: 'إجمالي الأصول', 
+    totalPL: 'الربح/الخسارة', 
+    annualizedReturn: 'العائد السنوي (CAGR)',
+    detail: 'التفاصيل',
+    includeCash: 'بما في ذلك النقد',
+    detailedStatistics: 'إحصائيات مفصلة',
+    totalCost: 'إجمالي التكلفة',
+    totalPLAmount: 'إجمالي مبلغ الربح/الخسارة',
+    accumulatedCashDividends: 'الأرباح النقدية المتراكمة',
+    accumulatedStockDividends: 'أرباح الأسهم المتراكمة',
+    annualizedReturnRate: 'معدل العائد السنوي',
+    avgExchangeRate: 'متوسط سعر الصرف (TWD/USD)',
+    currentExchangeRate: 'سعر الصرف الحالي',
+    totalReturnRate: 'معدل العائد الإجمالي',
+    assetVsCostTrend: 'اتجاه الأصول مقابل التكلفة',
+    aiCorrectHistory: 'تصحيح الأصول التاريخية بالذكاء الاصطناعي',
+    allocation: 'التخصيص',
+    annualPerformance: 'الأداء السنوي',
+    year: 'السنة',
+    startAssets: 'الأصول الأولية',
+    annualNetInflow: 'صافي التدفق السنوي',
+    endAssets: 'الأصول النهائية',
+    annualProfit: 'الربح السنوي',
+    annualROI: 'العائد على الاستثمار السنوي',
+    brokerageAccounts: 'الحسابات الوسيطة',
+    accountName: 'اسم الحساب',
+    totalAssetsNT: 'إجمالي الأصول (NT$)',
+    marketValueNT: 'القيمة السوقية (NT$)',
+    balanceNT: 'الرصيد (NT$)',
+    profitNT: 'الربح (NT$)',
+    annualizedROI: 'العائد السنوي على الاستثمار',
+    displayCurrency: 'عملة العرض', 
+    ntd: 'دولار تايواني', 
+    usd: 'دولار أمريكي',
+    portfolioHoldings: 'المراكز',
+    mergedDisplay: 'مدمج (حسب الرمز)',
+    detailedDisplay: 'مفصل (حسب الحساب)',
+    aiUpdatePrices: 'تحديث الأسعار وسعر الصرف (AI)',
+    estimatedGrowth8: 'نمو متوقع 8%',
+    chartLoading: 'جاري تحميل الرسم البياني...',
+    noChartData: 'يرجى إضافة الإيداعات والمعاملات أولاً',
+    noHoldings: 'لا توجد مراكز',
+    noAccounts: 'لا توجد حسابات وسيطة. يرجى إضافة حسابات في إدارة الحسابات.',
+    costBreakdown: 'تفصيل تكلفة الاستثمار الصافي',
+    netInvestedBreakdown: 'تفصيل الاستثمار الصافي',
+    calculationFormula: 'الصيغة: الاستثمار الصافي = الإيداعات - السحوبات',
+    formulaNote: 'ملاحظة: للحسابات بالدولار الأمريكي، يتم استخدام سعر الصرف التاريخي إن أمكن، وإلا فسيتم استخدام السعر الحالي من الإعدادات. التحويلات والفوائد غير مدرجة في التكلفة.',
+    attention: 'انتباه',
+    date: 'التاريخ',
+    category: 'الفئة',
+    originalAmount: 'المبلغ الأصلي',
+    twdCost: 'التكلفة ({currency})',
+    totalNetInvested: 'الإجمالي (الاستثمار الصافي)',
+    deposit: 'إيداع(+)', 
+    withdraw: 'سحب(-)',
+    fixedTWD: 'مبلغ TWD ثابت',
+    historicalRate: 'السعر التاريخي',
+    currentRate: 'السعر الحالي',
+    taiwanDollar: 'TWD',
+    chartLabels: {
+      investmentCost: 'تكلفة الاستثمار',
+      accumulatedPL: 'الربح/الخسارة المتراكم',
+      estimatedAssets: 'إجمالي الأصول المتوقع (8%)',
+      totalAssets: 'إجمالي الأصول',
+      realData: ' (السعر الحقيقي)',
+      estimated: ' (متوقع)',
+    },
+    aiAdvisor: 'مستشار Gemini AI', 
+    aiAdvisorDesc: 'تحليل تخصيص محفظتك والمخاطر والفرص المحتملة.',
+    startAnalysis: 'بدء التحليل',
+    analyzing: 'جاري التحليل...',
+    viewCalculationDetails: 'عرض التفاصيل',
+    notInvestmentAdvice: 'ليس نصيحة استثمارية.' 
+  },
+  funds: { 
+    ...en.funds, 
+    title: 'إدارة الأموال',
+    operations: 'العمليات',
+    clearAll: 'مسح جميع الأموال',
+    batchImport: 'استيراد مجمع',
+    addRecord: '+ إضافة سجل',
+    filter: 'تصفية',
+    clearFilters: 'مسح جميع التصفيات',
+    accountFilter: 'الحساب',
+    typeFilter: 'النوع',
+    dateFrom: 'من التاريخ',
+    dateTo: 'إلى التاريخ',
+    allAccounts: 'جميع الحسابات',
+    allTypes: 'جميع الأنواع',
+    deposit: 'إيداع',
+    withdraw: 'سحب',
+    transfer: 'تحويل',
+    interest: 'فائدة',
+    showRecords: 'عرض {count} سجل',
+    totalRecords: 'الإجمالي {total}',
+    last30Days: 'آخر 30 يوم',
+    thisYear: 'هذا العام',
+    confirmClearAll: 'هل تريد مسح جميع بيانات الأموال؟',
+    confirmClearAllMessage: 'سيتم حذف جميع الإيداعات والسحوبات.',
+    confirmClear: 'حذف',
+  },
+  history: { 
+    ...en.history,
+    operations: 'العمليات',
+    batchUpdateMarket: 'تحديث السوق المجمع',
+    clearAll: 'مسح جميع المعاملات',
+    batchImport: 'استيراد مجمع',
+    addRecord: '+ إضافة سجل',
+    filter: 'تصفية',
+    accountFilter: 'تصفية حسب الحساب',
+    tickerFilter: 'تصفية حسب الرمز',
+    dateFrom: 'من التاريخ',
+    dateTo: 'إلى التاريخ',
+    includeCashFlow: 'تضمين سجلات التدفق النقدي',
+    clearFilters: 'مسح جميع التصفيات',
+    showingRecords: 'عرض {count} سجل',
+    totalRecords: 'الإجمالي {total}: {transactionCount} معاملة{hasCashFlow}',
+    last30Days: 'آخر 30 يوم',
+    thisYear: 'هذا العام',
+    noTransactions: 'لا توجد معاملات',
+    noMatchingTransactions: 'لم يتم العثور على معاملات مطابقة',
+    edit: 'تعديل',
+    delete: 'حذف',
+    includeCashFlowDesc: 'حدد لإظهار الإيداعات والسحوبات والتحويلات وما إلى ذلك لعرض تغييرات الرصيد',
+    hiddenCashFlowRecords: '{count} سجل تدفق نقدي مخفي',
+    cashFlowDeposit: 'إيداع',
+    cashFlowWithdraw: 'سحب',
+    cashFlowTransfer: 'تحويل خارج',
+    cashFlowTransferIn: 'تحويل داخل',
+  },
+  labels: { 
+    ...en.labels, 
+    date: 'التاريخ', 
+    account: 'الحساب', 
+    amount: 'المبلغ', 
+    balance: 'الرصيد', 
+    action: 'الإجراء',
+    type: 'النوع',
+    price: 'السعر',
+    quantity: 'الكمية',
+    currency: 'العملة', 
+    fee: 'العمولة', 
+    exchangeRate: 'سعر الصرف',
+    totalCost: 'إجمالي التكلفة',
+    category: 'الفئة',
+    description: 'الرمز/الوصف',
+    note: 'ملاحظة',
+  },
+  holdings: { 
+    ...en.holdings, 
+    portfolioHoldings: 'المراكز', 
+    mergedDisplay: 'مدمج حسب الرمز',
+    detailedDisplay: 'مفصل حسب الحساب',
+    aiUpdatePrices: 'تحديث الأسعار وسعر الصرف (AI)', 
+    aiSearching: 'جاري البحث (AI)...',
+    market: 'السوق', 
+    ticker: 'الرمز',
+    quantity: 'الكمية',
+    currentPrice: 'السعر الحالي',
+    weight: 'الوزن',
+    cost: 'إجمالي التكلفة',
+    marketValue: 'القيمة السوقية',
+    profitLoss: 'الربح/الخسارة',
+    annualizedROI: 'العائد السنوي على الاستثمار',
+    dailyChange: 'التغيير اليومي',
+    avgPrice: 'متوسط السعر',
+    noHoldings: 'لا توجد مراكز. يرجى إضافة معاملات.' 
+  },
+  accounts: { 
+    ...en.accounts, 
+    addAccount: 'إضافة حساب وسيط/بنكي', 
+    accountName: 'اسم الحساب',
+    accountNamePlaceholder: 'مثال: Fubon Securities, Firstrade',
+    currency: 'العملة', 
+    currencyTWD: 'TWD',
+    currencyUSD: 'USD',
+    currencyJPY: 'JPY',
+    currencyEUR: 'EUR',
+    currencyGBP: 'GBP',
+    currencyHKD: 'HKD',
+    currencyKRW: 'KRW',
+    currencyCNY: 'CNY',
+    currencyINR: 'INR',
+    currencyCAD: 'CAD',
+    currencyAUD: 'دولار أسترالي', 
+    currencySAR: 'ريال سعودي', 
+    currencyBRL: 'ريال برازيلي',
+    subBrokerage: 'وسيط خارجي',
+    add: 'إضافة', 
+    update: 'تحديث', 
+    editAccount: 'تعديل الحساب',
+    balance: 'الرصيد', 
+    cancel: 'إلغاء',
+    updateAccount: 'تحديث الحساب',
+    confirmDelete: 'تأكيد حذف الحساب',
+    confirmDeleteMessage: 'هل أنت متأكد من حذف "{name}"؟',
+    deleteWarning: 'ملاحظة: لن يؤدي هذا إلى حذف سجلات المعاملات التاريخية لهذا الحساب، ولكن قد يسبب مشاكل عند التصفية.',
+    deleteAccount: 'تأكيد الحذف',
+    noAccounts: 'لا توجد حسابات بعد. يرجى إضافة حسابك الوسيط الأول أعلاه.',
+    cashBalance: 'رصيد النقد',
+    editAccountTitle: 'تعديل الحساب',
+  },
   rebalance: { 
     ...en.rebalance, 
     title: 'إعادة التوازن', 
@@ -2770,6 +2978,9 @@ const ar: Translations = {
     delete: 'حذف',
     addAll: 'إضافة الكل',
     yearlyInvestment: 'الاستثمار السنوي',
+    autoQuery: '🔍 استعلام تلقائي',
+    autoQueryTitle: 'استعلام تلقائي عن العائد السنوي منذ الطرح العام',
+    querying: 'جارٍ الاستعلام',
     cagrExplanation: '📊 شرح حساب العائد السنوي:',
     cagrFormulaDesc: 'يستخدم النظام صيغة CAGR (معدل النمو السنوي المركب):',
     cagrFormula: 'CAGR = ((السعر الحالي / السعر الأولي) ^ (1 / السنوات)) - 1',
@@ -3015,6 +3226,9 @@ const pt: Translations = {
     delete: 'Excluir',
     addAll: 'Adicionar tudo',
     yearlyInvestment: 'Investimento anual',
+    autoQuery: '🔍 Consulta automática',
+    autoQueryTitle: 'Consulta automática do retorno anualizado desde o IPO',
+    querying: 'Consultando',
     cagrExplanation: '📊 Explicação do cálculo do retorno anualizado:',
     cagrFormulaDesc: 'O sistema usa a fórmula CAGR (Taxa de Crescimento Anual Composta):',
     cagrFormula: 'CAGR = ((Preço Atual / Preço Inicial) ^ (1 / Anos)) - 1',
