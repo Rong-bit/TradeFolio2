@@ -824,7 +824,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                   <th className="px-3 py-2 text-left">{translations.simulator.market}</th>
                   <th className="px-3 py-2 text-right">{translations.simulator.annualReturn}</th>
                   <th className="px-3 py-2 text-right">{translations.simulator.allocation}</th>
-                  <th className="px-3 py-2 text-right">{language === 'zh-TW' ? '操作' : 'Action'}</th>
+                  <th className="px-3 py-2 text-right">{translations.simulator.action}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
