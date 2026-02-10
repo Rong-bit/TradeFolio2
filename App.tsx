@@ -681,7 +681,7 @@ const App: React.FC = () => {
     const holdingKeys = holdingsToUse.map((h: Holding) => ({ market: h.market, ticker: h.ticker, key: `${h.market}-${h.ticker}` }));
     
     // 建立 ticker 到 market 的對應關係，同時建立原始 ticker 到查詢 ticker 的映射
-    type MarketStr = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
+    type MarketStr = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'SZ' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
     const tickerMarketMap = new Map<string, MarketStr>();
     const tickerToQueryTickerMap = new Map<string, string>(); // 原始 ticker -> 查詢用的 ticker
     
@@ -698,6 +698,7 @@ const App: React.FC = () => {
       else if (h.market === Market.UK) marketStr = 'UK';
       else if (h.market === Market.JP) marketStr = 'JP';
       else if (h.market === Market.CN) marketStr = 'CN';
+      else if (h.market === Market.SZ) marketStr = 'SZ';
       else if (h.market === Market.IN) marketStr = 'IN';
       else if (h.market === Market.CA) marketStr = 'CA';
       else if (h.market === Market.FR) marketStr = 'FR';
@@ -841,6 +842,7 @@ const App: React.FC = () => {
       if (h.market === Market.US || h.market === Market.UK) return sum + h.currentValue * exchangeRate;
       if (h.market === Market.JP) return sum + h.currentValue * (jpyExchangeRate ?? exchangeRate);
       if (h.market === Market.CN) return sum + h.currentValue * (cnyExchangeRate ?? 0);
+      if (h.market === Market.SZ) return sum + h.currentValue * (cnyExchangeRate ?? 0);
       if (h.market === Market.IN) return sum + h.currentValue * (inrExchangeRate ?? 0);
       if (h.market === Market.CA) return sum + h.currentValue * (cadExchangeRate ?? 0);
       if (h.market === Market.FR) return sum + h.currentValue * (eurExchangeRate ?? 0);
@@ -864,6 +866,7 @@ const App: React.FC = () => {
         if (t.market === Market.US || t.market === Market.UK) return sum + amt * exchangeRate;
         if (t.market === Market.JP) return sum + amt * (jpyExchangeRate ?? exchangeRate);
         if (t.market === Market.CN) return sum + amt * (cnyExchangeRate ?? 0);
+        if (t.market === Market.SZ) return sum + amt * (cnyExchangeRate ?? 0);
         if (t.market === Market.IN) return sum + amt * (inrExchangeRate ?? 0);
         if (t.market === Market.CA) return sum + amt * (cadExchangeRate ?? 0);
         if (t.market === Market.FR) return sum + amt * (eurExchangeRate ?? 0);
@@ -881,6 +884,7 @@ const App: React.FC = () => {
         if (t.market === Market.US || t.market === Market.UK) return sum + amt * exchangeRate;
         if (t.market === Market.JP) return sum + amt * (jpyExchangeRate ?? exchangeRate);
         if (t.market === Market.CN) return sum + amt * (cnyExchangeRate ?? 0);
+        if (t.market === Market.SZ) return sum + amt * (cnyExchangeRate ?? 0);
         if (t.market === Market.IN) return sum + amt * (inrExchangeRate ?? 0);
         if (t.market === Market.CA) return sum + amt * (cadExchangeRate ?? 0);
         if (t.market === Market.FR) return sum + amt * (eurExchangeRate ?? 0);
@@ -940,6 +944,7 @@ const App: React.FC = () => {
         if (h.market === Market.US || h.market === Market.UK) valTwd = h.currentValue * exchangeRate;
         else if (h.market === Market.JP) valTwd = h.currentValue * (jpyExchangeRate ?? exchangeRate);
         else if (h.market === Market.CN) valTwd = h.currentValue * (cnyExchangeRate ?? 0);
+        else if (h.market === Market.SZ) valTwd = h.currentValue * (cnyExchangeRate ?? 0);
         else if (h.market === Market.IN) valTwd = h.currentValue * (inrExchangeRate ?? 0);
         else if (h.market === Market.CA) valTwd = h.currentValue * (cadExchangeRate ?? 0);
         else if (h.market === Market.FR) valTwd = h.currentValue * (eurExchangeRate ?? 0);

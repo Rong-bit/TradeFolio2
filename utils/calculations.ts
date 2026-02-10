@@ -487,6 +487,8 @@ export const generateAdvancedChartData = (
                       stockValueTWD += qty * price * rate;
                   } else if (market === Market.CN) {
                       stockValueTWD += qty * price * (cnyExchangeRate ?? 0);
+                  } else if (market === Market.SZ) {
+                      stockValueTWD += qty * price * (cnyExchangeRate ?? 0);
                   } else if (market === Market.IN) {
                       stockValueTWD += qty * price * (inrExchangeRate ?? 0);
                   } else if (market === Market.CA) {
@@ -634,6 +636,8 @@ export const calculateAssetAllocation = (
       valTWD = jpyExchangeRate ? h.currentValue * jpyExchangeRate : h.currentValue * exchangeRate;
     } else if (h.market === Market.CN) {
       valTWD = (cnyExchangeRate ?? 0) * h.currentValue;
+    } else if (h.market === Market.SZ) {
+      valTWD = (cnyExchangeRate ?? 0) * h.currentValue;
     } else if (h.market === Market.IN) {
       valTWD = (inrExchangeRate ?? 0) * h.currentValue;
     } else if (h.market === Market.CA) {
@@ -752,6 +756,7 @@ export const calculateAccountPerformance = (
       if (h.market === Market.US || h.market === Market.UK) return sum + h.currentValue * exchangeRate;
       if (h.market === Market.JP) return sum + h.currentValue * (jpyExchangeRate ?? exchangeRate);
       if (h.market === Market.CN) return sum + h.currentValue * (cnyExchangeRate ?? 0);
+      if (h.market === Market.SZ) return sum + h.currentValue * (cnyExchangeRate ?? 0);
       if (h.market === Market.IN) return sum + h.currentValue * (inrExchangeRate ?? 0);
       if (h.market === Market.CA) return sum + h.currentValue * (cadExchangeRate ?? 0);
       if (h.market === Market.FR) return sum + h.currentValue * (eurExchangeRate ?? 0);
@@ -819,6 +824,8 @@ export const calculateAccountPerformance = (
           } else if (tx.market === Market.JP) {
               valTWD = jpyExchangeRate ? val * jpyExchangeRate : val * exchangeRate;
           } else if (tx.market === Market.CN) {
+              valTWD = val * (cnyExchangeRate ?? 0);
+          } else if (tx.market === Market.SZ) {
               valTWD = val * (cnyExchangeRate ?? 0);
           } else if (tx.market === Market.IN) {
               valTWD = val * (inrExchangeRate ?? 0);

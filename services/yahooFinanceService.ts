@@ -5,7 +5,7 @@ export interface PriceData {
   changePercent: number;
 }
 
-export type YahooMarket = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
+export type YahooMarket = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'SZ' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
 
 /**
  * 將股票代號轉換為 Yahoo Finance 格式
@@ -35,6 +35,8 @@ const convertToYahooSymbol = (ticker: string, market?: YahooMarket): string => {
     return cleanTicker;
   } else if (market === 'CN') {
     return `${cleanTicker}.SS`;
+  } else if (market === 'SZ') {
+    return `${cleanTicker}.SZ`;
   } else if (market === 'IN') {
     return `${cleanTicker}.NS`;
   } else if (market === 'CA') {
@@ -73,6 +75,9 @@ const convertToYahooSymbol = (ticker: string, market?: YahooMarket): string => {
   }
   if (ticker.toUpperCase().includes('.SS') || ticker.toUpperCase().includes('SHA')) {
     return `${cleanTicker}.SS`;
+  }
+  if (ticker.toUpperCase().includes('.SZ') || ticker.toUpperCase().includes('SHE')) {
+    return `${cleanTicker}.SZ`;
   }
   if (ticker.toUpperCase().includes('.NS') || ticker.toUpperCase().includes('NSE')) {
     return `${cleanTicker}.NS`;
@@ -839,7 +844,7 @@ export const fetchCurrentPrices = async (
     });
 
     const hasJP = markets?.some(m => m === 'JP') || false;
-    const hasCN = markets?.some(m => m === 'CN') || false;
+    const hasCN = markets?.some(m => m === 'CN' || m === 'SZ') || false;
     const hasIN = markets?.some(m => m === 'IN') || false;
     const hasCA = markets?.some(m => m === 'CA') || false;
     const hasFR = markets?.some(m => m === 'FR') || false;

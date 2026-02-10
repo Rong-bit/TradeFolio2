@@ -10,6 +10,7 @@ export enum Market {
   UK = 'UK',
   JP = 'JP',
   CN = 'CN',
+  SZ = 'SZ',
   IN = 'IN',
   CA = 'CA',
   FR = 'FR',

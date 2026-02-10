@@ -73,6 +73,7 @@ const BatchUpdateMarketModal: React.FC<Props> = ({ transactions, onUpdate, onClo
               <option value={Market.UK}>英國股 (UK)</option>
               <option value={Market.JP}>日本股 (JP)</option>
               <option value={Market.CN}>中國滬 (CN)</option>
+              <option value={Market.SZ}>中國深 (SZ)</option>
               <option value={Market.IN}>印度 (IN)</option>
               <option value={Market.CA}>加拿大 (CA)</option>
               <option value={Market.FR}>法國 (FR)</option>
@@ -100,6 +101,7 @@ const BatchUpdateMarketModal: React.FC<Props> = ({ transactions, onUpdate, onClo
                       newMarket === Market.UK ? '英國股 (UK)' : 
                       newMarket === Market.JP ? '日本股 (JP)' :
                       newMarket === Market.CN ? '中國滬 (CN)' :
+                      newMarket === Market.SZ ? '中國深 (SZ)' :
                       newMarket === Market.IN ? '印度 (IN)' :
                       newMarket === Market.CA ? '加拿大 (CA)' :
                       newMarket === Market.FR ? '法國 (FR)' :

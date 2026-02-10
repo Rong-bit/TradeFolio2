@@ -118,15 +118,22 @@ const HistoricalDataModal: React.FC<Props> = ({
           // If no tickers are missing but rate needs update, we still need to call API.
           // We'll query one ticker to trigger the prompt logic if list is empty.
           let queryTickers: string[] = [];
-          type MarketCode = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'IN' | 'CA' | 'FR';
+          type MarketCode = 'US' | 'TW' | 'UK' | 'JP' | 'CN' | 'SZ' | 'IN' | 'CA' | 'FR' | 'HK' | 'KR' | 'DE' | 'AU' | 'SA' | 'BR';
           const toMarketCode = (m: Market): MarketCode => {
             if (m === Market.TW) return 'TW';
             if (m === Market.UK) return 'UK';
             if (m === Market.JP) return 'JP';
             if (m === Market.CN) return 'CN';
+            if (m === Market.SZ) return 'SZ';
             if (m === Market.IN) return 'IN';
             if (m === Market.CA) return 'CA';
             if (m === Market.FR) return 'FR';
+            if (m === Market.HK) return 'HK';
+            if (m === Market.KR) return 'KR';
+            if (m === Market.DE) return 'DE';
+            if (m === Market.AU) return 'AU';
+            if (m === Market.SA) return 'SA';
+            if (m === Market.BR) return 'BR';
             return 'US';
           };
           let queryMarkets: MarketCode[] = [];
@@ -306,6 +313,7 @@ const HistoricalDataModal: React.FC<Props> = ({
                                             t.market === Market.UK ? 'bg-purple-100 text-purple-700' : 
                                             t.market === Market.JP ? 'bg-red-100 text-red-700' :
                                             t.market === Market.CN ? 'bg-amber-100 text-amber-700' :
+                                            t.market === Market.SZ ? 'bg-amber-200 text-amber-800' :
                                             t.market === Market.IN ? 'bg-teal-100 text-teal-700' :
                                             t.market === Market.CA ? 'bg-rose-100 text-rose-700' :
                                             t.market === Market.FR ? 'bg-indigo-100 text-indigo-700' :

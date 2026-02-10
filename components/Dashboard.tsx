@@ -85,6 +85,7 @@ const Dashboard: React.FC<Props> = ({
       [Market.UK]: 0,
       [Market.JP]: 0,
       [Market.CN]: 0,
+      [Market.SZ]: 0,
       [Market.IN]: 0,
       [Market.CA]: 0,
       [Market.FR]: 0,
@@ -103,6 +104,8 @@ const Dashboard: React.FC<Props> = ({
       } else if (h.market === Market.JP) {
         valTwd = h.currentValue * (summary.jpyExchangeRate || summary.exchangeRateUsdToTwd);
       } else if (h.market === Market.CN) {
+        valTwd = h.currentValue * (summary.cnyExchangeRate ?? 0);
+      } else if (h.market === Market.SZ) {
         valTwd = h.currentValue * (summary.cnyExchangeRate ?? 0);
       } else if (h.market === Market.IN) {
         valTwd = h.currentValue * (summary.inrExchangeRate ?? 0);
@@ -413,6 +416,7 @@ const Dashboard: React.FC<Props> = ({
                 [Market.UK]: language === 'zh-TW' ? '英國股' : 'UK',
                 [Market.JP]: language === 'zh-TW' ? '日本股' : 'Japan',
                 [Market.CN]: language === 'zh-TW' ? '中國滬' : 'China',
+                [Market.SZ]: language === 'zh-TW' ? '中國深' : 'Shenzhen',
                 [Market.IN]: language === 'zh-TW' ? '印度' : 'India',
                 [Market.CA]: language === 'zh-TW' ? '加拿大' : 'Canada',
                 [Market.FR]: language === 'zh-TW' ? '法國' : 'France',
@@ -429,6 +433,7 @@ const Dashboard: React.FC<Props> = ({
                 [Market.UK]: 'bg-purple-500',
                 [Market.JP]: 'bg-red-500',
                 [Market.CN]: 'bg-amber-500',
+                [Market.SZ]: 'bg-amber-600',
                 [Market.IN]: 'bg-teal-500',
                 [Market.CA]: 'bg-rose-500',
                 [Market.FR]: 'bg-indigo-500',

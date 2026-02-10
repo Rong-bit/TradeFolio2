@@ -737,9 +737,15 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
         if (tickerVal.includes('TPE:') || tickerVal.includes('TW') || /^\d{4}$/.test(tickerVal)) {
             market = Market.TW;
             tickerVal = tickerVal.replace(/^(TPE:|TW|US)/i, '');
-        } else if (/\.(SS|SZ|HK)$/i.test(tickerVal) || /:(SS|SZ|HK)$/i.test(tickerVal)) {
+        } else if (/\.SS$/i.test(tickerVal) || /:SS$/i.test(tickerVal)) {
             market = Market.CN;
-            tickerVal = tickerVal.replace(/\.(SS|SZ|HK)$/i, '').replace(/:(SS|SZ|HK)$/i, '');
+            tickerVal = tickerVal.replace(/\.SS$/i, '').replace(/:SS$/i, '');
+        } else if (/\.SZ$/i.test(tickerVal) || /:SZ$/i.test(tickerVal)) {
+            market = Market.SZ;
+            tickerVal = tickerVal.replace(/\.SZ$/i, '').replace(/:SZ$/i, '');
+        } else if (/\.HK$/i.test(tickerVal) || /:HK$/i.test(tickerVal)) {
+            market = Market.HK;
+            tickerVal = tickerVal.replace(/\.HK$/i, '').replace(/:HK$/i, '');
         } else if (/\.NS$/i.test(tickerVal) || /\.BO$/i.test(tickerVal) || /:(NS|BO)$/i.test(tickerVal)) {
             market = Market.IN;
             tickerVal = tickerVal.replace(/\.(NS|BO)$/i, '').replace(/:(NS|BO)$/i, '');
@@ -1058,6 +1064,7 @@ const BatchImportModal: React.FC<Props> = ({ accounts, onImport, onClose }) => {
                               row.market === Market.UK ? 'bg-purple-100 text-purple-800' : 
                               row.market === Market.JP ? 'bg-orange-100 text-orange-800' :
                               row.market === Market.CN ? 'bg-amber-100 text-amber-800' :
+                              row.market === Market.SZ ? 'bg-amber-200 text-amber-900' :
                               row.market === Market.IN ? 'bg-teal-100 text-teal-800' :
                               row.market === Market.CA ? 'bg-rose-100 text-rose-800' :
                               row.market === Market.FR ? 'bg-indigo-100 text-indigo-800' :

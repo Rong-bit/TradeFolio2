@@ -269,7 +269,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, accounts, onUpdatePrice, onA
   // 渲染持倉行的輔助函數
   function renderHoldingRow(h: Holding, isDetailedMode: boolean = false) {
     const isProfit = h.unrealizedPL >= 0;
-    const currency = h.market === Market.TW ? 'TWD' : h.market === Market.JP ? 'JPY' : h.market === Market.CN ? 'CNY' : h.market === Market.IN ? 'INR' : h.market === Market.CA ? 'CAD' : h.market === Market.FR ? 'EUR' : h.market === Market.HK ? 'HKD' : h.market === Market.KR ? 'KRW' : h.market === Market.DE ? 'EUR' : h.market === Market.AU ? 'AUD' : h.market === Market.SA ? 'SAR' : h.market === Market.BR ? 'BRL' : 'USD';
+    const currency = h.market === Market.TW ? 'TWD' : h.market === Market.JP ? 'JPY' : h.market === Market.CN ? 'CNY' : h.market === Market.SZ ? 'CNY' : h.market === Market.IN ? 'INR' : h.market === Market.CA ? 'CAD' : h.market === Market.FR ? 'EUR' : h.market === Market.HK ? 'HKD' : h.market === Market.KR ? 'KRW' : h.market === Market.DE ? 'EUR' : h.market === Market.AU ? 'AUD' : h.market === Market.SA ? 'SAR' : h.market === Market.BR ? 'BRL' : 'USD';
     const plColor = isProfit ? 'text-emerald-600' : 'text-rose-600';
     const roiColor = h.annualizedReturn >= 0 ? 'text-blue-600' : 'text-orange-600';
     // 只有當 dailyChange 不是 undefined/null 時才根據正負值決定顏色，否則保持預設顏色
@@ -343,6 +343,7 @@ const HoldingsTable: React.FC<Props> = ({ holdings, accounts, onUpdatePrice, onA
                   h.market === Market.UK ? 'bg-purple-400' : 
                   h.market === Market.JP ? 'bg-orange-400' :
                   h.market === Market.CN ? 'bg-amber-400' :
+                  h.market === Market.SZ ? 'bg-amber-500' :
                   h.market === Market.IN ? 'bg-teal-400' :
                   h.market === Market.CA ? 'bg-rose-400' :
                   h.market === Market.FR ? 'bg-indigo-400' :

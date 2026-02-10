@@ -166,6 +166,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
       case Market.UK: return 'USD';
       case Market.US: return 'USD';
       case Market.CN: return 'CNY';
+      case Market.SZ: return 'CNY';
       case Market.IN: return 'INR';
       case Market.CA: return 'CAD';
       case Market.FR: return 'EUR';
@@ -413,6 +414,7 @@ const TransactionForm: React.FC<Props> = ({ accounts, holdings = [], onAdd, onUp
                 formData.market === Market.UK ? 'USD' : 
                 formData.market === Market.JP ? 'JPY' : 
                 formData.market === Market.CN ? 'CNY' :
+                formData.market === Market.SZ ? 'CNY' :
                 formData.market === Market.IN ? 'INR' :
                 formData.market === Market.CA ? 'CAD' :
                 formData.market === Market.FR ? 'EUR' :
