@@ -1,8 +1,8 @@
 
 /** 基準顯示幣別（儀表板總額等用此幣顯示） */
-export type BaseCurrency = 'TWD' | 'USD' | 'JPY';
+export type BaseCurrency = 'TWD' | 'USD' | 'JPY' | 'EUR' | 'GBP' | 'HKD' | 'KRW';
 
-export const BASE_CURRENCIES: BaseCurrency[] = ['TWD', 'USD', 'JPY'];
+export const BASE_CURRENCIES: BaseCurrency[] = ['TWD', 'USD', 'JPY', 'EUR', 'GBP', 'HKD', 'KRW'];
 
 export enum Market {
   US = 'US',
@@ -130,6 +130,10 @@ export interface PortfolioSummary {
   annualizedReturn: number; // CAGR
   exchangeRateUsdToTwd: number;
   jpyExchangeRate?: number; // JPY to TWD exchange rate (optional)
+  eurExchangeRate?: number; // EUR to TWD (1 EUR = N TWD)
+  gbpExchangeRate?: number; // GBP to TWD (1 GBP = N TWD)
+  hkdExchangeRate?: number; // HKD to TWD (1 HKD = N TWD)
+  krwExchangeRate?: number; // KRW to TWD (1 KRW = N TWD)
   // Detailed fields
   accumulatedCashDividendsTWD: number;
   accumulatedStockDividendsTWD: number;
@@ -186,6 +190,10 @@ export interface HistoricalData {
     prices: Record<string, number>; // Ticker -> Price on Dec 31
     exchangeRate: number; // USD to TWD on Dec 31
     jpyExchangeRate?: number; // JPY to TWD on Dec 31 (optional)
+    eurExchangeRate?: number; // EUR to TWD on Dec 31 (optional)
+    gbpExchangeRate?: number; // GBP to TWD on Dec 31 (optional)
+    hkdExchangeRate?: number; // HKD to TWD on Dec 31 (optional)
+    krwExchangeRate?: number; // KRW to TWD on Dec 31 (optional)
   };
 }
 

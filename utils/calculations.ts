@@ -15,27 +15,55 @@ import {
   BaseCurrency
 } from '../types';
 
+/** 匯率物件（X→TWD：1 X = N TWD） */
+export interface ExchangeRates {
+  exchangeRateUsdToTwd: number;
+  jpyExchangeRate?: number;
+  eurExchangeRate?: number;
+  gbpExchangeRate?: number;
+  hkdExchangeRate?: number;
+  krwExchangeRate?: number;
+}
+
 /** 將 TWD 換算為基準幣（僅顯示用；內部仍以 TWD 為單位） */
 export function valueInBaseCurrency(
   valueTWD: number,
   baseCurrency: BaseCurrency,
-  rates: { exchangeRateUsdToTwd: number; jpyExchangeRate?: number }
+  rates: ExchangeRates
 ): number {
   if (baseCurrency === 'TWD') return valueTWD;
   if (baseCurrency === 'USD') return valueTWD / rates.exchangeRateUsdToTwd;
   const jpyRate = rates.jpyExchangeRate && rates.jpyExchangeRate > 0 ? rates.jpyExchangeRate : 0.21;
-  return valueTWD / jpyRate; // JPY: jpyExchangeRate = JPY→TWD, so TWD→JPY = 1/jpyRate
+  if (baseCurrency === 'JPY') return valueTWD / jpyRate;
+  const eurRate = rates.eurExchangeRate && rates.eurExchangeRate > 0 ? rates.eurExchangeRate : 34;
+  if (baseCurrency === 'EUR') return valueTWD / eurRate;
+  const gbpRate = rates.gbpExchangeRate && rates.gbpExchangeRate > 0 ? rates.gbpExchangeRate : 40;
+  if (baseCurrency === 'GBP') return valueTWD / gbpRate;
+  const hkdRate = rates.hkdExchangeRate && rates.hkdExchangeRate > 0 ? rates.hkdExchangeRate : 4;
+  if (baseCurrency === 'HKD') return valueTWD / hkdRate;
+  const krwRate = rates.krwExchangeRate && rates.krwExchangeRate > 0 ? rates.krwExchangeRate : 0.023;
+  if (baseCurrency === 'KRW') return valueTWD / krwRate;
+  return valueTWD;
 }
 
 /** 儀表板僅顯示一個主要匯率：回傳 { label, value } */
 export function getDisplayRateForBaseCurrency(
   baseCurrency: BaseCurrency,
-  rates: { exchangeRateUsdToTwd: number; jpyExchangeRate?: number }
+  rates: ExchangeRates
 ): { label: string; value: number } {
   const jpy = rates.jpyExchangeRate && rates.jpyExchangeRate > 0 ? rates.jpyExchangeRate : 0.21;
   if (baseCurrency === 'TWD') return { label: 'USD/TWD', value: rates.exchangeRateUsdToTwd };
   if (baseCurrency === 'USD') return { label: 'TWD/USD', value: 1 / rates.exchangeRateUsdToTwd };
-  return { label: 'USD/JPY', value: rates.exchangeRateUsdToTwd / jpy };
+  if (baseCurrency === 'JPY') return { label: 'USD/JPY', value: rates.exchangeRateUsdToTwd / jpy };
+  const eurRate = rates.eurExchangeRate && rates.eurExchangeRate > 0 ? rates.eurExchangeRate : 34;
+  if (baseCurrency === 'EUR') return { label: 'EUR/TWD', value: eurRate };
+  const gbpRate = rates.gbpExchangeRate && rates.gbpExchangeRate > 0 ? rates.gbpExchangeRate : 40;
+  if (baseCurrency === 'GBP') return { label: 'GBP/TWD', value: gbpRate };
+  const hkdRate = rates.hkdExchangeRate && rates.hkdExchangeRate > 0 ? rates.hkdExchangeRate : 4;
+  if (baseCurrency === 'HKD') return { label: 'HKD/TWD', value: hkdRate };
+  const krwRate = rates.krwExchangeRate && rates.krwExchangeRate > 0 ? rates.krwExchangeRate : 0.023;
+  if (baseCurrency === 'KRW') return { label: 'KRW/TWD', value: krwRate };
+  return { label: 'USD/TWD', value: rates.exchangeRateUsdToTwd };
 }
 
 export const calculateHoldings = (
@@ -526,15 +554,15 @@ export const formatCurrency = (val: number, currency: string): string => {
     }
 
     // Hybrid Strategy:
-    // USD: 2 decimals
-    // TWD: 0 decimals
-    const isUSD = currency === 'USD';
+    // USD, EUR, GBP, HKD: 2 decimals
+    // TWD, JPY, KRW: 0 decimals
+    const twoDecimals = ['USD', 'EUR', 'GBP', 'HKD'].includes(currency);
 
     return new Intl.NumberFormat('zh-TW', {
       style: 'currency',
       currency: currency,
-      minimumFractionDigits: isUSD ? 2 : 0,
-      maximumFractionDigits: isUSD ? 2 : 0,
+      minimumFractionDigits: twoDecimals ? 2 : 0,
+      maximumFractionDigits: twoDecimals ? 2 : 0,
     }).format(normalizedVal);
   } catch (error) {
     return normalizedVal.toLocaleString();

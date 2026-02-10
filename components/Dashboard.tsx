@@ -49,7 +49,14 @@ const Dashboard: React.FC<Props> = ({
   const [showAccountInUSD, setShowAccountInUSD] = useState(false); 
   const [showAnnualInUSD, setShowAnnualInUSD] = useState(false);
 
-  const rates = { exchangeRateUsdToTwd: summary.exchangeRateUsdToTwd, jpyExchangeRate: summary.jpyExchangeRate };
+  const rates = {
+    exchangeRateUsdToTwd: summary.exchangeRateUsdToTwd,
+    jpyExchangeRate: summary.jpyExchangeRate,
+    eurExchangeRate: summary.eurExchangeRate,
+    gbpExchangeRate: summary.gbpExchangeRate,
+    hkdExchangeRate: summary.hkdExchangeRate,
+    krwExchangeRate: summary.krwExchangeRate,
+  };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const displayRate = getDisplayRateForBaseCurrency(baseCurrency, rates); 
 

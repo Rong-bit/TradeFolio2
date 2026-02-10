@@ -20,7 +20,7 @@ import AssetAllocationSimulator from './components/AssetAllocationSimulator';
 import { fetchCurrentPrices } from './services/yahooFinanceService';
 import { ADMIN_EMAIL, SYSTEM_ACCESS_CODE, GLOBAL_AUTHORIZED_USERS } from './config';
 import { v4 as uuidv4 } from 'uuid';
-import { Language, getLanguage, setLanguage as saveLanguage, t, translate } from './utils/i18n';
+import { Language, getLanguage, setLanguage as saveLanguage, t, translate, getBaseCurrencyLabel, BaseCurrencyCode } from './utils/i18n';
 
 type View = 'dashboard' | 'history' | 'funds' | 'accounts' | 'rebalance' | 'simulator' | 'help';
 
@@ -59,6 +59,10 @@ const App: React.FC = () => {
   const [priceDetails, setPriceDetails] = useState<Record<string, { change: number, changePercent: number }>>({});
   const [exchangeRate, setExchangeRate] = useState<number>(31.5);
   const [jpyExchangeRate, setJpyExchangeRate] = useState<number | undefined>(undefined);
+  const [eurExchangeRate, setEurExchangeRate] = useState<number | undefined>(undefined);
+  const [gbpExchangeRate, setGbpExchangeRate] = useState<number | undefined>(undefined);
+  const [hkdExchangeRate, setHkdExchangeRate] = useState<number | undefined>(undefined);
+  const [krwExchangeRate, setKrwExchangeRate] = useState<number | undefined>(undefined);
   const [baseCurrency, setBaseCurrency] = useState<BaseCurrency>('TWD');
   const [rebalanceTargets, setRebalanceTargets] = useState<Record<string, number>>({});
   const [rebalanceEnabledItems, setRebalanceEnabledItems] = useState<string[]>([]);
@@ -235,10 +239,20 @@ const App: React.FC = () => {
     
     const jpyRate = localStorage.getItem(getKey('jpyExchangeRate'));
     setJpyExchangeRate(jpyRate ? parseFloat(jpyRate) : undefined);
+
+    const eurRate = localStorage.getItem(getKey('eurExchangeRate'));
+    setEurExchangeRate(eurRate ? parseFloat(eurRate) : undefined);
+    const gbpRate = localStorage.getItem(getKey('gbpExchangeRate'));
+    setGbpExchangeRate(gbpRate ? parseFloat(gbpRate) : undefined);
+    const hkdRate = localStorage.getItem(getKey('hkdExchangeRate'));
+    setHkdExchangeRate(hkdRate ? parseFloat(hkdRate) : undefined);
+    const krwRate = localStorage.getItem(getKey('krwExchangeRate'));
+    setKrwExchangeRate(krwRate ? parseFloat(krwRate) : undefined);
     
     const savedBase = localStorage.getItem(getKey('baseCurrency'));
-    if (savedBase === 'TWD' || savedBase === 'USD' || savedBase === 'JPY') {
-      setBaseCurrency(savedBase);
+    const validBaseCurrencies: BaseCurrency[] = ['TWD', 'USD', 'JPY', 'EUR', 'GBP', 'HKD', 'KRW'];
+    if (savedBase && validBaseCurrencies.includes(savedBase as BaseCurrency)) {
+      setBaseCurrency(savedBase as BaseCurrency);
     } else {
       const lang = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || '';
       if (lang.startsWith('ja')) setBaseCurrency('JPY');
@@ -263,6 +277,10 @@ const App: React.FC = () => {
   useLocalStorageDebounced('priceDetails', priceDetails, 500, userPrefix);
   useLocalStorageDebouncedSimple('exchangeRate', exchangeRate, 500, userPrefix);
   useLocalStorageDebouncedSimple('jpyExchangeRate', jpyExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('eurExchangeRate', eurExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('gbpExchangeRate', gbpExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('hkdExchangeRate', hkdExchangeRate, 500, userPrefix);
+  useLocalStorageDebouncedSimple('krwExchangeRate', krwExchangeRate, 500, userPrefix);
   useLocalStorageDebouncedSimple('baseCurrency', baseCurrency, 500, userPrefix);
   useLocalStorageDebounced('rebalanceTargets', rebalanceTargets, 500, userPrefix);
   useLocalStorageDebounced('rebalanceEnabledItems', rebalanceEnabledItems, 500, userPrefix);
@@ -469,6 +487,11 @@ const App: React.FC = () => {
         currentPrices, 
         priceDetails, 
         exchangeRate, 
+        jpyExchangeRate,
+        eurExchangeRate,
+        gbpExchangeRate,
+        hkdExchangeRate,
+        krwExchangeRate,
         baseCurrency,
         rebalanceTargets,
         rebalanceEnabledItems,
@@ -598,7 +621,11 @@ const App: React.FC = () => {
         if (data.currentPrices) setCurrentPrices(data.currentPrices);
         if (data.priceDetails) setPriceDetails(data.priceDetails);
         if (data.exchangeRate) setExchangeRate(data.exchangeRate);
-        if (data.baseCurrency && (data.baseCurrency === 'TWD' || data.baseCurrency === 'USD' || data.baseCurrency === 'JPY')) setBaseCurrency(data.baseCurrency);
+        if (data.baseCurrency && ['TWD', 'USD', 'JPY', 'EUR', 'GBP', 'HKD', 'KRW'].includes(data.baseCurrency)) setBaseCurrency(data.baseCurrency);
+        if (data.eurExchangeRate) setEurExchangeRate(data.eurExchangeRate);
+        if (data.gbpExchangeRate) setGbpExchangeRate(data.gbpExchangeRate);
+        if (data.hkdExchangeRate) setHkdExchangeRate(data.hkdExchangeRate);
+        if (data.krwExchangeRate) setKrwExchangeRate(data.krwExchangeRate);
         if (data.rebalanceTargets) setRebalanceTargets(data.rebalanceTargets);
         if (data.rebalanceEnabledItems) setRebalanceEnabledItems(data.rebalanceEnabledItems);
         if (data.historicalData) setHistoricalData(data.historicalData);
@@ -690,6 +717,11 @@ const App: React.FC = () => {
         setExchangeRate(result.exchangeRate);
         msg += `，並同步更新匯率為 ${result.exchangeRate}`;
       }
+      if (result.jpyExchangeRate && result.jpyExchangeRate > 0) setJpyExchangeRate(result.jpyExchangeRate);
+      if (result.eurExchangeRate && result.eurExchangeRate > 0) setEurExchangeRate(result.eurExchangeRate);
+      if (result.gbpExchangeRate && result.gbpExchangeRate > 0) setGbpExchangeRate(result.gbpExchangeRate);
+      if (result.hkdExchangeRate && result.hkdExchangeRate > 0) setHkdExchangeRate(result.hkdExchangeRate);
+      if (result.krwExchangeRate && result.krwExchangeRate > 0) setKrwExchangeRate(result.krwExchangeRate);
 
       // 只有在非靜默模式下才顯示提示
       if (!silent) {
@@ -789,13 +821,24 @@ const App: React.FC = () => {
         annualizedReturn,
         exchangeRateUsdToTwd: exchangeRate,
         jpyExchangeRate,
+        eurExchangeRate,
+        gbpExchangeRate,
+        hkdExchangeRate,
+        krwExchangeRate,
         accumulatedCashDividendsTWD,
         accumulatedStockDividendsTWD,
         avgExchangeRate
     };
-  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, jpyExchangeRate, accounts, transactions]);
+  }, [baseHoldings, computedAccounts, cashFlows, exchangeRate, jpyExchangeRate, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate, accounts, transactions]);
 
-  const displayRate = useMemo(() => getDisplayRateForBaseCurrency(baseCurrency, { exchangeRateUsdToTwd: exchangeRate, jpyExchangeRate: jpyExchangeRate ?? 0.21 }), [baseCurrency, exchangeRate, jpyExchangeRate]);
+  const displayRate = useMemo(() => getDisplayRateForBaseCurrency(baseCurrency, {
+    exchangeRateUsdToTwd: exchangeRate,
+    jpyExchangeRate: jpyExchangeRate ?? 0.21,
+    eurExchangeRate,
+    gbpExchangeRate,
+    hkdExchangeRate,
+    krwExchangeRate,
+  }), [baseCurrency, exchangeRate, jpyExchangeRate, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate]);
 
   // Step 4: Final Holdings with Weights
   const holdings = useMemo(() => {
@@ -1216,7 +1259,7 @@ const App: React.FC = () => {
                    onChange={(e) => setBaseCurrency(e.target.value as BaseCurrency)}
                    className="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                  >
-                   {BASE_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                   {BASE_CURRENCIES.map(c => <option key={c} value={c}>{getBaseCurrencyLabel(c as BaseCurrencyCode, language)}</option>)}
                  </select>
                  <div className="flex items-center bg-slate-800 rounded-md px-2 py-1 border border-slate-700">
                    <span className="text-xs text-slate-400 mr-2">{displayRate.label}</span>
@@ -1670,6 +1713,10 @@ const App: React.FC = () => {
                 baseCurrency={baseCurrency}
                 currentExchangeRate={exchangeRate}
                 currentJpyExchangeRate={jpyExchangeRate}
+                currentEurExchangeRate={eurExchangeRate}
+                currentGbpExchangeRate={gbpExchangeRate}
+                currentHkdExchangeRate={hkdExchangeRate}
+                currentKrwExchangeRate={krwExchangeRate}
                 language={language}
               />
             )}
@@ -1699,6 +1746,10 @@ const App: React.FC = () => {
                  baseCurrency={baseCurrency}
                  exchangeRateUsdToTwd={exchangeRate}
                  jpyExchangeRate={jpyExchangeRate}
+                 eurExchangeRate={eurExchangeRate}
+                 gbpExchangeRate={gbpExchangeRate}
+                 hkdExchangeRate={hkdExchangeRate}
+                 krwExchangeRate={krwExchangeRate}
                  language={language}
                />
             )}
@@ -1747,7 +1798,7 @@ const App: React.FC = () => {
                   onChange={(e) => setBaseCurrency(e.target.value as BaseCurrency)}
                   className="flex-1 bg-slate-800 rounded border border-slate-700 text-emerald-400 px-2 py-1"
                 >
-                  {BASE_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {BASE_CURRENCIES.map(c => <option key={c} value={c}>{getBaseCurrencyLabel(c as BaseCurrencyCode, language)}</option>)}
                 </select>
               </div>
               <div className="flex justify-between items-center text-xs font-bold">

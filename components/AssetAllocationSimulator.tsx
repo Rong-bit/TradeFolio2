@@ -11,11 +11,22 @@ interface Props {
   baseCurrency?: BaseCurrency;
   exchangeRateUsdToTwd?: number;
   jpyExchangeRate?: number;
+  eurExchangeRate?: number;
+  gbpExchangeRate?: number;
+  hkdExchangeRate?: number;
+  krwExchangeRate?: number;
   language: Language;
 }
 
-const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency = 'TWD', exchangeRateUsdToTwd = 31.5, jpyExchangeRate = 0.21, language }) => {
-  const rates = { exchangeRateUsdToTwd, jpyExchangeRate };
+const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency = 'TWD', exchangeRateUsdToTwd = 31.5, jpyExchangeRate = 0.21, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate, language }) => {
+  const rates = {
+    exchangeRateUsdToTwd,
+    jpyExchangeRate,
+    eurExchangeRate,
+    gbpExchangeRate,
+    hkdExchangeRate,
+    krwExchangeRate,
+  };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const translations = t(language);
   const [assets, setAssets] = useState<AssetSimulationItem[]>([]);

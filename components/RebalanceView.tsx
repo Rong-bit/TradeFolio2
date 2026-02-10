@@ -20,7 +20,14 @@ interface Props {
 const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, exchangeRate, jpyExchangeRate, targets, onUpdateTargets, enabledItems: enabledItemsArray, onUpdateEnabledItems, language }) => {
   const translations = t(language);
   const totalPortfolioValue = summary.totalValueTWD + summary.cashBalanceTWD;
-  const rates = { exchangeRateUsdToTwd: summary.exchangeRateUsdToTwd, jpyExchangeRate: summary.jpyExchangeRate };
+  const rates = {
+    exchangeRateUsdToTwd: summary.exchangeRateUsdToTwd,
+    jpyExchangeRate: summary.jpyExchangeRate,
+    eurExchangeRate: summary.eurExchangeRate,
+    gbpExchangeRate: summary.gbpExchangeRate,
+    hkdExchangeRate: summary.hkdExchangeRate,
+    krwExchangeRate: summary.krwExchangeRate,
+  };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   
   const enabledItems = useMemo(() => new Set(enabledItemsArray), [enabledItemsArray]);

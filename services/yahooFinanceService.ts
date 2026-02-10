@@ -484,6 +484,29 @@ const fetchJPYExchangeRate = async (): Promise<number> => {
   }
 };
 
+/** 通用：取得 X/TWD 即時匯率（1 X = N TWD） */
+const fetchXTWDExchangeRate = async (symbol: string, defaultRate: number): Promise<number> => {
+  try {
+    const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    const response = await fetchWithProxy(baseUrl);
+    if (!response || !response.ok) return defaultRate;
+    const text = await response.text();
+    if (!text?.trim() || text.trim().startsWith('Edge:') || text.trim().startsWith('Too many') ||
+        text.includes('<!DOCTYPE') || text.includes('<html')) return defaultRate;
+    const data = JSON.parse(text);
+    if (!data.chart?.result?.[0]) return defaultRate;
+    const rate = data.chart.result[0].meta?.regularMarketPrice ?? data.chart.result[0].meta?.previousClose ?? defaultRate;
+    return rate;
+  } catch {
+    return defaultRate;
+  }
+};
+
+const fetchEURExchangeRate = () => fetchXTWDExchangeRate('EURTWD=X', 34);
+const fetchGBPExchangeRate = () => fetchXTWDExchangeRate('GBPTWD=X', 40);
+const fetchHKDExchangeRate = () => fetchXTWDExchangeRate('HKDTWD=X', 4);
+const fetchKRWExchangeRate = () => fetchXTWDExchangeRate('KRWTWD=X', 0.023);
+
 /**
  * 取得指定年份的歷史日幣匯率（年底匯率）
  * @param year 年份
@@ -715,7 +738,15 @@ const fetchHistoricalExchangeRate = async (year: number): Promise<number> => {
 export const fetchCurrentPrices = async (
   tickers: string[],
   markets?: ('US' | 'TW' | 'UK' | 'JP')[]
-): Promise<{ prices: Record<string, PriceData>, exchangeRate: number, jpyExchangeRate?: number }> => {
+): Promise<{
+  prices: Record<string, PriceData>;
+  exchangeRate: number;
+  jpyExchangeRate?: number;
+  eurExchangeRate?: number;
+  gbpExchangeRate?: number;
+  hkdExchangeRate?: number;
+  krwExchangeRate?: number;
+}> => {
   try {
     console.log(`[調試] ===== 開始批次取得股價與匯率 =====`);
     console.log(`[調試] 📌 重要提示：`);
@@ -767,8 +798,14 @@ export const fetchCurrentPrices = async (
     
     // 同時取得匯率
     console.log(`[調試] 開始取得匯率資訊...`);
-    const exchangeRate = await fetchExchangeRate();
-    const jpyExchangeRate = hasJP ? await fetchJPYExchangeRate() : undefined;
+    const [exchangeRate, jpyExchangeRate, eurExchangeRate, gbpExchangeRate, hkdExchangeRate, krwExchangeRate] = await Promise.all([
+      fetchExchangeRate(),
+      hasJP ? fetchJPYExchangeRate() : Promise.resolve(undefined),
+      fetchEURExchangeRate(),
+      fetchGBPExchangeRate(),
+      fetchHKDExchangeRate(),
+      fetchKRWExchangeRate(),
+    ]);
 
     // 統計成功取得的數據
     const successCount = Object.keys(result).length;
@@ -789,8 +826,12 @@ export const fetchCurrentPrices = async (
 
     return {
       prices: result,
-      exchangeRate: exchangeRate,
-      jpyExchangeRate: jpyExchangeRate,
+      exchangeRate,
+      jpyExchangeRate,
+      eurExchangeRate,
+      gbpExchangeRate,
+      hkdExchangeRate,
+      krwExchangeRate,
     };
   } catch (error) {
     console.error('批次取得股價時發生錯誤:', error);

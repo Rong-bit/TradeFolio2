@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
-<!-- 請勿直接開啟此檔：請用 npm run dev 啟動開發伺服器，或使用 build 後的 dist 內容 -->
 <html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -11,7 +11,7 @@
     <!-- 禁止 iOS/Android 自動將數字辨識為電話號碼 -->
     <meta name="format-detection" content="telephone=no" />
     <!-- 修改為相對路徑，確保在子目錄下能讀取 -->
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="manifest" href="./assets/manifest-DRLUZSmr.json" />
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3314/3314353.png">
     <title>TradeFolio - 投資資產紀錄</title>
     <!-- Tailwind CSS 保持 CDN 引入即可 -->
@@ -30,7 +30,6 @@
             animation: {
               'fade-in': 'fadeIn 0.2s ease-out',
               'slide-up': 'slideUp 0.3s ease-out',
-              'slide-right': 'slideRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             },
             keyframes: {
               fadeIn: {
@@ -40,16 +39,13 @@
               slideUp: {
                 '0%': { transform: 'translateY(100%)' },
                 '100%': { transform: 'translateY(0)' },
-              },
-              slideRight: {
-                '0%': { transform: 'translateX(-100%)' },
-                '100%': { transform: 'translateX(0)' },
               }
             }
           }
         }
       }
     </script>
+
   <script type="importmap">
 {
   "imports": {
@@ -64,9 +60,9 @@
   }
 }
 </script>
+  <script type="module" crossorigin src="./assets/index-BoshXdp9.js"></script>
 </head>
-  <body class="bg-slate-50 text-slate-900 antialiased">
+  <body class="bg-slate-50 text-slate-900 antialiased overscroll-none">
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

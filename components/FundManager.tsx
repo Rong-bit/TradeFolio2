@@ -17,6 +17,10 @@ interface Props {
   baseCurrency?: BaseCurrency;
   currentExchangeRate?: number;
   currentJpyExchangeRate?: number;
+  currentEurExchangeRate?: number;
+  currentGbpExchangeRate?: number;
+  currentHkdExchangeRate?: number;
+  currentKrwExchangeRate?: number;
   language: Language;
 }
 
@@ -31,9 +35,20 @@ const FundManager: React.FC<Props> = ({
   baseCurrency = 'TWD',
   currentExchangeRate = 32,
   currentJpyExchangeRate = 0.21,
+  currentEurExchangeRate,
+  currentGbpExchangeRate,
+  currentHkdExchangeRate,
+  currentKrwExchangeRate,
   language
 }) => {
-  const rates = { exchangeRateUsdToTwd: currentExchangeRate, jpyExchangeRate: currentJpyExchangeRate };
+  const rates = {
+    exchangeRateUsdToTwd: currentExchangeRate,
+    jpyExchangeRate: currentJpyExchangeRate,
+    eurExchangeRate: currentEurExchangeRate,
+    gbpExchangeRate: currentGbpExchangeRate,
+    hkdExchangeRate: currentHkdExchangeRate,
+    krwExchangeRate: currentKrwExchangeRate,
+  };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const translations = t(language);
   const ff = translations.fundForm;
