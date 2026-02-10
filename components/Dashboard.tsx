@@ -56,6 +56,8 @@ const Dashboard: React.FC<Props> = ({
     gbpExchangeRate: summary.gbpExchangeRate,
     hkdExchangeRate: summary.hkdExchangeRate,
     krwExchangeRate: summary.krwExchangeRate,
+    cadExchangeRate: summary.cadExchangeRate,
+    inrExchangeRate: summary.inrExchangeRate,
   };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const displayRate = getDisplayRateForBaseCurrency(baseCurrency, rates); 

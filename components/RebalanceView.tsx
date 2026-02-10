@@ -27,6 +27,8 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
     gbpExchangeRate: summary.gbpExchangeRate,
     hkdExchangeRate: summary.hkdExchangeRate,
     krwExchangeRate: summary.krwExchangeRate,
+    cadExchangeRate: summary.cadExchangeRate,
+    inrExchangeRate: summary.inrExchangeRate,
   };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   

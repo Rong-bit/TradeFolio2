@@ -1,8 +1,8 @@
 
 /** 基準顯示幣別（儀表板總額等用此幣顯示） */
-export type BaseCurrency = 'TWD' | 'USD' | 'JPY' | 'EUR' | 'GBP' | 'HKD' | 'KRW';
+export type BaseCurrency = 'TWD' | 'USD' | 'JPY' | 'EUR' | 'GBP' | 'HKD' | 'KRW' | 'CAD' | 'INR';
 
-export const BASE_CURRENCIES: BaseCurrency[] = ['TWD', 'USD', 'JPY', 'EUR', 'GBP', 'HKD', 'KRW'];
+export const BASE_CURRENCIES: BaseCurrency[] = ['TWD', 'USD', 'JPY', 'EUR', 'GBP', 'HKD', 'KRW', 'CAD', 'INR'];
 
 export enum Market {
   US = 'US',

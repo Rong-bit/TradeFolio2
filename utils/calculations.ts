@@ -23,6 +23,8 @@ export interface ExchangeRates {
   gbpExchangeRate?: number;
   hkdExchangeRate?: number;
   krwExchangeRate?: number;
+  cadExchangeRate?: number;
+  inrExchangeRate?: number;
 }
 
 /** 將 TWD 換算為基準幣（僅顯示用；內部仍以 TWD 為單位） */
@@ -43,6 +45,10 @@ export function valueInBaseCurrency(
   if (baseCurrency === 'HKD') return valueTWD / hkdRate;
   const krwRate = rates.krwExchangeRate && rates.krwExchangeRate > 0 ? rates.krwExchangeRate : 0.023;
   if (baseCurrency === 'KRW') return valueTWD / krwRate;
+  const cadRate = rates.cadExchangeRate && rates.cadExchangeRate > 0 ? rates.cadExchangeRate : 23;
+  if (baseCurrency === 'CAD') return valueTWD / cadRate;
+  const inrRate = rates.inrExchangeRate && rates.inrExchangeRate > 0 ? rates.inrExchangeRate : 0.38;
+  if (baseCurrency === 'INR') return valueTWD / inrRate;
   return valueTWD;
 }
 
@@ -65,6 +71,10 @@ export function getDisplayRateForBaseCurrency(
   if (baseCurrency === 'HKD') return { label: 'USD/HKD', value: usdToTwd / hkdRate };
   const krwRate = rates.krwExchangeRate && rates.krwExchangeRate > 0 ? rates.krwExchangeRate : 0.023;
   if (baseCurrency === 'KRW') return { label: 'USD/KRW', value: usdToTwd / krwRate };
+  const cadRate = rates.cadExchangeRate && rates.cadExchangeRate > 0 ? rates.cadExchangeRate : 23;
+  if (baseCurrency === 'CAD') return { label: 'USD/CAD', value: usdToTwd / cadRate };
+  const inrRate = rates.inrExchangeRate && rates.inrExchangeRate > 0 ? rates.inrExchangeRate : 0.38;
+  if (baseCurrency === 'INR') return { label: 'USD/INR', value: usdToTwd / inrRate };
   return { label: 'USD/TWD', value: usdToTwd };
 }
 

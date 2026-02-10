@@ -21,6 +21,8 @@ interface Props {
   currentGbpExchangeRate?: number;
   currentHkdExchangeRate?: number;
   currentKrwExchangeRate?: number;
+  currentCadExchangeRate?: number;
+  currentInrExchangeRate?: number;
   language: Language;
 }
 
@@ -39,6 +41,8 @@ const FundManager: React.FC<Props> = ({
   currentGbpExchangeRate,
   currentHkdExchangeRate,
   currentKrwExchangeRate,
+  currentCadExchangeRate,
+  currentInrExchangeRate,
   language
 }) => {
   const rates = {
@@ -48,6 +52,8 @@ const FundManager: React.FC<Props> = ({
     gbpExchangeRate: currentGbpExchangeRate,
     hkdExchangeRate: currentHkdExchangeRate,
     krwExchangeRate: currentKrwExchangeRate,
+    cadExchangeRate: currentCadExchangeRate,
+    inrExchangeRate: currentInrExchangeRate,
   };
   const toBase = (v: number) => valueInBaseCurrency(v, baseCurrency, rates);
   const translations = t(language);
@@ -352,13 +358,13 @@ const FundManager: React.FC<Props> = ({
           {/* 篩選結果統計與快速按鈕 */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-200">
             <div className="text-sm text-slate-600">
-              {language === 'en' 
+              {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi')
                 ? <>Showing <span className="font-semibold text-slate-800">{filteredFlows.length}</span> records</>
                 : <>顯示 <span className="font-semibold text-slate-800">{filteredFlows.length}</span> 筆記錄</>
               }
               {filteredFlows.length !== cashFlows.length && (
                 <span className="text-slate-500">
-                  {language === 'en' 
+                  {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi')
                     ? <> (Total {cashFlows.length})</>
                     : <>（共 {cashFlows.length} 筆）</>
                   }
@@ -409,7 +415,7 @@ const FundManager: React.FC<Props> = ({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredFlows.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center text-slate-400">{language === 'en' ? 'No matching records found.' : '沒有符合條件的資金紀錄。'}</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-slate-400">{(language === 'en' || language === 'de' || language === 'fr' || language === 'hi') ? 'No matching records found.' : '沒有符合條件的資金紀錄。'}</td></tr>
             ) : (
                 filteredFlows.map(cf => {
                    const account = accounts.find(a => a.id === cf.accountId);
