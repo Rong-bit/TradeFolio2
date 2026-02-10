@@ -1,6 +1,16 @@
 
 // 語言類型
-export type Language = 'zh-TW' | 'en' | 'ja' | 'ko';
+export type Language = 'zh-TW' | 'zh-CN' | 'en' | 'ja' | 'ko' | 'de';
+
+/** 語系選項（用於下拉選單） */
+export const LANGUAGES: { code: Language; label: string }[] = [
+  { code: 'zh-TW', label: '繁' },
+  { code: 'zh-CN', label: '简' },
+  { code: 'en', label: 'EN' },
+  { code: 'ja', label: '日' },
+  { code: 'ko', label: '한' },
+  { code: 'de', label: '德' },
+];
 
 // 基準幣別代碼
 export type BaseCurrencyCode = 'TWD' | 'USD' | 'JPY' | 'EUR' | 'GBP' | 'HKD' | 'KRW';
@@ -1592,18 +1602,53 @@ const ko: Translations = {
   fundForm: { addFundRecord: '자금 기록 추가', editFundRecord: '자금 기록 편집', date: '날짜', type: '유형', account: '계좌', sourceAccount: '송금 출처', amount: '금액', targetAccount: '송금 대상', selectAccount: '계좌 선택...', exchangeRate: '환율', exchangeRateUSD: '환율(TWD/USD)', exchangeRateJPY: '환율(TWD/JPY)', crossCurrencyTransfer: '다른 통화 송금', usdConversion: '미국 달러 환산', jpyConversion: '일본 엔 환산', sameCurrencyTransfer: '동일 통화 송금(1.0)', fees: '수수료({currency})', feesNote: '송금 수수료', note: '비고', cancel: '취소', updateRecord: '업데이트', confirmExecute: '저장', typeDeposit: '입금', typeWithdraw: '출금', typeTransfer: '송금', typeInterest: '이자', confirmTitle: '자금 기록 확인', confirmMessage: '내용을 확인하세요.', dateLabel: '날짜:', typeLabel: '유형:', accountLabel: '계좌:', targetAccountLabel: '송금 대상:', amountLabel: '금액:', exchangeRateLabel: '환율:', feesLabel: '수수료:', noteLabel: '비고:', totalTWD: '합계({currency}):', backToEdit: '돌아가기', confirmSave: '저장', errorNoAccount: '먼저 계좌를 생성하세요' },
 };
 
+// 簡體中文翻譯（基於繁體轉簡體）
+const zhCN: Translations = JSON.parse(JSON.stringify(zhTW));
+zhCN.baseCurrency = { TWD: '台币', USD: '美元', JPY: '日元', EUR: '欧元', GBP: '英镑', HKD: '港币', KRW: '韩元' };
+zhCN.common = { confirm: '确认', cancel: '取消', delete: '删除', edit: '编辑', save: '保存', close: '关闭', loading: '加载中...', search: '搜索', logoutConfirm: '确定要登出系统吗？' };
+zhCN.nav = { dashboard: '仪表板', history: '交易记录', funds: '资金管理', accounts: '证券户', rebalance: '再平衡', simulator: '配置模拟', help: '系统管理', logout: '登出' };
+zhCN.login = { title: 'TradeView 登录', subtitle: '台美股资产管理', email: 'Email', password: 'Password', login: '登录', privacy: '隐私声明', privacyDesc: '数据存储在个人设备，不涉及个人隐私，请定时备份。', riskDisclaimer: '风险声明', riskDisclaimerDesc: '投资有风险，过往绩效不代表未来表现。' };
+zhCN.dashboard = { ...zhTW.dashboard, netCost: '净投入', totalAssets: '总资产', totalPL: '总损益', includeCash: '含现金', formulaNote: '美元账户优先使用历史汇率，转账与利息不计入成本。', deposit: '汇入(+)', withdraw: '汇出(-)', fixedTWD: '指定台币金额', taiwanDollar: '台币' };
+zhCN.funds = { ...zhTW.funds, title: '资金管理', deposit: '汇入', withdraw: '汇出', transfer: '转账', interest: '利息' };
+zhCN.accounts = { ...zhTW.accounts, currencyTWD: '台币', currencyUSD: '美元', currencyJPY: '日元' };
+zhCN.labels = { ...zhTW.labels, exchangeRate: '汇率', fee: '手续费' };
+zhCN.holdings = { ...zhTW.holdings };
+
+// 德文翻譯
+const de: Translations = {
+  baseCurrency: { TWD: 'TWD', USD: 'USD', JPY: 'JPY', EUR: 'EUR', GBP: 'GBP', HKD: 'HKD', KRW: 'KRW' },
+  common: { confirm: 'Bestätigen', cancel: 'Abbrechen', delete: 'Löschen', edit: 'Bearbeiten', save: 'Speichern', close: 'Schließen', loading: 'Laden...', search: 'Suchen', logoutConfirm: 'Möchten Sie sich abmelden?' },
+  nav: { dashboard: 'Dashboard', history: 'Transaktionen', funds: 'Fonds', accounts: 'Konten', rebalance: 'Rebalancing', simulator: 'Simulator', help: 'System', logout: 'Abmelden' },
+  pages: { dashboard: 'Portfolio-Dashboard', history: 'Verlauf (Transaktionen + Cashflow)', funds: 'Fondsverwaltung', accounts: 'Kontoverwaltung', rebalance: 'Rebalancing', simulator: 'Asset-Allocation-Simulator', help: 'System & Backup' },
+  login: { title: 'TradeView Anmeldung', subtitle: 'Taiwan- & US-Aktien Portfolio', email: 'E-Mail', password: 'Passwort', login: 'Anmelden', privacy: 'Datenschutz', privacyDesc: 'Daten werden lokal gespeichert. Keine Erfassung personenbezogener Daten.', riskDisclaimer: 'Risikohinweis', riskDisclaimerDesc: 'Investitionen bergen Risiken. Vergangene Performance garantiert keine zukünftigen Ergebnisse.' },
+  dashboard: { ...en.dashboard, netCost: 'Nettokosten', totalAssets: 'Gesamtvermögen', totalPL: 'Gewinn/Verlust', deposit: 'Einzahlung(+)', withdraw: 'Auszahlung(-)', formulaNote: 'USD-Konten: Historischer Kurs bevorzugt. Überweisungen und Zinsen nicht in Kosten.', attention: 'Hinweis', taiwanDollar: 'TWD', aiAdvisor: 'Gemini AI Berater', aiAdvisorDesc: 'Portfolio-Analyse', notInvestmentAdvice: 'Keine Anlageberatung.' },
+  funds: { title: 'Fondsverwaltung', operations: 'Aktionen', clearAll: 'Alle löschen', batchImport: 'Import', addRecord: '+ Eintrag', filter: 'Filter', clearFilters: 'Zurücksetzen', accountFilter: 'Konto', typeFilter: 'Typ', dateFrom: 'Von', dateTo: 'Bis', allAccounts: 'Alle', allTypes: 'Alle', deposit: 'Einzahlung', withdraw: 'Auszahlung', transfer: 'Überweisung', interest: 'Zinsen', showRecords: '{count} Einträge', totalRecords: 'Gesamt {total}', last30Days: 'Letzte 30 Tage', thisYear: 'Dieses Jahr', confirmClearAll: 'Alle Fondsdaten löschen?', confirmClearAllMessage: 'Ein- und Auszahlungen werden gelöscht.', confirmClear: 'Löschen' },
+  history: { ...en.history },
+  labels: { date: 'Datum', account: 'Konto', amount: 'Betrag', balance: 'Saldo', action: 'Aktion', type: 'Typ', price: 'Preis', quantity: 'Anzahl', currency: 'Währung', fee: 'Gebühr', exchangeRate: 'Kurs', totalCost: 'Gesamtkosten', category: 'Kategorie', description: 'Symbol/Beschreibung', note: 'Notiz' },
+  holdings: { ...en.holdings },
+  accounts: { ...en.accounts },
+  rebalance: { ...en.rebalance },
+  simulator: { ...en.simulator },
+  help: { ...en.help },
+  transactionForm: { ...en.transactionForm },
+  fundForm: { ...en.fundForm },
+};
+
 // 翻譯映射
 const translations: Record<Language, Translations> = {
   'zh-TW': zhTW,
+  'zh-CN': zhCN,
   'en': en,
   'ja': ja,
   'ko': ko,
+  'de': de,
 };
 
 // 獲取當前語言
 export const getLanguage = (): Language => {
   const saved = localStorage.getItem('tf_language');
-  return (saved === 'en' || saved === 'zh-TW' || saved === 'ja' || saved === 'ko') ? saved : 'zh-TW';
+  const valid: Language[] = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'de'];
+  return valid.includes(saved as Language) ? saved as Language : 'zh-TW';
 };
 
 // 設置語言
