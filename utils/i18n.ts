@@ -1677,7 +1677,66 @@ const ja: Translations = {
   accounts: { addAccount: '口座追加', accountName: '口座名', accountNamePlaceholder: '例: 富邦證券, Firstrade', currency: '通貨', currencyTWD: '台湾ドル', currencyUSD: '米ドル', currencyJPY: '日本円', currencyEUR: 'ユーロ', currencyGBP: '英ポンド', currencyHKD: '香港ドル', currencyKRW: '韓国ウォン', currencyCNY: '人民元', currencyINR: 'インドルピー', currencyCAD: 'カナダドル', currencyAUD: '豪ドル', currencySAR: 'サウジリヤル', currencyBRL: 'ブラジルレアル', subBrokerage: '海外証券', add: '追加', update: '更新', editAccount: '編集', balance: '残高', cancel: 'キャンセル', updateAccount: '更新', confirmDelete: '削除確認', confirmDeleteMessage: '「{name}」を削除しますか？', deleteWarning: '取引履歴は削除されませんが、フィルタで異常が出る場合があります。', deleteAccount: '削除', noAccounts: '口座がありません。', cashBalance: '現金残高', editAccountTitle: '口座編集' },
   rebalance: { title: 'リバランス', resetToCurrent: '現状にリセット', totalAssets: '総資産（現金含む）', enable: '有効', symbol: '銘柄', currentPrice: '現在価格', currentValue: '現在価値', currentWeight: '現在比率', targetWeight: '目標比率', targetValue: '目標価値', adjustAmount: '調整額', suggestedAction: '推奨操作', cash: '現金', totalEnabled: '有効合計', remainingFunds: '残資金', notParticipating: '対象外', accounts: '口座', description: '説明：', description1: '同一銘柄は自動合算されます。', description2: '「有効」でリバランス対象を選択します。', description3: '現金も選択できます。', description4: '目標比率は自動保存されます。', description5: '現金目標がマイナスの場合、銘柄目標を減らしてください。', description6: '「現状にリセット」で一括リセット。', buy: '買い', sell: '売り' },
   simulator: { title: '資産配分シミュレータ', description: '異なる資産配分の期待リターンを比較できます。', descriptionWarning: '⚠️ 過去の実績は将来を保証しません。参考情報です。', basicSettings: '基本設定', initialAmount: '初期投資額', investmentYears: '投資年数', regularInvestment: '定期投資（任意）', regularAmount: '定期投資額', frequency: '頻度', monthly: '月', quarterly: '四半期', yearly: '年', annualTotal: '年間合計', setToZero: '0で無効', importFromHoldings: '保有から取り込み', importButton: '取り込み', manualAdd: '手動追加', ticker: '銘柄', tickerPlaceholder: '例: 0050', market: '市場', marketTW: '台湾(TW)', marketUS: '米国(US)', marketUK: '英国(UK)', marketJP: '日本(JP)', marketCN: '中国(CN)', marketIN: 'インド(IN)', marketCA: 'カナダ(CA)', marketFR: 'フランス(FR)', marketHK: '香港(HK)', marketKR: '韓国(KR)', marketDE: 'ドイツ(DE)', marketAU: '豪州(AU)', marketSA: 'サウジ(SA)', marketBR: 'ブラジル(BR)', annualReturn: '年率リターン(%)', autoQuery: '🔍 自動取得', querying: '取得中', allocation: '配分(%)', add: '追加', assetList: '資産リスト', autoBalance: '自動配分', clearAll: '全クリア', allocationSum: '合計配分:', totalInvested: '総投資', finalValue: '最終価値', totalReturn: '総リターン', portfolioAnnualReturn: 'ポートフォリオ年率', initial: '初期', yearlyProjection: '年間予測', yearlyReturnAnalysis: '年間リターン分析', detailedYearlyProjection: '詳細年間予測', year: '年', assetValue: '資産価値', yearlyReturn: '年間リターン', cumulativeInvestment: '累積投資', yearlyReturnRate: '年間リターン率', allocationWarning: '⚠️ 配分合計は100%に', confirmClear: '全クリア確認', confirmClearMessage: '全資産配分をクリアしますか？', dataWarning: '⚠️ データ注意', dataWarningDesc: '結果が低い場合、Yahoo Financeのデータが不完全な可能性があります。', cagrExplanation: '年率リターン計算', cagrFormula: 'CAGR = ((現在価格/初期価格)^(1/年数))-1', cagrFormulaDesc: 'CAGR（年平均成長率）を使用', cagrExample: '上場時購入から現在までの年平均リターン', cagrExampleValue: '例: 100→200（5年）≈14.87%', errorEnterTicker: '銘柄を入力', errorAllocationRange: '0-100%の範囲で', errorAllocationSum: '合計100%以下に', errorNoHoldings: '取り込みデータなし', errorEnterTickerFirst: '先に銘柄を入力', errorCannotGetReturn: '{ticker}の年率取得不可、手動入力', errorQueryFailed: '取得失敗、手動入力', close: '閉じる', cancel: 'キャンセル', yearPrefix: '年', yearSuffix: '', queryingReturn: '{ticker}の年率取得中...', autoQueryTitle: '上場来年率を自動取得' },
-  help: { dataManagement: 'データ管理', export: 'エクスポート', exportDesc: '取引・口座・株価をJSONで出力。定期的なバックアップ推奨。', downloadBackup: 'バックアップ(.json)ダウンロード', import: 'インポート', importWarning: 'バックアップ読み込みで現在のデータが上書きされます。', uploadBackup: 'バックアップアップロード', authorizedUsers: '認可ユーザー', authorizedUsersDesc: 'パスワードなしでログイン可能なメール一覧（プライバシー保護のためマスク）:', emailAccount: 'メール', status: '状態', systemAuthorized: 'システム認可', contact: '購入・お問い合わせ', contactTitle: 'ご利用ありがとう', contactDesc: 'メンバー外で永久利用権をご希望の方、機能提案・不具合報告は開発者まで。', contactEmail: '管理者連絡先(メール)', documentation: 'ドキュメント', copyAll: 'コピー', copied: 'コピーしました！', print: '印刷', confirmImport: 'データ上書きの確認', confirmImportMessage: '{fileName}を読み込みます。', confirmImportWarning: '現在の取引・設定が完全に消去されます。元に戻せません。', confirmOverride: '上書き確認', documentationContent: '# TradeView マニュアル\n\n**プライバシー**: 全データはデバイスにローカル保存。個人情報収集なし。定期的なバックアップを推奨。\n\n## 機能\n- 口座管理・資金管理・取引記録\n- ダッシュボード・リバランス・シミュレータ\n\n## リスク\n投資にはリスクがあります。本アプリは投資アドバイスを提供しません。', androidPublish: 'Android公開ガイド', androidPublishTitle: 'Google Playへの公開方法', androidPublishDesc: 'TWAでWebアプリをラップしてAndroid化できます。' },
+  help: {
+    dataManagement: 'データ管理',
+    export: 'エクスポート',
+    exportDesc: '取引・口座・株価をJSONで出力。定期的なバックアップ推奨。',
+    downloadBackup: 'バックアップ(.json)ダウンロード',
+    import: 'インポート',
+    importWarning: 'バックアップ読み込みで現在のデータが上書きされます。',
+    uploadBackup: 'バックアップアップロード',
+    authorizedUsers: '認可ユーザー',
+    authorizedUsersDesc: 'パスワードなしでログイン可能なメール一覧（プライバシー保護のためマスク）:',
+    emailAccount: 'メール',
+    status: '状態',
+    systemAuthorized: 'システム認可',
+    contact: '購入・お問い合わせ',
+    contactTitle: 'ご利用ありがとう',
+    contactDesc: 'メンバー外で永久利用権をご希望の方、機能提案・不具合報告は開発者まで。',
+    contactEmail: '管理者連絡先(メール)',
+    documentation: 'ドキュメント',
+    copyAll: 'コピー',
+    copied: 'コピーしました！',
+    print: '印刷',
+    confirmImport: 'データ上書きの確認',
+    confirmImportMessage: '{fileName}を読み込みます。',
+    confirmImportWarning: '現在の取引・設定が完全に消去されます。元に戻せません。',
+    confirmOverride: '上書き確認',
+    documentationContent: `# TradeView ユーザーマニュアル
+
+> **プライバシー・セキュリティ**：オフライン優先構成。**全取引データはお使いの端末にのみ保存**され、サーバーへは送信されません。**個人情報の収集は行いません。**
+
+## 1. システム概要
+TradeViewは台湾・米国株に対応した資産管理ツールです。資産推移の追跡、リターン計算、資金フロー管理をサポートします。
+
+## 2. クイックスタート
+1. **口座作成**：「口座管理」で銀行情報・証券口座を追加。
+2. **資金入力**：「資金管理」の「入金」で給与・預金を記録。
+3. **取引追加**：右上「記録追加」で売買を入力。
+4. **レポート**：「ダッシュボード」で資産推移・パフォーマンスを確認。
+
+## 3. 機能詳細
+**資金管理**：入金・出金・送金・利息。
+**取引種別**：買い/売り・株式配当・現金配当。
+
+## 4. よくある質問(FAQ)
+Q: 年率リターンはどう計算？ A: 資金加重リターンを採用。入出金のタイミングを考慮して推定します。
+Q: 為替設定は？ A: 右上でUSD/TWDを設定するか、送金時にその時点のレートを指定。
+Q: データとプライバシー？ A: データはすべて端末内のみ。個資の心配はありません。端末障害やキャッシュ削除に備え、**定期的に「バックアップ」でJSONを保存**することを推奨します。
+Q: バックアップがダウンロードできない？ A: LINE内で開いているとポップアップがブロックされることがあります。ChromeやSafariなどのブラウザで操作してください。
+Q: 株価が更新されない？ A: 銘柄の市場設定を確認。誤りがあれば「取引履歴」の「市場一括変更」で修正。
+Q: 会員のメリットは？ A: リバランス・チャート・年間成績表が使え、投資結果を把握しやすくなります。
+Q: 株価・為替が「AI更新」の現値と違う？ A: ウェブの現値を取得しているため数分遅れがあります。売買の基準は証券会社のリアルタイムを優先してください。本アプリは資産統計用であり、証券取引機能はありません。投資にはリスクがあります。緊急資金の確保をお忘れなく。
+
+## 5. 免責事項
+- 投資にはリスクがあります。過去の実績は将来を保証しません。
+- 本アプリは資産の記録・管理のみを提供し、投資助言は行いません。
+- 証券の売買機能はなく、実際の取引は行えません。
+- 投資判断とリスクはすべてユーザーが負います。必要に応じて専門家にご相談ください。`,
+    androidPublish: 'Android公開ガイド',
+    androidPublishTitle: 'Google Playへの公開方法',
+    androidPublishDesc: 'TWAでWebアプリをラップしてAndroid化できます。\n1. Googleデベロッパーアカウント登録（25ドル）。\n2. Bubblewrap CLIでサイトURLをラップ。\n3. Play ConsoleでAABをアップロードし審査に提出。',
+  },
   transactionForm: { addTransaction: '取引追加', editTransaction: '取引編集', date: '日付', account: '口座', market: '市場', ticker: '銘柄', tickerPlaceholder: '例: 2330, AAPL', category: 'カテゴリ', price: '単価', quantity: '数量', quantityFixed: '数量(1固定)', fees: '手数料', note: '備考', cancel: 'キャンセル', saveTransaction: '保存', updateTransaction: '更新', confirmTitle: '確認', confirmMessage: '内容を確認してください。', dateLabel: '日付:', accountLabel: '口座:', marketLabel: '市場:', tickerLabel: '銘柄:', typeLabel: '種別:', priceLabel: '単価:', quantityLabel: '数量:', feesLabel: '手数料:', noteLabel: '備考:', totalAmount: '合計:', shares: '株', backToEdit: '戻る', confirmSave: '保存', previewTitle: '金額プレビュー:', calculationFormula: '計算式:', marketTW: '台湾(TW)', marketUS: '米国(US)', marketUK: '英国(UK)', marketJP: '日本(JP)', marketCN: '中国(CN)', marketIN: 'インド(IN)', marketCA: 'カナダ(CA)', marketFR: 'フランス(FR)', marketHK: '香港(HK)', marketKR: '韓国(KR)', marketDE: 'ドイツ(DE)', marketAU: '豪州(AU)', marketSA: 'サウジ(SA)', marketBR: 'ブラジル(BR)', typeBuy: '買い', typeSell: '売り', typeDividend: '株式配当', typeCashDividend: '現金配当', typeTransferIn: '振込', typeTransferOut: '振出', placeholderPrice: '単価', placeholderQuantity: '配当総額', errorNoAccount: '口座を先に作成してください', feesShort: '手数料', formulaNote: '(台湾株は切り捨て)' },
   fundForm: { addFundRecord: '資金記録追加', editFundRecord: '資金記録編集', date: '日付', type: '種別', account: '口座', sourceAccount: '送金元', amount: '金額', targetAccount: '送金先', selectAccount: '口座選択...', exchangeRate: '為替', exchangeRateUSD: '為替(TWD/USD)', exchangeRateJPY: '為替(TWD/JPY)', crossCurrencyTransfer: '異通貨送金', usdConversion: '米ドル換算', jpyConversion: '日本円換算', sameCurrencyTransfer: '同通貨送金(1.0)', fees: '手数料({currency})', feesNote: '送金手数料', note: '備考', cancel: 'キャンセル', updateRecord: '更新', confirmExecute: '保存', typeDeposit: '入金', typeWithdraw: '出金', typeTransfer: '送金', typeInterest: '利息', confirmTitle: '資金記録確認', confirmMessage: '内容を確認してください。', dateLabel: '日付:', typeLabel: '種別:', accountLabel: '口座:', targetAccountLabel: '送金先:', amountLabel: '金額:', exchangeRateLabel: '為替:', feesLabel: '手数料:', noteLabel: '備考:', totalTWD: '合計({currency}):', backToEdit: '戻る', confirmSave: '保存', errorNoAccount: '口座を先に作成してください' },
 };
@@ -1697,7 +1756,66 @@ const ko: Translations = {
   accounts: { addAccount: '계좌 추가', accountName: '계좌명', accountNamePlaceholder: '예: 富邦證券, Firstrade', currency: '통화', currencyTWD: '대만 달러', currencyUSD: '미국 달러', currencyJPY: '일본 엔', currencyEUR: '유로', currencyGBP: '영국 파운드', currencyHKD: '홍콩 달러', currencyKRW: '한국 원', currencyCNY: '중국 위안', currencyINR: '인도 루피', currencyCAD: '캐나다 달러', currencyAUD: '호주 달러', currencySAR: '사우디 리얄', currencyBRL: '브라질 레알', subBrokerage: '해외 증권', add: '추가', update: '업데이트', editAccount: '편집', balance: '잔액', cancel: '취소', updateAccount: '업데이트', confirmDelete: '삭제 확인', confirmDeleteMessage: '「{name}」을(를) 삭제하시겠습니까?', deleteWarning: '거래 기록은 삭제되지 않지만 필터에 문제가 생길 수 있습니다.', deleteAccount: '삭제', noAccounts: '계좌가 없습니다.', cashBalance: '현금 잔액', editAccountTitle: '계좌 편집' },
   rebalance: { title: '리밸런싱', resetToCurrent: '현재로 초기화', totalAssets: '총 자산(현금 포함)', enable: '활성화', symbol: '종목', currentPrice: '현재가', currentValue: '현재 가치', currentWeight: '현재 비중', targetWeight: '목표 비중', targetValue: '목표 가치', adjustAmount: '조정 금액', suggestedAction: '권장 조치', cash: '현금', totalEnabled: '활성화 합계', remainingFunds: '잔여 자금', notParticipating: '미참여', accounts: '계좌', description: '설명:', description1: '동일 종목은 자동 합산됩니다.', description2: '「활성화」로 리밸런싱 대상을 선택합니다.', description3: '현금도 선택할 수 있습니다.', description4: '목표 비중은 자동 저장됩니다.', description5: '현금 목표가 음수면 종목 목표를 줄이세요.', description6: '「현재로 초기화」로 일괄 초기화.', buy: '매수', sell: '매도' },
   simulator: { title: '자산 배분 시뮬레이터', description: '다른 자산 배분의 기대 수익을 비교할 수 있습니다.', descriptionWarning: '⚠️ 과거 실적은 미래를 보장하지 않습니다. 참고 정보입니다.', basicSettings: '기본 설정', initialAmount: '초기 투자액', investmentYears: '투자 년수', regularInvestment: '정기 투자(선택)', regularAmount: '정기 투자액', frequency: '빈도', monthly: '월', quarterly: '분기', yearly: '년', annualTotal: '연간 합계', setToZero: '0으로 비활성화', importFromHoldings: '보유에서 가져오기', importButton: '가져오기', manualAdd: '수동 추가', ticker: '종목', tickerPlaceholder: '예: 0050', market: '시장', marketTW: '대만(TW)', marketUS: '미국(US)', marketUK: '영국(UK)', marketJP: '일본(JP)', marketCN: '중국(CN)', marketIN: '인도(IN)', marketCA: '캐나다(CA)', marketFR: '프랑스(FR)', marketHK: '홍콩(HK)', marketKR: '한국(KR)', marketDE: '독일(DE)', marketAU: '호주(AU)', marketSA: '사우디(SA)', marketBR: '브라질(BR)', annualReturn: '연평균 수익률(%)', autoQuery: '🔍 자동 조회', querying: '조회 중', allocation: '배분(%)', add: '추가', assetList: '자산 목록', autoBalance: '자동 배분', clearAll: '전체 초기화', allocationSum: '총 배분:', totalInvested: '총 투자', finalValue: '최종 가치', totalReturn: '총 수익', portfolioAnnualReturn: '포트폴리오 연평균', initial: '초기', yearlyProjection: '연간 예측', yearlyReturnAnalysis: '연간 수익 분석', detailedYearlyProjection: '상세 연간 예측', year: '년', assetValue: '자산 가치', yearlyReturn: '연간 수익', cumulativeInvestment: '누적 투자', yearlyReturnRate: '연간 수익률', allocationWarning: '⚠️ 배분 합계 100%로', confirmClear: '전체 초기화 확인', confirmClearMessage: '전체 자산 배분을 초기화하시겠습니까?', dataWarning: '⚠️ 데이터 주의', dataWarningDesc: '결과가 낮으면 Yahoo Finance 데이터가 불완전할 수 있습니다.', cagrExplanation: '연평균 수익률 계산', cagrFormula: 'CAGR = ((현재가/초기가)^(1/년수))-1', cagrFormulaDesc: 'CAGR(연평균 성장률) 사용', cagrExample: '상장 시 매수~현재 연평균 수익률', cagrExampleValue: '예: 100→200(5년)≈14.87%', errorEnterTicker: '종목 입력', errorAllocationRange: '0-100% 범위', errorAllocationSum: '합계 100% 이하', errorNoHoldings: '가져올 데이터 없음', errorEnterTickerFirst: '먼저 종목 입력', errorCannotGetReturn: '{ticker} 연평균 조회 불가, 수동 입력', errorQueryFailed: '조회 실패, 수동 입력', close: '닫기', cancel: '취소', yearPrefix: '년', yearSuffix: '', queryingReturn: '{ticker} 연평균 조회 중...', autoQueryTitle: '상장 이후 연평균 자동 조회' },
-  help: { dataManagement: '데이터 관리', export: '내보내기', exportDesc: '거래·계좌·주가를 JSON으로 내보냅니다. 정기 백업 권장.', downloadBackup: '백업(.json) 다운로드', import: '가져오기', importWarning: '백업 로드 시 현재 데이터가 덮어씌워집니다.', uploadBackup: '백업 업로드', authorizedUsers: '인가 사용자', authorizedUsersDesc: '비밀번호 없이 로그인 가능한 이메일(개인정보 보호로 마스킹):', emailAccount: '이메일', status: '상태', systemAuthorized: '시스템 인가', contact: '구매·문의', contactTitle: '이용해 주셔서 감사합니다', contactDesc: '비회원으로 영구 이용권을 원하시거나 기능 제안·버그 리포트는 개발자에게 문의하세요.', contactEmail: '관리자 연락처(이메일)', documentation: '문서', copyAll: '복사', copied: '복사했습니다!', print: '인쇄', confirmImport: '데이터 덮어쓰기 확인', confirmImportMessage: '{fileName}을(를) 로드합니다.', confirmImportWarning: '현재 거래·설정이 완전히 삭제됩니다. 되돌릴 수 없습니다.', confirmOverride: '덮어쓰기 확인', documentationContent: '# TradeView 매뉴얼\n\n**개인정보**: 모든 데이터는 기기에 로컬 저장. 개인정보 수집 없음. 정기 백업 권장.\n\n## 기능\n- 계좌·자금·거래 관리\n- 대시보드·리밸런싱·시뮬레이터\n\n## 위험\n투자에는 위험이 따릅니다. 본 앱은 투자 조언을 제공하지 않습니다.', androidPublish: 'Android 배포 가이드', androidPublishTitle: 'Google Play 배포 방법', androidPublishDesc: 'TWA로 웹앱을 래핑하여 Android화할 수 있습니다.' },
+  help: {
+    dataManagement: '데이터 관리',
+    export: '내보내기',
+    exportDesc: '거래·계좌·주가를 JSON으로 내보냅니다. 정기 백업 권장.',
+    downloadBackup: '백업(.json) 다운로드',
+    import: '가져오기',
+    importWarning: '백업 로드 시 현재 데이터가 덮어씌워집니다.',
+    uploadBackup: '백업 업로드',
+    authorizedUsers: '인가 사용자',
+    authorizedUsersDesc: '비밀번호 없이 로그인 가능한 이메일(개인정보 보호로 마스킹):',
+    emailAccount: '이메일',
+    status: '상태',
+    systemAuthorized: '시스템 인가',
+    contact: '구매·문의',
+    contactTitle: '이용해 주셔서 감사합니다',
+    contactDesc: '비회원으로 영구 이용권을 원하시거나 기능 제안·버그 리포트는 개발자에게 문의하세요.',
+    contactEmail: '관리자 연락처(이메일)',
+    documentation: '문서',
+    copyAll: '복사',
+    copied: '복사했습니다!',
+    print: '인쇄',
+    confirmImport: '데이터 덮어쓰기 확인',
+    confirmImportMessage: '{fileName}을(를) 로드합니다.',
+    confirmImportWarning: '현재 거래·설정이 완전히 삭제됩니다. 되돌릴 수 없습니다.',
+    confirmOverride: '덮어쓰기 확인',
+    documentationContent: `# TradeView 사용자 매뉴얼
+
+> **개인정보·보안**: 오프라인 우선 구조. **모든 거래 데이터는 사용자 기기에만 저장**되며 서버로 전송되지 않습니다. **개인정보를 수집하지 않습니다.**
+
+## 1. 시스템 소개
+TradeView는 대만·미국 주식 자산 관리 도구로, 자산 추이·수익률 계산·자금 흐름 관리를 지원합니다.
+
+## 2. 빠른 시작
+1. **계좌 생성**: "계좌 관리"에서 은행·증권 계좌 추가.
+2. **자금 입력**: "자금 관리"에서 입금(급여·예금) 기록.
+3. **거래 추가**: 우측 상단 "기록 추가"로 매매 입력.
+4. **보고서**: "대시보드"에서 자산 추이·성과 확인.
+
+## 3. 기능 상세
+**자금 관리**: 입금·출금·송금·이자.
+**거래 유형**: 매수/매도·주식 배당·현금 배당.
+
+## 4. 자주 묻는 질문(FAQ)
+Q: 연평균 수익률은 어떻게 계산되나요? A: 자금 가중 수익률을 사용하며, 입출금 시점을 반영해 추정합니다.
+Q: 환율 설정은? A: 우측 상단에서 USD/TWD 설정 또는 송금 시 해당 시점 환율 지정.
+Q: 데이터와 개인정보? A: 데이터는 모두 기기 내에만 저장됩니다. 기기 고장·캐시 삭제에 대비해 **정기적으로 "백업"으로 JSON 저장**을 권장합니다.
+Q: 백업 파일을 다운로드할 수 없어요. A: LINE에서 링크를 열면 팝업이 차단될 수 있습니다. Chrome·Safari 등 브라우저에서 이용하세요.
+Q: 주가가 갱신되지 않아요. A: 종목의 시장 설정을 확인하세요. 잘못되었으면 "거래 내역"의 "시장 일괄 변경"으로 수정.
+Q: 회원 혜택은? A: 리밸런싱·차트·연간 성과표를 사용해 투자 결과를 파악하기 쉽습니다.
+Q: 주가·환율이 "AI 업데이트" 현행가와 다릅니다. A: 웹 현행가를 가져오므로 수 분 지연될 수 있습니다. 매매 기준은 증권사 실시간 시세를 우선하세요. 본 앱은 자산 통계용이며 증권 매매 기능은 없습니다. 투자에는 위험이 있으며 비상 자금을 마련하세요.
+
+## 5. 면책 조항
+- 투자에는 위험이 따릅니다. 과거 실적은 미래를 보장하지 않습니다.
+- 본 앱은 자산 기록·관리만 제공하며 투자 조언을 하지 않습니다.
+- 증권 매매 기능이 없으며 실제 매매는 불가합니다.
+- 투자 결정과 위험은 전적으로 이용자에게 있으며, 필요 시 전문가와 상담하세요.`,
+    androidPublish: 'Android 배포 가이드',
+    androidPublishTitle: 'Google Play 배포 방법',
+    androidPublishDesc: 'TWA로 웹앱을 래핑해 Android 앱으로 만들 수 있습니다.\n1. Google 개발자 계정 등록(25달러).\n2. Bubblewrap CLI로 사이트 URL 래핑.\n3. Play Console에 AAB 업로드 후 심사 제출.',
+  },
   transactionForm: { addTransaction: '거래 추가', editTransaction: '거래 편집', date: '날짜', account: '계좌', market: '시장', ticker: '종목', tickerPlaceholder: '예: 2330, AAPL', category: '카테고리', price: '단가', quantity: '수량', quantityFixed: '수량(1 고정)', fees: '수수료', note: '비고', cancel: '취소', saveTransaction: '저장', updateTransaction: '업데이트', confirmTitle: '확인', confirmMessage: '내용을 확인하세요.', dateLabel: '날짜:', accountLabel: '계좌:', marketLabel: '시장:', tickerLabel: '종목:', typeLabel: '유형:', priceLabel: '단가:', quantityLabel: '수량:', feesLabel: '수수료:', noteLabel: '비고:', totalAmount: '합계:', shares: '주', backToEdit: '돌아가기', confirmSave: '저장', previewTitle: '금액 미리보기:', calculationFormula: '계산식:', marketTW: '대만(TW)', marketUS: '미국(US)', marketUK: '영국(UK)', marketJP: '일본(JP)', marketCN: '중국(CN)', marketIN: '인도(IN)', marketCA: '캐나다(CA)', marketFR: '프랑스(FR)', marketHK: '홍콩(HK)', marketKR: '한국(KR)', marketDE: '독일(DE)', marketAU: '호주(AU)', marketSA: '사우디(SA)', marketBR: '브라질(BR)', typeBuy: '매수', typeSell: '매도', typeDividend: '주식 배당', typeCashDividend: '현금 배당', typeTransferIn: '입고', typeTransferOut: '출고', placeholderPrice: '단가', placeholderQuantity: '배당 총액', errorNoAccount: '먼저 계좌를 생성하세요', feesShort: '수수료', formulaNote: '(대만주 내림)' },
   fundForm: { addFundRecord: '자금 기록 추가', editFundRecord: '자금 기록 편집', date: '날짜', type: '유형', account: '계좌', sourceAccount: '송금 출처', amount: '금액', targetAccount: '송금 대상', selectAccount: '계좌 선택...', exchangeRate: '환율', exchangeRateUSD: '환율(TWD/USD)', exchangeRateJPY: '환율(TWD/JPY)', crossCurrencyTransfer: '다른 통화 송금', usdConversion: '미국 달러 환산', jpyConversion: '일본 엔 환산', sameCurrencyTransfer: '동일 통화 송금(1.0)', fees: '수수료({currency})', feesNote: '송금 수수료', note: '비고', cancel: '취소', updateRecord: '업데이트', confirmExecute: '저장', typeDeposit: '입금', typeWithdraw: '출금', typeTransfer: '송금', typeInterest: '이자', confirmTitle: '자금 기록 확인', confirmMessage: '내용을 확인하세요.', dateLabel: '날짜:', typeLabel: '유형:', accountLabel: '계좌:', targetAccountLabel: '송금 대상:', amountLabel: '금액:', exchangeRateLabel: '환율:', feesLabel: '수수료:', noteLabel: '비고:', totalTWD: '합계({currency}):', backToEdit: '돌아가기', confirmSave: '저장', errorNoAccount: '먼저 계좌를 생성하세요' },
 };
@@ -1713,6 +1831,105 @@ zhCN.funds = { ...zhTW.funds, title: '资金管理', deposit: '汇入', withdraw
 zhCN.accounts = { ...zhTW.accounts, currencyTWD: '台币', currencyUSD: '美元', currencyJPY: '日元', currencyEUR: '欧元', currencyGBP: '英镑', currencyHKD: '港币', currencyKRW: '韩元', currencyCNY: '人民币', currencyINR: '印度卢比', currencyCAD: '加元', currencyAUD: '澳元', currencySAR: '沙特里亚尔', currencyBRL: '巴西雷亚尔', subBrokerage: '海外券商' };
 zhCN.labels = { ...zhTW.labels, exchangeRate: '汇率', fee: '手续费' };
 zhCN.holdings = { ...zhTW.holdings };
+zhCN.help = {
+  dataManagement: '数据备份与还原',
+  export: '备份数据',
+  exportDesc: '将您的交易记录、账户设定与股价信息导出为 JSON 文件，建议定期备份以免数据丢失。',
+  downloadBackup: '下载备份文件 (.json)',
+  import: '还原数据',
+  importWarning: '警告：导入备份文件将会完全覆盖您目前的系统数据。',
+  uploadBackup: '上传备份文件',
+  authorizedUsers: '用户授权名单',
+  authorizedUsersDesc: '以下为系统预设可免密码登录的 Email 名单（已脱敏）：',
+  emailAccount: 'Email 账号',
+  status: '状态',
+  systemAuthorized: '系统授权',
+  contact: '购买授权与联系管理员',
+  contactTitle: '喜欢这个系统吗？',
+  contactDesc: '如果您是非会员并希望获得永久使用权限，或有任何功能建议与 Bug 回报，欢迎联系开发者。业余时间维护，回复较慢请见谅。',
+  contactEmail: '联系管理员',
+  documentation: '使用说明',
+  copyAll: '复制全文',
+  copied: '已复制!',
+  print: '打印',
+  confirmImport: '警告：确认覆盖数据？',
+  confirmImportMessage: '您即将导入 {fileName}。',
+  confirmImportWarning: '这将会完全清除目前的交易记录与设定，且无法恢复。',
+  confirmOverride: '确认覆盖',
+  documentationContent: `# TradeView 使用说明书
+
+> **隐私与安全声明**：
+> 本系统采用离线优先架构，**所有交易数据皆储存于您的个人电脑或手机浏览器中**，不会上传至任何服务器。**系统不涉及收集个人资料**，请安心使用。
+
+## 1. 系统简介
+TradeView 是一个支持台股与美股的资产管理工具，协助投资人追踪资产变化、计算报酬率并管理资金流向。
+
+## 2. 快速开始
+1. **建立账户**：前往「证券户管理」新增您的银行或证券账户。
+2. **导入资金**：前往「资金管理」，选择「导入资金」将薪资或存款记录到系统中。
+3. **新增交易**：点击右上角「记一笔」输入股票买卖记录。
+4. **查看报表**：回到「仪表板」查看资产折线图与绩效。
+
+## 3. 功能详解
+
+### 资金管理 (Fund Management)
+* **导入 (Import)**：外部资金流入（如薪资）。
+* **导出 (Export)**：资金流出（如生活费提领）。
+* **转账 (Transfer)**：不同账户间的资金移动（如银行转证券户）。
+* **利息**：记录存款或证券户利息。
+
+### 交易类别
+* **Buy/Sell**：一般买卖。
+* **Dividend**：股票股息（股数增加）。
+* **Cash Dividend**：现金股息（余额增加）。
+
+## 4. 常见问题 (FAQ)
+Q: 如何计算年化报酬率？
+A: 系统采用资金加权报酬率概念，考虑资金进出的时间点进行估算。
+
+Q: 汇率如何设定？
+A: 可在右上角设定全域 USD/TWD 汇率，或在转账时指定当下汇率。
+
+Q: 数据储存与隐私？
+A: 如同前述，**数据完全储存在您个人的装置（电脑或手机）上**，不涉及个资问题。为避免装置损坏或浏览器缓存被清除导致数据丢失，**强烈建议定期使用下方的「备份数据」功能**自行保存 JSON 文件。
+
+Q: 无法下载备份文件？
+A: 若您是在 LINE 开启链接，系统可能会阻挡弹窗导致无法正常下载。建议您在浏览器（如 Chrome 或 Safari）再进行操作。
+
+Q: 为何股价无法更新？
+A: 检查该只股票市场是否设定正确，若错误请在「交易记录」里选择「批量修改市场」进行更换。
+
+Q: 会员有何优点？
+A: 界面会多出再平衡、图表、年度绩效表，让使用者更加了解自己投资结果。
+
+Q: 会员的年度绩效表为何有勾勾？
+A: 具勾勾部分是显示该年度年底的绩效表现，无勾勾部分是按您的报酬率反推的绩效表现，仅是预估效果。
+
+Q: 股价与汇率为何与按「AI 联网更新股价与汇率」得到的现价不同？
+A: 股价与汇率因抓取网页现值，故现值会延迟三至五分钟不等，请勿作为买卖参考，建议买卖仍以证券公司为主。本软件仅适合作统计资产功能，如紧急预备金、旅游基金、退休金、定存、股债券等统计参考，并无证券交易买卖功能；另外投资有赚有赔，请预留紧急预备金，感谢您的使用。
+
+## 5. 重要免责声明
+
+**投资风险警告**：
+- ⚠️ 投资有风险，过往绩效不代表未来表现。
+- 本应用程序仅提供资产统计与管理功能，不提供投资建议。
+- 本应用程序不具备证券交易功能，无法进行实际买卖操作。
+- 所有投资决策应由使用者自行判断，并承担相关风险。
+- 使用者应自行评估投资风险，并在需要时咨询专业财务顾问。
+
+**非投资建议声明**：
+- 本应用程序提供的所有信息、分析、图表与 AI 建议仅供参考，不构成任何投资建议。
+- 本应用程序不保证任何投资结果或报酬率。
+- 使用者应根据自身情况做出投资决策，并对所有投资决策负责。
+
+**数据准确性**：
+- 本应用程序提供的股价、汇率等数据可能因网络延迟而与实际市场价格有所差异。
+- 使用者不应将本应用程序的数据作为实际买卖的唯一参考依据。
+- 建议以证券公司或金融机构提供的即时报价为准。`,
+  androidPublish: '上架安卓商店指南',
+  androidPublishTitle: '如何将此工具上架到 Google Play？',
+  androidPublishDesc: '您可透过 TWA 技术将网页转为 Android App：\n1. 注册 Google 开发者账号（$25）。\n2. 使用 Bubblewrap CLI 工具封装您的网站网址。\n3. 在 Play Console 上传 AAB 档并提交审核。',
+};
 
 // 德文翻譯
 const de: Translations = {
@@ -1729,9 +1946,165 @@ const de: Translations = {
   accounts: { ...en.accounts, currencyAUD: 'Australischer Dollar', currencySAR: 'Saudi-Riyal', currencyBRL: 'Brasilianischer Real' },
   rebalance: { ...en.rebalance },
   simulator: { ...en.simulator },
-  help: { ...en.help },
-  transactionForm: { ...en.transactionForm },
-  fundForm: { ...en.fundForm },
+  help: {
+    dataManagement: 'Datenverwaltung',
+    export: 'Export',
+    exportDesc: 'Transaktionen, Konten und Kursdaten als JSON exportieren. Regelmäßige Backups werden empfohlen.',
+    downloadBackup: 'Backup herunterladen (.json)',
+    import: 'Import',
+    importWarning: 'Achtung: Ein Backup überschreibt alle aktuellen Systemdaten.',
+    uploadBackup: 'Backup-Datei hochladen',
+    authorizedUsers: 'Berechtigte Nutzer',
+    authorizedUsersDesc: 'E-Mails, die ohne Passwort anmelden können (aus Datenschutzgründen maskiert):',
+    emailAccount: 'E-Mail',
+    status: 'Status',
+    systemAuthorized: 'System berechtigt',
+    contact: 'Kaufberechtigung & Kontakt',
+    contactTitle: 'Gefällt Ihnen das System?',
+    contactDesc: 'Als Nicht-Mitglied dauerhafte Nutzungsrechte oder Vorschläge/Meldungen? Bitte den Entwickler kontaktieren. Pflege in Freizeit, Antworten können verzögert sein.',
+    contactEmail: 'Administrator kontaktieren (E-Mail)',
+    documentation: 'Dokumentation',
+    copyAll: 'Alles kopieren',
+    copied: 'Kopiert!',
+    print: 'Drucken',
+    confirmImport: 'Achtung: Daten überschreiben?',
+    confirmImportMessage: 'Sie importieren gleich {fileName}.',
+    confirmImportWarning: 'Alle aktuellen Transaktionen und Einstellungen werden gelöscht und können nicht rückgängig gemacht werden.',
+    confirmOverride: 'Überschreiben bestätigen',
+    documentationContent: `# TradeView Benutzerhandbuch
+
+> **Datenschutz**: Offline-First-Architektur. **Alle Daten werden nur auf Ihrem Gerät gespeichert**, nicht auf Servern. **Keine Erfassung personenbezogener Daten.**
+
+## 1. Einführung
+TradeView ist ein Vermögensverwaltungstool für Taiwan- und US-Aktien.
+
+## 2. Schnellstart
+1. **Konto anlegen**: Unter „Konten“ Konto hinzufügen.
+2. **Geld erfassen**: Unter „Fonds“ Einzahlungen erfassen.
+3. **Transaktion**: „Transaktion hinzufügen“ für Kauf/Verkauf.
+4. **Berichte**: „Dashboard“ für Vermögensverlauf.
+
+## 3. Funktionen
+**Fonds**: Einzahlung, Auszahlung, Überweisung, Zinsen.
+**Transaktionen**: Kauf/Verkauf, Aktien- und Bardividende.
+
+## 4. FAQ
+**Rendite?** Geldgewichtete Rendite, Ein- und Auszahlungszeitpunkte berücksichtigt.
+**Wechselkurs?** Oben rechts oder bei Überweisung.
+**Daten?** Nur lokal auf Ihrem Gerät. Bitte regelmäßig „Backup“ nutzen.
+**Preise?** Markt prüfen, ggf. „Markt stapelweise aktualisieren“.
+
+## 5. Haftungsausschluss
+- Investitionen bergen Risiken. Keine Anlageberatung.
+- Keine Wertpapierhandelsfunktion. Alle Entscheidungen und Risiken beim Nutzer.`,
+    androidPublish: 'Android-Store-Veröffentlichung',
+    androidPublishTitle: 'Wie bei Google Play veröffentlichen?',
+    androidPublishDesc: 'Mit TWA die Web-App als Android-App packen:\n1. Google-Developer-Konto (25 USD).\n2. Bubblewrap CLI mit Ihrer Website-URL.\n3. AAB in Play Console hochladen und einreichen.',
+  },
+  transactionForm: {
+    ...en.transactionForm,
+    addTransaction: 'Transaktion hinzufügen',
+    editTransaction: 'Transaktion bearbeiten',
+    date: 'Datum',
+    account: 'Konto',
+    market: 'Markt',
+    ticker: 'Symbol',
+    tickerPlaceholder: 'z.B. 2330, AAPL',
+    category: 'Kategorie',
+    price: 'Preis',
+    quantity: 'Anzahl (Aktien)',
+    quantityFixed: 'Anzahl (fix 1)',
+    fees: 'Gebühren/Steuern',
+    note: 'Notiz',
+    cancel: 'Abbrechen',
+    saveTransaction: 'Transaktion speichern',
+    updateTransaction: 'Transaktion aktualisieren',
+    confirmTitle: 'Transaktion bestätigen',
+    confirmMessage: 'Bitte prüfen Sie die Angaben.',
+    dateLabel: 'Datum:',
+    accountLabel: 'Konto:',
+    marketLabel: 'Markt:',
+    tickerLabel: 'Symbol:',
+    typeLabel: 'Typ:',
+    priceLabel: 'Preis:',
+    quantityLabel: 'Anzahl:',
+    feesLabel: 'Gebühren:',
+    noteLabel: 'Notiz:',
+    totalAmount: 'Gesamtbetrag:',
+    shares: 'Aktien',
+    backToEdit: 'Zurück',
+    confirmSave: 'Bestätigen & Speichern',
+    previewTitle: 'Betrag:',
+    calculationFormula: 'Formel:',
+    marketTW: 'Taiwan (TW)',
+    marketUS: 'USA (US)',
+    marketUK: 'UK (UK)',
+    marketJP: 'Japan (JP)',
+    marketCN: 'China (CN)',
+    marketIN: 'Indien (IN)',
+    marketCA: 'Kanada (CA)',
+    marketFR: 'Frankreich (FR)',
+    marketHK: 'Hongkong (HK)',
+    marketKR: 'Südkorea (KR)',
+    marketDE: 'Deutschland (DE)',
+    marketAU: 'Australien (AU)',
+    marketSA: 'Saudi-Arabien (SA)',
+    marketBR: 'Brasilien (BR)',
+    typeBuy: 'Kaufen',
+    typeSell: 'Verkaufen',
+    typeDividend: 'Aktiendividende',
+    typeCashDividend: 'Bardividende',
+    typeTransferIn: 'Einbuchung',
+    typeTransferOut: 'Ausbuchung',
+    placeholderPrice: 'Preis pro Aktie',
+    placeholderQuantity: 'Dividende gesamt',
+    errorNoAccount: 'Bitte zuerst Konto anlegen.',
+    feesShort: 'Gebühren',
+    formulaNote: ' (TW Abrundung)',
+  },
+  fundForm: {
+    ...en.fundForm,
+    addFundRecord: 'Geldfluss hinzufügen',
+    editFundRecord: 'Geldfluss bearbeiten',
+    date: 'Datum',
+    type: 'Typ',
+    account: 'Konto',
+    sourceAccount: 'Von Konto',
+    amount: 'Betrag',
+    targetAccount: 'Zielkonto',
+    selectAccount: 'Konto wählen...',
+    exchangeRate: 'Kurs',
+    exchangeRateUSD: 'Kurs (TWD/USD)',
+    exchangeRateJPY: 'Kurs (TWD/JPY)',
+    crossCurrencyTransfer: 'Währungsübertrag',
+    usdConversion: 'USD-Umrechnung',
+    jpyConversion: 'JPY-Umrechnung',
+    sameCurrencyTransfer: 'Gleiche Währung (1.0)',
+    fees: 'Gebühren ({currency})',
+    feesNote: 'Überweisungsgebühr',
+    note: 'Notiz',
+    cancel: 'Abbrechen',
+    updateRecord: 'Aktualisieren',
+    confirmExecute: 'Bestätigen & Speichern',
+    typeDeposit: 'Einzahlung',
+    typeWithdraw: 'Auszahlung',
+    typeTransfer: 'Überweisung',
+    typeInterest: 'Zinsen',
+    confirmTitle: 'Geldfluss bestätigen',
+    confirmMessage: 'Bitte Angaben prüfen.',
+    dateLabel: 'Datum:',
+    typeLabel: 'Typ:',
+    accountLabel: 'Konto:',
+    targetAccountLabel: 'Zielkonto:',
+    amountLabel: 'Betrag:',
+    exchangeRateLabel: 'Kurs:',
+    feesLabel: 'Gebühren:',
+    noteLabel: 'Notiz:',
+    totalTWD: 'Summe ({currency}):',
+    backToEdit: 'Zurück',
+    confirmSave: 'Bestätigen',
+    errorNoAccount: 'Bitte zuerst Konto anlegen.',
+  },
 };
 
 // 加拿大法語（以英文為底，覆寫常用法文）
@@ -1750,9 +2123,165 @@ const fr: Translations = {
   accounts: { ...en.accounts, addAccount: 'Ajouter un compte', accountName: 'Nom du compte', currency: 'Devise', currencyAUD: 'Dollar australien', currencySAR: 'Riyal saoudien', currencyBRL: 'Real brésilien', add: 'Ajouter', update: 'Mettre à jour', balance: 'Solde', cancel: 'Annuler', noAccounts: 'Aucun compte. Ajoutez un compte ci-dessus.' },
   rebalance: { ...en.rebalance, title: 'Rééquilibrage', buy: 'Acheter', sell: 'Vendre' },
   simulator: { ...en.simulator, title: 'Simulateur d\'allocation', market: 'Marché', add: 'Ajouter' },
-  help: { ...en.help },
-  transactionForm: { ...en.transactionForm, market: 'Marché', ticker: 'Symbole', cancel: 'Annuler', saveTransaction: 'Enregistrer' },
-  fundForm: { ...en.fundForm },
+  help: {
+    dataManagement: 'Gestion des données',
+    export: 'Exporter',
+    exportDesc: 'Exporter transactions, comptes et cours en JSON. Sauvegardes régulières recommandées.',
+    downloadBackup: 'Télécharger la sauvegarde (.json)',
+    import: 'Importer',
+    importWarning: 'Attention : importer un fichier remplace toutes les données actuelles.',
+    uploadBackup: 'Envoyer un fichier de sauvegarde',
+    authorizedUsers: 'Utilisateurs autorisés',
+    authorizedUsersDesc: 'E-mails pouvant se connecter sans mot de passe (masqués pour la confidentialité) :',
+    emailAccount: 'E-mail',
+    status: 'Statut',
+    systemAuthorized: 'Autorisé par le système',
+    contact: 'Autorisation d\'achat et contact administrateur',
+    contactTitle: 'Vous aimez ce système ?',
+    contactDesc: 'Non-membre souhaitant des droits d\'usage permanents, ou suggestions/bugs : contactez le développeur. Réponses parfois lentes.',
+    contactEmail: 'Contacter l\'administrateur (e-mail)',
+    documentation: 'Documentation',
+    copyAll: 'Tout copier',
+    copied: 'Copié !',
+    print: 'Imprimer',
+    confirmImport: 'Attention : confirmer l\'écrasement des données ?',
+    confirmImportMessage: 'Vous allez importer {fileName}.',
+    confirmImportWarning: 'Vos transactions et paramètres actuels seront effacés de façon irréversible.',
+    confirmOverride: 'Confirmer l\'écrasement',
+    documentationContent: `# Manuel TradeView
+
+> **Confidentialité** : architecture hors ligne. **Toutes les données sont stockées sur votre appareil**, pas sur des serveurs. **Aucune collecte de données personnelles.**
+
+## 1. Présentation
+TradeView est un outil de gestion d'actifs pour actions Taiwan et US.
+
+## 2. Démarrage
+1. **Créer un compte** : dans « Comptes », ajouter un compte.
+2. **Saisir les fonds** : dans « Fonds », enregistrer les dépôts.
+3. **Transaction** : « Ajouter une transaction » pour acheter/vendre.
+4. **Rapports** : « Tableau de bord » pour l'évolution du patrimoine.
+
+## 3. Fonctions
+**Fonds** : Dépôt, retrait, virement, intérêts.
+**Transactions** : Achat/vente, dividende en actions, dividende en espèces.
+
+## 4. FAQ
+**Rendement ?** Rendement pondéré par les flux (entrées/sorties).
+**Taux de change ?** En haut à droite ou lors du virement.
+**Données ?** Uniquement sur votre appareil. Faites des sauvegardes régulières.
+**Prix ?** Vérifier le marché ; « Mise à jour du marché en lot » si besoin.
+
+## 5. Avertissements
+- Les investissements comportent des risques. Ceci n'est pas un conseil en investissement.
+- Aucune fonction de trading. Toutes les décisions et risques restent à la charge de l'utilisateur.`,
+    androidPublish: 'Publication sur le Play Store',
+    androidPublishTitle: 'Comment publier sur Google Play ?',
+    androidPublishDesc: 'Emballer l\'app web en app Android avec TWA :\n1. Compte Google Developer (25 $).\n2. Bubblewrap CLI avec l’URL du site.\n3. Téléverser le AAB dans Play Console et soumettre.',
+  },
+  transactionForm: {
+    ...en.transactionForm,
+    addTransaction: 'Ajouter une transaction',
+    editTransaction: 'Modifier la transaction',
+    date: 'Date',
+    account: 'Compte',
+    market: 'Marché',
+    ticker: 'Symbole',
+    tickerPlaceholder: 'ex. 2330, AAPL',
+    category: 'Catégorie',
+    price: 'Prix',
+    quantity: 'Quantité (actions)',
+    quantityFixed: 'Quantité (fixe 1)',
+    fees: 'Frais / Taxes',
+    note: 'Note',
+    cancel: 'Annuler',
+    saveTransaction: 'Enregistrer',
+    updateTransaction: 'Mettre à jour',
+    confirmTitle: 'Confirmer la transaction',
+    confirmMessage: 'Vérifiez les informations ci-dessous.',
+    dateLabel: 'Date :',
+    accountLabel: 'Compte :',
+    marketLabel: 'Marché :',
+    tickerLabel: 'Symbole :',
+    typeLabel: 'Type :',
+    priceLabel: 'Prix :',
+    quantityLabel: 'Quantité :',
+    feesLabel: 'Frais :',
+    noteLabel: 'Note :',
+    totalAmount: 'Montant total :',
+    shares: 'actions',
+    backToEdit: 'Retour',
+    confirmSave: 'Confirmer et enregistrer',
+    previewTitle: 'Aperçu du montant :',
+    calculationFormula: 'Formule :',
+    marketTW: 'Taïwan (TW)',
+    marketUS: 'États-Unis (US)',
+    marketUK: 'Royaume-Uni (UK)',
+    marketJP: 'Japon (JP)',
+    marketCN: 'Chine (CN)',
+    marketIN: 'Inde (IN)',
+    marketCA: 'Canada (CA)',
+    marketFR: 'France (FR)',
+    marketHK: 'Hong Kong (HK)',
+    marketKR: 'Corée du Sud (KR)',
+    marketDE: 'Allemagne (DE)',
+    marketAU: 'Australie (AU)',
+    marketSA: 'Arabie saoudite (SA)',
+    marketBR: 'Brésil (BR)',
+    typeBuy: 'Achat',
+    typeSell: 'Vente',
+    typeDividend: 'Dividende en actions',
+    typeCashDividend: 'Dividende en espèces',
+    typeTransferIn: 'Transfert entrant',
+    typeTransferOut: 'Transfert sortant',
+    placeholderPrice: 'Prix par action',
+    placeholderQuantity: 'Dividende total',
+    errorNoAccount: 'Veuillez d\'abord créer un compte.',
+    feesShort: 'frais',
+    formulaNote: ' (TW arrondi)',
+  },
+  fundForm: {
+    ...en.fundForm,
+    addFundRecord: 'Ajouter un flux',
+    editFundRecord: 'Modifier le flux',
+    date: 'Date',
+    type: 'Type',
+    account: 'Compte',
+    sourceAccount: 'Compte source',
+    amount: 'Montant',
+    targetAccount: 'Compte cible',
+    selectAccount: 'Choisir un compte...',
+    exchangeRate: 'Taux de change',
+    exchangeRateUSD: 'Taux (TWD/USD)',
+    exchangeRateJPY: 'Taux (TWD/JPY)',
+    crossCurrencyTransfer: 'Transfert multi-devises',
+    usdConversion: 'Conversion USD',
+    jpyConversion: 'Conversion JPY',
+    sameCurrencyTransfer: 'Même devise (1.0)',
+    fees: 'Frais ({currency})',
+    feesNote: 'Frais de virement',
+    note: 'Note',
+    cancel: 'Annuler',
+    updateRecord: 'Mettre à jour',
+    confirmExecute: 'Confirmer et enregistrer',
+    typeDeposit: 'Dépôt',
+    typeWithdraw: 'Retrait',
+    typeTransfer: 'Virement',
+    typeInterest: 'Intérêts',
+    confirmTitle: 'Confirmer le flux',
+    confirmMessage: 'Vérifiez les informations ci-dessous.',
+    dateLabel: 'Date :',
+    typeLabel: 'Type :',
+    accountLabel: 'Compte :',
+    targetAccountLabel: 'Compte cible :',
+    amountLabel: 'Montant :',
+    exchangeRateLabel: 'Taux :',
+    feesLabel: 'Frais :',
+    noteLabel: 'Note :',
+    totalTWD: 'Total ({currency}) :',
+    backToEdit: 'Retour',
+    confirmSave: 'Confirmer',
+    errorNoAccount: 'Veuillez d\'abord créer un compte.',
+  },
 };
 
 // 印地語（以英文為底，覆寫常用印地語）
@@ -1771,9 +2300,165 @@ const hi: Translations = {
   accounts: { ...en.accounts, addAccount: 'खाता जोड़ें', accountName: 'खाता नाम', currency: 'मुद्रा', currencyAUD: 'ऑस्ट्रेलियाई डॉलर', currencySAR: 'सऊदी रियाल', currencyBRL: 'ब्राज़ीली रियल', add: 'जोड़ें', update: 'अपडेट', balance: 'शेष', cancel: 'रद्द', noAccounts: 'कोई खाता नहीं। ऊपर से जोड़ें।' },
   rebalance: { ...en.rebalance, title: 'रीबैलेंस', buy: 'खरीदें', sell: 'बेचें' },
   simulator: { ...en.simulator, title: 'आवंटन सिम्युलेटर', market: 'बाजार', add: 'जोड़ें' },
-  help: { ...en.help },
-  transactionForm: { ...en.transactionForm, market: 'बाजार', ticker: 'सिम्बल', cancel: 'रद्द', saveTransaction: 'सहेजें' },
-  fundForm: { ...en.fundForm },
+  help: {
+    dataManagement: 'डेटा प्रबंधन',
+    export: 'निर्यात',
+    exportDesc: 'लेनदेन, खाते और कीमतें JSON में निर्यात करें। नियमित बैकअप की सलाह।',
+    downloadBackup: 'बैकअप डाउनलोड (.json)',
+    import: 'आयात',
+    importWarning: 'चेतावनी: बैकअप आयात करने से वर्तमान सभी डेटा बदल जाएंगे।',
+    uploadBackup: 'बैकअप फ़ाइल अपलोड करें',
+    authorizedUsers: 'अधिकृत उपयोगकर्ता',
+    authorizedUsersDesc: 'बिना पासवर्ड लॉगिन होने वाले ईमेल (गोपनीयता के लिए मास्क):',
+    emailAccount: 'ईमेल',
+    status: 'स्थिति',
+    systemAuthorized: 'सिस्टम अधिकृत',
+    contact: 'खरीद अधिकार और व्यवस्थापक संपर्क',
+    contactTitle: 'सिस्टम पसंद है?',
+    contactDesc: 'गैर-सदस्य स्थायी उपयोग चाहते हैं या सुझाव/बग रिपोर्ट: डेवलपर से संपर्क करें। जवाब में देरी हो सकती है।',
+    contactEmail: 'व्यवस्थापक से संपर्क (ईमेल)',
+    documentation: 'दस्तावेज़ीकरण',
+    copyAll: 'सब कॉपी करें',
+    copied: 'कॉपी हो गया!',
+    print: 'प्रिंट',
+    confirmImport: 'चेतावनी: डेटा ओवरराइड की पुष्टि करें?',
+    confirmImportMessage: 'आप {fileName} आयात करने जा रहे हैं।',
+    confirmImportWarning: 'वर्तमान लेनदेन और सेटिंग्स पूरी तरह मिट जाएंगे, पूर्ववत नहीं हो सकता।',
+    confirmOverride: 'ओवरराइड की पुष्टि करें',
+    documentationContent: `# TradeView उपयोगकर्ता मैनुअल
+
+> **गोपनीयता**: ऑफ़लाइन-फर्स्ट। **सभी डेटा आपके डिवाइस पर संग्रहीत**, सर्वर पर नहीं। **कोई निजी डेटा संग्रह नहीं।**
+
+## 1. परिचय
+TradeView ताइवान और US स्टॉक के लिए संपत्ति प्रबंधन टूल है।
+
+## 2. त्वरित शुरुआत
+1. **खाता बनाएं**: "खाते" में खाता जोड़ें।
+2. **फंड दर्ज करें**: "निधि" में जमा दर्ज करें।
+3. **लेनदेन**: खरीद/बिक्री के लिए "लेनदेन जोड़ें"।
+4. **रिपोर्ट**: "डैशबोर्ड" पर संपत्ति देखें।
+
+## 3. सुविधाएं
+**निधि**: जमा, निकासी, ट्रांसफर, ब्याज।
+**लेनदेन**: खरीद/बिक्री, स्टॉक डिविडेंड, कैश डिविडेंड।
+
+## 4. FAQ
+**रिटर्न?** धन-भारित रिटर्न, जमा/निकासी समय शामिल।
+**विनिमय दर?** ऊपर दाएं या ट्रांसफर समय निर्दिष्ट।
+**डेटा?** केवल आपके डिवाइस पर। नियमित "बैकअप" करें।
+**कीमतें?** बाजार जांचें; जरूरत हो तो "बैच अपडेट मार्केट"।
+
+## 5. अस्वीकरण
+- निवेश में जोखिम है। निवेश सलाह नहीं।
+- सिक्योरिटीज़ ट्रेडिंग नहीं। सभी निर्णय और जोखिम उपयोगकर्ता पर।`,
+    androidPublish: 'Android स्टोर प्रकाशन',
+    androidPublishTitle: 'Google Play पर कैसे प्रकाशित करें?',
+    androidPublishDesc: 'TWA से वेब ऐप को Android ऐप में लपेटें:\n1. Google डेवलपर खाता ($25)।\n2. Bubblewrap CLI से साइट URL लपेटें।\n3. Play Console में AAB अपलोड करें और सबमिट करें।',
+  },
+  transactionForm: {
+    ...en.transactionForm,
+    addTransaction: 'लेनदेन जोड़ें',
+    editTransaction: 'लेनदेन संपादित करें',
+    date: 'तारीख',
+    account: 'खाता',
+    market: 'बाजार',
+    ticker: 'सिम्बल',
+    tickerPlaceholder: 'जैसे 2330, AAPL',
+    category: 'श्रेणी',
+    price: 'कीमत',
+    quantity: 'मात्रा (शेयर)',
+    quantityFixed: 'मात्रा (1 नियत)',
+    fees: 'शुल्क/कर',
+    note: 'नोट',
+    cancel: 'रद्द',
+    saveTransaction: 'सहेजें',
+    updateTransaction: 'अपडेट करें',
+    confirmTitle: 'लेनदेन की पुष्टि करें',
+    confirmMessage: 'नीचे की जानकारी जांचें।',
+    dateLabel: 'तारीख:',
+    accountLabel: 'खाता:',
+    marketLabel: 'बाजार:',
+    tickerLabel: 'सिम्बल:',
+    typeLabel: 'प्रकार:',
+    priceLabel: 'कीमत:',
+    quantityLabel: 'मात्रा:',
+    feesLabel: 'शुल्क:',
+    noteLabel: 'नोट:',
+    totalAmount: 'कुल राशि:',
+    shares: 'शेयर',
+    backToEdit: 'वापस',
+    confirmSave: 'पुष्टि और सहेजें',
+    previewTitle: 'राशि पूर्वावलोकन:',
+    calculationFormula: 'सूत्र:',
+    marketTW: 'ताइवान (TW)',
+    marketUS: 'अमेरिका (US)',
+    marketUK: 'ब्रिटेन (UK)',
+    marketJP: 'जापान (JP)',
+    marketCN: 'चीन (CN)',
+    marketIN: 'भारत (IN)',
+    marketCA: 'कनाडा (CA)',
+    marketFR: 'फ्रांस (FR)',
+    marketHK: 'हांगकांग (HK)',
+    marketKR: 'दक्षिण कोरिया (KR)',
+    marketDE: 'जर्मनी (DE)',
+    marketAU: 'ऑस्ट्रेलिया (AU)',
+    marketSA: 'सऊदी अरब (SA)',
+    marketBR: 'ब्राजील (BR)',
+    typeBuy: 'खरीद',
+    typeSell: 'बिक्री',
+    typeDividend: 'स्टॉक डिविडेंड',
+    typeCashDividend: 'कैश डिविडेंड',
+    typeTransferIn: 'ट्रांसफर इन',
+    typeTransferOut: 'ट्रांसफर आउट',
+    placeholderPrice: 'प्रति शेयर कीमत',
+    placeholderQuantity: 'कुल डिविडेंड',
+    errorNoAccount: 'पहले खाता बनाएं।',
+    feesShort: 'शुल्क',
+    formulaNote: ' (TW पूर्णांक)',
+  },
+  fundForm: {
+    ...en.fundForm,
+    addFundRecord: 'निधि रिकॉर्ड जोड़ें',
+    editFundRecord: 'निधि रिकॉर्ड संपादित करें',
+    date: 'तारीख',
+    type: 'प्रकार',
+    account: 'खाता',
+    sourceAccount: 'स्रोत खाता',
+    amount: 'राशि',
+    targetAccount: 'लक्ष्य खाता',
+    selectAccount: 'खाता चुनें...',
+    exchangeRate: 'विनिमय दर',
+    exchangeRateUSD: 'विनिमय दर (TWD/USD)',
+    exchangeRateJPY: 'विनिमय दर (TWD/JPY)',
+    crossCurrencyTransfer: 'क्रॉस-करेंसी ट्रांसफर',
+    usdConversion: 'USD रूपांतरण',
+    jpyConversion: 'JPY रूपांतरण',
+    sameCurrencyTransfer: 'समान मुद्रा (1.0)',
+    fees: 'शुल्क ({currency})',
+    feesNote: 'ट्रांसफर शुल्क',
+    note: 'नोट',
+    cancel: 'रद्द',
+    updateRecord: 'अपडेट',
+    confirmExecute: 'पुष्टि और सहेजें',
+    typeDeposit: 'जमा',
+    typeWithdraw: 'निकासी',
+    typeTransfer: 'ट्रांसफर',
+    typeInterest: 'ब्याज',
+    confirmTitle: 'निधि रिकॉर्ड की पुष्टि करें',
+    confirmMessage: 'नीचे की जानकारी जांचें।',
+    dateLabel: 'तारीख:',
+    typeLabel: 'प्रकार:',
+    accountLabel: 'खाता:',
+    targetAccountLabel: 'लक्ष्य खाता:',
+    amountLabel: 'राशि:',
+    exchangeRateLabel: 'विनिमय दर:',
+    feesLabel: 'शुल्क:',
+    noteLabel: 'नोट:',
+    totalTWD: 'कुल ({currency}):',
+    backToEdit: 'वापस',
+    confirmSave: 'पुष्टि',
+    errorNoAccount: 'पहले खाता बनाएं।',
+  },
 };
 
 // 阿拉伯語（以英文為底，沙烏地等中東用戶）
@@ -1792,9 +2477,165 @@ const ar: Translations = {
   accounts: { ...en.accounts, addAccount: 'إضافة حساب', accountName: 'اسم الحساب', currency: 'العملة', currencyAUD: 'دولار أسترالي', currencySAR: 'ريال سعودي', currencyBRL: 'ريال برازيلي', add: 'إضافة', update: 'تحديث', balance: 'الرصيد', cancel: 'إلغاء', noAccounts: 'لا حسابات. أضف من الأعلى.' },
   rebalance: { ...en.rebalance, title: 'إعادة التوازن', buy: 'شراء', sell: 'بيع' },
   simulator: { ...en.simulator, title: 'محاكي التخصيص', market: 'السوق', add: 'إضافة' },
-  help: { ...en.help },
-  transactionForm: { ...en.transactionForm, market: 'السوق', ticker: 'الرمز', cancel: 'إلغاء', saveTransaction: 'حفظ' },
-  fundForm: { ...en.fundForm },
+  help: {
+    dataManagement: 'إدارة البيانات',
+    export: 'تصدير',
+    exportDesc: 'تصدير المعاملات والحسابات والأسعار إلى JSON. يُنصح بالنسخ الاحتياطي الدوري.',
+    downloadBackup: 'تحميل النسخة الاحتياطية (.json)',
+    import: 'استيراد',
+    importWarning: 'تحذير: استيراد نسخة احتياطية سيستبدل جميع البيانات الحالية.',
+    uploadBackup: 'رفع ملف النسخ الاحتياطي',
+    authorizedUsers: 'المستخدمون المصرح لهم',
+    authorizedUsersDesc: 'البريد الذي يمكن تسجيل الدخول بدونه (مُخفى للخصوصية):',
+    emailAccount: 'البريد',
+    status: 'الحالة',
+    systemAuthorized: 'مرخص من النظام',
+    contact: 'ترخيص الشراء واتصال المسؤول',
+    contactTitle: 'يعجبك النظام؟',
+    contactDesc: 'غير عضو وترغب بحق استخدام دائم أو لديك اقتراحات/أخطاء؟ تواصل مع المطور. قد يتأخر الرد.',
+    contactEmail: 'الاتصال بالمسؤول (بريد)',
+    documentation: 'التوثيق',
+    copyAll: 'نسخ الكل',
+    copied: 'تم النسخ!',
+    print: 'طباعة',
+    confirmImport: 'تحذير: تأكيد استبدال البيانات؟',
+    confirmImportMessage: 'أنت على وشك استيراد {fileName}.',
+    confirmImportWarning: 'سيتم حذف جميع المعاملات والإعدادات الحالية ولا يمكن التراجع.',
+    confirmOverride: 'تأكيد الاستبدال',
+    documentationContent: `# دليل مستخدم TradeView
+
+> **الخصوصية**: بنية دون اتصال. **جميع البيانات مخزنة على جهازك فقط**، لا على خوادم. **لا جمع للبيانات الشخصية.**
+
+## 1. مقدمة
+TradeView أداة إدارة أصول لأسهم تايوان والولايات المتحدة.
+
+## 2. البدء السريع
+1. **إنشاء حساب**: في "الحسابات" أضف حساباً.
+2. **إدخال الأموال**: في "الأموال" سجّل الإيداعات.
+3. **معاملة**: "إضافة معاملة" للشراء/البيع.
+4. **التقارير**: "لوحة التحكم" لمتابعة الأصول.
+
+## 3. الميزات
+**الأموال**: إيداع، سحب، تحويل، فائدة.
+**المعاملات**: شراء/بيع، توزيع أسهم، توزيع نقدي.
+
+## 4. أسئلة شائعة
+**العائد؟** عائد مرجح بالمال، مع توقيت التدفقات.
+**سعر الصرف؟** في الأعلى يميناً أو عند التحويل.
+**البيانات؟** محلياً على جهازك فقط. استخدم "النسخ الاحتياطي" بانتظام.
+**الأسعار؟** تحقق من السوق؛ "تحديث السوق دفعة واحدة" إن لزم.
+
+## 5. إخلاء المسؤولية
+- الاستثمار ينطوي على مخاطر. هذا ليس نصيحة استثمارية.
+- لا وظيفة تداول أوراق مالية. كل القرارات والمخاطر على المستخدم.`,
+    androidPublish: 'نشر متجر Android',
+    androidPublishTitle: 'كيف تنشر على Google Play؟',
+    androidPublishDesc: 'لف تطبيق الويب كتطبيق أندرويد بـ TWA:\n1. حساب مطور Google (25$).\n2. Bubblewrap CLI مع رابط الموقع.\n3. ارفع AAB إلى Play Console وقدم للمراجعة.',
+  },
+  transactionForm: {
+    ...en.transactionForm,
+    addTransaction: 'إضافة معاملة',
+    editTransaction: 'تعديل المعاملة',
+    date: 'التاريخ',
+    account: 'الحساب',
+    market: 'السوق',
+    ticker: 'الرمز',
+    tickerPlaceholder: 'مثال: 2330, AAPL',
+    category: 'الفئة',
+    price: 'السعر',
+    quantity: 'الكمية (أسهم)',
+    quantityFixed: 'الكمية (ثابت 1)',
+    fees: 'العمولة/الضرائب',
+    note: 'ملاحظة',
+    cancel: 'إلغاء',
+    saveTransaction: 'حفظ',
+    updateTransaction: 'تحديث',
+    confirmTitle: 'تأكيد المعاملة',
+    confirmMessage: 'راجع المعلومات أدناه.',
+    dateLabel: 'التاريخ:',
+    accountLabel: 'الحساب:',
+    marketLabel: 'السوق:',
+    tickerLabel: 'الرمز:',
+    typeLabel: 'النوع:',
+    priceLabel: 'السعر:',
+    quantityLabel: 'الكمية:',
+    feesLabel: 'العمولة:',
+    noteLabel: 'ملاحظة:',
+    totalAmount: 'المبلغ الإجمالي:',
+    shares: 'أسهم',
+    backToEdit: 'رجوع',
+    confirmSave: 'تأكيد وحفظ',
+    previewTitle: 'معاينة المبلغ:',
+    calculationFormula: 'المعادلة:',
+    marketTW: 'تايوان (TW)',
+    marketUS: 'الولايات المتحدة (US)',
+    marketUK: 'بريطانيا (UK)',
+    marketJP: 'اليابان (JP)',
+    marketCN: 'الصين (CN)',
+    marketIN: 'الهند (IN)',
+    marketCA: 'كندا (CA)',
+    marketFR: 'فرنسا (FR)',
+    marketHK: 'هونغ كونغ (HK)',
+    marketKR: 'كوريا الجنوبية (KR)',
+    marketDE: 'ألمانيا (DE)',
+    marketAU: 'أستراليا (AU)',
+    marketSA: 'السعودية (SA)',
+    marketBR: 'البرازيل (BR)',
+    typeBuy: 'شراء',
+    typeSell: 'بيع',
+    typeDividend: 'توزيع أسهم',
+    typeCashDividend: 'توزيع نقدي',
+    typeTransferIn: 'تحويل وارد',
+    typeTransferOut: 'تحويل صادر',
+    placeholderPrice: 'السعر للسهم',
+    placeholderQuantity: 'إجمالي التوزيع',
+    errorNoAccount: 'أنشئ حساباً أولاً.',
+    feesShort: 'عمولة',
+    formulaNote: ' (TW تقريب)',
+  },
+  fundForm: {
+    ...en.fundForm,
+    addFundRecord: 'إضافة سجل أموال',
+    editFundRecord: 'تعديل سجل الأموال',
+    date: 'التاريخ',
+    type: 'النوع',
+    account: 'الحساب',
+    sourceAccount: 'الحساب المصدر',
+    amount: 'المبلغ',
+    targetAccount: 'الحساب المستهدف',
+    selectAccount: 'اختر حساباً...',
+    exchangeRate: 'سعر الصرف',
+    exchangeRateUSD: 'سعر الصرف (TWD/USD)',
+    exchangeRateJPY: 'سعر الصرف (TWD/JPY)',
+    crossCurrencyTransfer: 'تحويل بعملات مختلفة',
+    usdConversion: 'تحويل USD',
+    jpyConversion: 'تحويل JPY',
+    sameCurrencyTransfer: 'نفس العملة (1.0)',
+    fees: 'العمولة ({currency})',
+    feesNote: 'عمولة التحويل',
+    note: 'ملاحظة',
+    cancel: 'إلغاء',
+    updateRecord: 'تحديث',
+    confirmExecute: 'تأكيد وحفظ',
+    typeDeposit: 'إيداع',
+    typeWithdraw: 'سحب',
+    typeTransfer: 'تحويل',
+    typeInterest: 'فائدة',
+    confirmTitle: 'تأكيد سجل الأموال',
+    confirmMessage: 'راجع المعلومات أدناه.',
+    dateLabel: 'التاريخ:',
+    typeLabel: 'النوع:',
+    accountLabel: 'الحساب:',
+    targetAccountLabel: 'الحساب المستهدف:',
+    amountLabel: 'المبلغ:',
+    exchangeRateLabel: 'سعر الصرف:',
+    feesLabel: 'العمولة:',
+    noteLabel: 'ملاحظة:',
+    totalTWD: 'الإجمالي ({currency}):',
+    backToEdit: 'رجوع',
+    confirmSave: 'تأكيد',
+    errorNoAccount: 'أنشئ حساباً أولاً.',
+  },
 };
 
 // 葡萄牙語（以英文為底，巴西等葡語用戶）
@@ -1813,9 +2654,165 @@ const pt: Translations = {
   accounts: { ...en.accounts, addAccount: 'Adicionar conta', accountName: 'Nome da conta', currency: 'Moeda', currencyAUD: 'Dólar australiano', currencySAR: 'Riyal saudita', currencyBRL: 'Real brasileiro', add: 'Adicionar', update: 'Atualizar', balance: 'Saldo', cancel: 'Cancelar', noAccounts: 'Nenhuma conta. Adicione acima.' },
   rebalance: { ...en.rebalance, title: 'Rebalanceamento', buy: 'Comprar', sell: 'Vender' },
   simulator: { ...en.simulator, title: 'Simulador de alocação', market: 'Mercado', add: 'Adicionar' },
-  help: { ...en.help },
-  transactionForm: { ...en.transactionForm, market: 'Mercado', ticker: 'Símbolo', cancel: 'Cancelar', saveTransaction: 'Salvar' },
-  fundForm: { ...en.fundForm },
+  help: {
+    dataManagement: 'Gestão de dados',
+    export: 'Exportar',
+    exportDesc: 'Exportar transações, contas e cotações em JSON. Recomenda-se backup regular.',
+    downloadBackup: 'Descarregar backup (.json)',
+    import: 'Importar',
+    importWarning: 'Atenção: importar um backup substitui todos os dados atuais do sistema.',
+    uploadBackup: 'Enviar ficheiro de backup',
+    authorizedUsers: 'Utilizadores autorizados',
+    authorizedUsersDesc: 'E-mails que podem entrar sem palavra-passe (mascarados por privacidade):',
+    emailAccount: 'E-mail',
+    status: 'Estado',
+    systemAuthorized: 'Autorizado pelo sistema',
+    contact: 'Autorização de compra e contacto do administrador',
+    contactTitle: 'Gosta do sistema?',
+    contactDesc: 'Não membro e quer direitos permanentes, ou sugestões/erros? Contacte o desenvolvedor. Respostas podem demorar.',
+    contactEmail: 'Contactar administrador (e-mail)',
+    documentation: 'Documentação',
+    copyAll: 'Copiar tudo',
+    copied: 'Copiado!',
+    print: 'Imprimir',
+    confirmImport: 'Atenção: confirmar substituição dos dados?',
+    confirmImportMessage: 'Está prestes a importar {fileName}.',
+    confirmImportWarning: 'Os seus registos e definições atuais serão apagados e não podem ser revertidos.',
+    confirmOverride: 'Confirmar substituição',
+    documentationContent: `# Manual do utilizador TradeView
+
+> **Privacidade**: Arquitetura offline-first. **Todos os dados ficam no seu dispositivo**, não em servidores. **Sem recolha de dados pessoais.**
+
+## 1. Introdução
+TradeView é uma ferramenta de gestão de ativos para ações de Taiwan e EUA.
+
+## 2. Início rápido
+1. **Criar conta**: Em "Contas", adicione uma conta.
+2. **Registar fundos**: Em "Fundos", registe depósitos.
+3. **Transação**: "Adicionar transação" para comprar/vender.
+4. **Relatórios**: "Painel" para evolução do património.
+
+## 3. Funcionalidades
+**Fundos**: Depósito, levantamento, transferência, juros.
+**Transações**: Compra/venda, dividendo em ações, dividendo em dinheiro.
+
+## 4. FAQ
+**Retorno?** Retorno ponderado pelo dinheiro, com timing dos fluxos.
+**Taxa de câmbio?** No canto superior direito ou ao transferir.
+**Dados?** Apenas no seu dispositivo. Use "Backup" regularmente.
+**Preços?** Verifique o mercado; "Atualizar mercado em lote" se necessário.
+
+## 5. Avisos legais
+- Investimentos envolvem riscos. Isto não é aconselhamento de investimento.
+- Sem função de negociação de valores. Todas as decisões e riscos são do utilizador.`,
+    androidPublish: 'Publicação na loja Android',
+    androidPublishTitle: 'Como publicar no Google Play?',
+    androidPublishDesc: 'Empacotar a app web como app Android com TWA:\n1. Conta Google Developer (25 USD).\n2. Bubblewrap CLI com o URL do site.\n3. Enviar ficheiro AAB para a Play Console e submeter.',
+  },
+  transactionForm: {
+    ...en.transactionForm,
+    addTransaction: 'Adicionar transação',
+    editTransaction: 'Editar transação',
+    date: 'Data',
+    account: 'Conta',
+    market: 'Mercado',
+    ticker: 'Símbolo',
+    tickerPlaceholder: 'ex: 2330, AAPL',
+    category: 'Categoria',
+    price: 'Preço',
+    quantity: 'Quantidade (ações)',
+    quantityFixed: 'Quantidade (fixo 1)',
+    fees: 'Taxas / Impostos',
+    note: 'Nota',
+    cancel: 'Cancelar',
+    saveTransaction: 'Salvar',
+    updateTransaction: 'Atualizar',
+    confirmTitle: 'Confirmar transação',
+    confirmMessage: 'Confira as informações abaixo.',
+    dateLabel: 'Data:',
+    accountLabel: 'Conta:',
+    marketLabel: 'Mercado:',
+    tickerLabel: 'Símbolo:',
+    typeLabel: 'Tipo:',
+    priceLabel: 'Preço:',
+    quantityLabel: 'Quantidade:',
+    feesLabel: 'Taxas:',
+    noteLabel: 'Nota:',
+    totalAmount: 'Valor total:',
+    shares: 'ações',
+    backToEdit: 'Voltar',
+    confirmSave: 'Confirmar e salvar',
+    previewTitle: 'Pré-visualização do valor:',
+    calculationFormula: 'Fórmula:',
+    marketTW: 'Taiwan (TW)',
+    marketUS: 'EUA (US)',
+    marketUK: 'Reino Unido (UK)',
+    marketJP: 'Japão (JP)',
+    marketCN: 'China (CN)',
+    marketIN: 'Índia (IN)',
+    marketCA: 'Canadá (CA)',
+    marketFR: 'França (FR)',
+    marketHK: 'Hong Kong (HK)',
+    marketKR: 'Coreia do Sul (KR)',
+    marketDE: 'Alemanha (DE)',
+    marketAU: 'Austrália (AU)',
+    marketSA: 'Arábia Saudita (SA)',
+    marketBR: 'Brasil (BR)',
+    typeBuy: 'Comprar',
+    typeSell: 'Vender',
+    typeDividend: 'Dividendo em ações',
+    typeCashDividend: 'Dividendo em dinheiro',
+    typeTransferIn: 'Transferência entrada',
+    typeTransferOut: 'Transferência saída',
+    placeholderPrice: 'Preço por ação',
+    placeholderQuantity: 'Dividendo total',
+    errorNoAccount: 'Crie uma conta primeiro.',
+    feesShort: 'taxas',
+    formulaNote: ' (TW arred.)',
+  },
+  fundForm: {
+    ...en.fundForm,
+    addFundRecord: 'Adicionar registo de fundos',
+    editFundRecord: 'Editar registo de fundos',
+    date: 'Data',
+    type: 'Tipo',
+    account: 'Conta',
+    sourceAccount: 'Conta de origem',
+    amount: 'Valor',
+    targetAccount: 'Conta de destino',
+    selectAccount: 'Selecionar conta...',
+    exchangeRate: 'Taxa de câmbio',
+    exchangeRateUSD: 'Taxa (TWD/USD)',
+    exchangeRateJPY: 'Taxa (TWD/JPY)',
+    crossCurrencyTransfer: 'Transferência multi-moeda',
+    usdConversion: 'Conversão USD',
+    jpyConversion: 'Conversão JPY',
+    sameCurrencyTransfer: 'Mesma moeda (1.0)',
+    fees: 'Taxas ({currency})',
+    feesNote: 'Taxa de transferência',
+    note: 'Nota',
+    cancel: 'Cancelar',
+    updateRecord: 'Atualizar',
+    confirmExecute: 'Confirmar e salvar',
+    typeDeposit: 'Depósito',
+    typeWithdraw: 'Levantamento',
+    typeTransfer: 'Transferência',
+    typeInterest: 'Juros',
+    confirmTitle: 'Confirmar registo de fundos',
+    confirmMessage: 'Confira as informações abaixo.',
+    dateLabel: 'Data:',
+    typeLabel: 'Tipo:',
+    accountLabel: 'Conta:',
+    targetAccountLabel: 'Conta de destino:',
+    amountLabel: 'Valor:',
+    exchangeRateLabel: 'Taxa:',
+    feesLabel: 'Taxas:',
+    noteLabel: 'Nota:',
+    totalTWD: 'Total ({currency}):',
+    backToEdit: 'Voltar',
+    confirmSave: 'Confirmar',
+    errorNoAccount: 'Crie uma conta primeiro.',
+  },
 };
 
 // 翻譯映射
