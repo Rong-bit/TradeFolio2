@@ -46,24 +46,26 @@ export function valueInBaseCurrency(
   return valueTWD;
 }
 
-/** 儀表板僅顯示一個主要匯率：回傳 { label, value } */
+/** 儀表板僅顯示一個主要匯率：回傳 { label, value }
+ * 基準幣為 X 時顯示 USD/X（1 美元 = N X）；基準幣為 USD 時維持 TWD/USD 不變。 */
 export function getDisplayRateForBaseCurrency(
   baseCurrency: BaseCurrency,
   rates: ExchangeRates
 ): { label: string; value: number } {
+  const usdToTwd = rates.exchangeRateUsdToTwd;
+  if (baseCurrency === 'TWD') return { label: 'USD/TWD', value: usdToTwd };
+  if (baseCurrency === 'USD') return { label: 'TWD/USD', value: 1 / usdToTwd };
   const jpy = rates.jpyExchangeRate && rates.jpyExchangeRate > 0 ? rates.jpyExchangeRate : 0.21;
-  if (baseCurrency === 'TWD') return { label: 'USD/TWD', value: rates.exchangeRateUsdToTwd };
-  if (baseCurrency === 'USD') return { label: 'TWD/USD', value: 1 / rates.exchangeRateUsdToTwd };
-  if (baseCurrency === 'JPY') return { label: 'USD/JPY', value: rates.exchangeRateUsdToTwd / jpy };
+  if (baseCurrency === 'JPY') return { label: 'USD/JPY', value: usdToTwd / jpy };
   const eurRate = rates.eurExchangeRate && rates.eurExchangeRate > 0 ? rates.eurExchangeRate : 34;
-  if (baseCurrency === 'EUR') return { label: 'EUR/TWD', value: eurRate };
+  if (baseCurrency === 'EUR') return { label: 'USD/EUR', value: usdToTwd / eurRate };
   const gbpRate = rates.gbpExchangeRate && rates.gbpExchangeRate > 0 ? rates.gbpExchangeRate : 40;
-  if (baseCurrency === 'GBP') return { label: 'GBP/TWD', value: gbpRate };
+  if (baseCurrency === 'GBP') return { label: 'USD/GBP', value: usdToTwd / gbpRate };
   const hkdRate = rates.hkdExchangeRate && rates.hkdExchangeRate > 0 ? rates.hkdExchangeRate : 4;
-  if (baseCurrency === 'HKD') return { label: 'HKD/TWD', value: hkdRate };
+  if (baseCurrency === 'HKD') return { label: 'USD/HKD', value: usdToTwd / hkdRate };
   const krwRate = rates.krwExchangeRate && rates.krwExchangeRate > 0 ? rates.krwExchangeRate : 0.023;
-  if (baseCurrency === 'KRW') return { label: 'KRW/TWD', value: krwRate };
-  return { label: 'USD/TWD', value: rates.exchangeRateUsdToTwd };
+  if (baseCurrency === 'KRW') return { label: 'USD/KRW', value: usdToTwd / krwRate };
+  return { label: 'USD/TWD', value: usdToTwd };
 }
 
 export const calculateHoldings = (
