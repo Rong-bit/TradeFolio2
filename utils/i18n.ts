@@ -2,8 +2,21 @@
 // 語言類型
 export type Language = 'zh-TW' | 'en';
 
+// 基準幣別代碼
+export type BaseCurrencyCode = 'TWD' | 'USD' | 'JPY' | 'EUR' | 'GBP' | 'HKD' | 'KRW';
+
 // 翻譯鍵值類型
 export interface Translations {
+  // 基準幣顯示名稱
+  baseCurrency: {
+    TWD: string;
+    USD: string;
+    JPY: string;
+    EUR: string;
+    GBP: string;
+    HKD: string;
+    KRW: string;
+  };
   // 通用
   common: {
     confirm: string;
@@ -474,6 +487,15 @@ export interface Translations {
 
 // 繁體中文翻譯
 const zhTW: Translations = {
+  baseCurrency: {
+    TWD: '台幣',
+    USD: '美金',
+    JPY: '日幣',
+    EUR: '歐元',
+    GBP: '英鎊',
+    HKD: '港幣',
+    KRW: '韓元',
+  },
   common: {
     confirm: '確認',
     cancel: '取消',
@@ -998,6 +1020,15 @@ A: 股價與匯率因為是抓取網頁現值，故現值會慢三分鐘至五�
 
 // 英文翻譯
 const en: Translations = {
+  baseCurrency: {
+    TWD: 'TWD',
+    USD: 'USD',
+    JPY: 'JPY',
+    EUR: 'EUR',
+    GBP: 'GBP',
+    HKD: 'HKD',
+    KRW: 'KRW',
+  },
   common: {
     confirm: 'Confirm',
     cancel: 'Cancel',
@@ -1563,4 +1594,10 @@ export const translate = (key: string, lang: Language, params?: Record<string, s
   }
   
   return typeof value === 'string' ? value : key;
+};
+
+/** 取得基準幣的顯示名稱（依語言） */
+export const getBaseCurrencyLabel = (code: BaseCurrencyCode, lang: Language): string => {
+  const tr = translations[lang] || translations['zh-TW'];
+  return tr?.baseCurrency?.[code] ?? code;
 };
