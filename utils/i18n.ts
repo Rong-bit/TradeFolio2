@@ -1,6 +1,6 @@
 
 // 語言類型
-export type Language = 'zh-TW' | 'zh-CN' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'hi';
+export type Language = 'zh-TW' | 'zh-CN' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'hi' | 'ar' | 'pt';
 
 /** 語系選項（用於下拉選單） */
 export const LANGUAGES: { code: Language; label: string }[] = [
@@ -12,6 +12,8 @@ export const LANGUAGES: { code: Language; label: string }[] = [
   { code: 'de', label: 'DE' },
   { code: 'fr', label: 'FR' },
   { code: 'hi', label: 'हि' },
+  { code: 'ar', label: 'ع' },
+  { code: 'pt', label: 'PT' },
 ];
 
 // 基準幣別代碼
@@ -1724,7 +1726,7 @@ const de: Translations = {
   history: { ...en.history },
   labels: { date: 'Datum', account: 'Konto', amount: 'Betrag', balance: 'Saldo', action: 'Aktion', type: 'Typ', price: 'Preis', quantity: 'Anzahl', currency: 'Währung', fee: 'Gebühr', exchangeRate: 'Kurs', totalCost: 'Gesamtkosten', category: 'Kategorie', description: 'Symbol/Beschreibung', note: 'Notiz' },
   holdings: { ...en.holdings },
-  accounts: { ...en.accounts },
+  accounts: { ...en.accounts, currencyAUD: 'Australischer Dollar', currencySAR: 'Saudi-Riyal', currencyBRL: 'Brasilianischer Real' },
   rebalance: { ...en.rebalance },
   simulator: { ...en.simulator },
   help: { ...en.help },
@@ -1745,7 +1747,7 @@ const fr: Translations = {
   history: { ...en.history },
   labels: { ...en.labels, date: 'Date', account: 'Compte', amount: 'Montant', balance: 'Solde', currency: 'Devise', fee: 'Frais', exchangeRate: 'Taux' },
   holdings: { ...en.holdings, portfolioHoldings: 'Positions', aiUpdatePrices: 'MAJ prix et taux (IA)', market: 'Marché', ticker: 'Symbole', noHoldings: 'Aucune position. Ajoutez des transactions.' },
-  accounts: { ...en.accounts, addAccount: 'Ajouter un compte', accountName: 'Nom du compte', currency: 'Devise', add: 'Ajouter', update: 'Mettre à jour', balance: 'Solde', cancel: 'Annuler', noAccounts: 'Aucun compte. Ajoutez un compte ci-dessus.' },
+  accounts: { ...en.accounts, addAccount: 'Ajouter un compte', accountName: 'Nom du compte', currency: 'Devise', currencyAUD: 'Dollar australien', currencySAR: 'Riyal saoudien', currencyBRL: 'Real brésilien', add: 'Ajouter', update: 'Mettre à jour', balance: 'Solde', cancel: 'Annuler', noAccounts: 'Aucun compte. Ajoutez un compte ci-dessus.' },
   rebalance: { ...en.rebalance, title: 'Rééquilibrage', buy: 'Acheter', sell: 'Vendre' },
   simulator: { ...en.simulator, title: 'Simulateur d\'allocation', market: 'Marché', add: 'Ajouter' },
   help: { ...en.help },
@@ -1766,11 +1768,53 @@ const hi: Translations = {
   history: { ...en.history },
   labels: { ...en.labels, date: 'तारीख', account: 'खाता', amount: 'राशि', balance: 'शेष', currency: 'मुद्रा', fee: 'शुल्क', exchangeRate: 'विनिमय दर' },
   holdings: { ...en.holdings, portfolioHoldings: 'होल्डिंग्स', aiUpdatePrices: 'AI द्वारा कीमत/विनिमय दर अपडेट', market: 'बाजार', ticker: 'सिम्बल', noHoldings: 'कोई होल्डिंग नहीं। लेनदेन जोड़ें।' },
-  accounts: { ...en.accounts, addAccount: 'खाता जोड़ें', accountName: 'खाता नाम', currency: 'मुद्रा', add: 'जोड़ें', update: 'अपडेट', balance: 'शेष', cancel: 'रद्द', noAccounts: 'कोई खाता नहीं। ऊपर से जोड़ें।' },
+  accounts: { ...en.accounts, addAccount: 'खाता जोड़ें', accountName: 'खाता नाम', currency: 'मुद्रा', currencyAUD: 'ऑस्ट्रेलियाई डॉलर', currencySAR: 'सऊदी रियाल', currencyBRL: 'ब्राज़ीली रियल', add: 'जोड़ें', update: 'अपडेट', balance: 'शेष', cancel: 'रद्द', noAccounts: 'कोई खाता नहीं। ऊपर से जोड़ें।' },
   rebalance: { ...en.rebalance, title: 'रीबैलेंस', buy: 'खरीदें', sell: 'बेचें' },
   simulator: { ...en.simulator, title: 'आवंटन सिम्युलेटर', market: 'बाजार', add: 'जोड़ें' },
   help: { ...en.help },
   transactionForm: { ...en.transactionForm, market: 'बाजार', ticker: 'सिम्बल', cancel: 'रद्द', saveTransaction: 'सहेजें' },
+  fundForm: { ...en.fundForm },
+};
+
+// 阿拉伯語（以英文為底，沙烏地等中東用戶）
+const ar: Translations = {
+  ...en,
+  baseCurrency: { ...en.baseCurrency, TWD: 'دولار تايواني', USD: 'دولار أمريكي', JPY: 'ين ياباني', EUR: 'يورو', GBP: 'جنيه إسترليني', HKD: 'دولار هونغ كونغ', KRW: 'وون كوري', CAD: 'دولار كندي', INR: 'روبية هندية' },
+  common: { ...en.common, confirm: 'تأكيد', cancel: 'إلغاء', delete: 'حذف', edit: 'تعديل', save: 'حفظ', close: 'إغلاق', loading: 'جاري التحميل...', search: 'بحث', logoutConfirm: 'تسجيل الخروج؟' },
+  nav: { dashboard: 'لوحة التحكم', history: 'السجل', funds: 'الأموال', accounts: 'الحسابات', rebalance: 'إعادة التوازن', simulator: 'المحاكي', help: 'النظام', logout: 'تسجيل الخروج' },
+  pages: { ...en.pages, dashboard: 'لوحة المحفظة', history: 'السجل (المعاملات والتدفق)', funds: 'إدارة الأموال', accounts: 'إدارة الحسابات', rebalance: 'إعادة التوازن', simulator: 'محاكي التخصيص', help: 'النظام والنسخ' },
+  login: { title: 'تسجيل الدخول TradeView', subtitle: 'محفظة أسهم تايوان والولايات المتحدة', email: 'البريد', password: 'كلمة المرور', login: 'دخول', privacy: 'الخصوصية', privacyDesc: 'البيانات مخزنة محلياً. لا جمع للبيانات الشخصية.', riskDisclaimer: 'إخلاء المسؤولية', riskDisclaimerDesc: 'الاستثمار ينطوي على مخاطر.' },
+  dashboard: { ...en.dashboard, netCost: 'صافي الاستثمار', totalAssets: 'إجمالي الأصول', totalPL: 'الربح/الخسارة', deposit: 'إيداع(+)', withdraw: 'سحب(-)', taiwanDollar: 'TWD', aiAdvisor: 'مستشار Gemini AI', notInvestmentAdvice: 'ليس نصيحة استثمارية.' },
+  funds: { ...en.funds, title: 'إدارة الأموال', deposit: 'إيداع', withdraw: 'سحب', transfer: 'تحويل', interest: 'فائدة' },
+  history: { ...en.history },
+  labels: { ...en.labels, date: 'التاريخ', account: 'الحساب', amount: 'المبلغ', balance: 'الرصيد', currency: 'العملة', fee: 'العمولة', exchangeRate: 'سعر الصرف' },
+  holdings: { ...en.holdings, portfolioHoldings: 'المراكز', aiUpdatePrices: 'تحديث الأسعار (AI)', market: 'السوق', ticker: 'الرمز', noHoldings: 'لا مراكز. أضف معاملات.' },
+  accounts: { ...en.accounts, addAccount: 'إضافة حساب', accountName: 'اسم الحساب', currency: 'العملة', currencyAUD: 'دولار أسترالي', currencySAR: 'ريال سعودي', currencyBRL: 'ريال برازيلي', add: 'إضافة', update: 'تحديث', balance: 'الرصيد', cancel: 'إلغاء', noAccounts: 'لا حسابات. أضف من الأعلى.' },
+  rebalance: { ...en.rebalance, title: 'إعادة التوازن', buy: 'شراء', sell: 'بيع' },
+  simulator: { ...en.simulator, title: 'محاكي التخصيص', market: 'السوق', add: 'إضافة' },
+  help: { ...en.help },
+  transactionForm: { ...en.transactionForm, market: 'السوق', ticker: 'الرمز', cancel: 'إلغاء', saveTransaction: 'حفظ' },
+  fundForm: { ...en.fundForm },
+};
+
+// 葡萄牙語（以英文為底，巴西等葡語用戶）
+const pt: Translations = {
+  ...en,
+  baseCurrency: { ...en.baseCurrency, TWD: 'Dólar taiwanês', USD: 'Dólar americano', JPY: 'Iene japonês', EUR: 'Euro', GBP: 'Libra esterlina', HKD: 'Dólar de Hong Kong', KRW: 'Won coreano', CAD: 'Dólar canadense', INR: 'Rúpia indiana' },
+  common: { ...en.common, confirm: 'Confirmar', cancel: 'Cancelar', delete: 'Excluir', edit: 'Editar', save: 'Salvar', close: 'Fechar', loading: 'Carregando...', search: 'Buscar', logoutConfirm: 'Sair?' },
+  nav: { dashboard: 'Painel', history: 'Histórico', funds: 'Fundos', accounts: 'Contas', rebalance: 'Rebalanceamento', simulator: 'Simulador', help: 'Sistema', logout: 'Sair' },
+  pages: { ...en.pages, dashboard: 'Painel da carteira', history: 'Histórico (transações e fluxo)', funds: 'Gestão de fundos', accounts: 'Gestão de contas', rebalance: 'Rebalanceamento', simulator: 'Simulador de alocação', help: 'Sistema e backup' },
+  login: { title: 'Login TradeView', subtitle: 'Carteira de ações Taiwan e EUA', email: 'E-mail', password: 'Senha', login: 'Entrar', privacy: 'Privacidade', privacyDesc: 'Dados armazenados localmente. Sem coleta de dados pessoais.', riskDisclaimer: 'Aviso', riskDisclaimerDesc: 'Investimentos envolvem riscos.' },
+  dashboard: { ...en.dashboard, netCost: 'Investimento líquido', totalAssets: 'Patrimônio total', totalPL: 'Lucro/Perda', deposit: 'Depósito(+)', withdraw: 'Saque(-)', taiwanDollar: 'TWD', aiAdvisor: 'Assistente Gemini AI', notInvestmentAdvice: 'Não é aconselhamento de investimento.' },
+  funds: { ...en.funds, title: 'Gestão de fundos', deposit: 'Depósito', withdraw: 'Saque', transfer: 'Transferência', interest: 'Juros' },
+  history: { ...en.history },
+  labels: { ...en.labels, date: 'Data', account: 'Conta', amount: 'Valor', balance: 'Saldo', currency: 'Moeda', fee: 'Taxa', exchangeRate: 'Câmbio' },
+  holdings: { ...en.holdings, portfolioHoldings: 'Posições', aiUpdatePrices: 'Atualizar preços (IA)', market: 'Mercado', ticker: 'Símbolo', noHoldings: 'Sem posições. Adicione transações.' },
+  accounts: { ...en.accounts, addAccount: 'Adicionar conta', accountName: 'Nome da conta', currency: 'Moeda', currencyAUD: 'Dólar australiano', currencySAR: 'Riyal saudita', currencyBRL: 'Real brasileiro', add: 'Adicionar', update: 'Atualizar', balance: 'Saldo', cancel: 'Cancelar', noAccounts: 'Nenhuma conta. Adicione acima.' },
+  rebalance: { ...en.rebalance, title: 'Rebalanceamento', buy: 'Comprar', sell: 'Vender' },
+  simulator: { ...en.simulator, title: 'Simulador de alocação', market: 'Mercado', add: 'Adicionar' },
+  help: { ...en.help },
+  transactionForm: { ...en.transactionForm, market: 'Mercado', ticker: 'Símbolo', cancel: 'Cancelar', saveTransaction: 'Salvar' },
   fundForm: { ...en.fundForm },
 };
 
@@ -1784,12 +1828,14 @@ const translations: Record<Language, Translations> = {
   'de': de,
   'fr': fr,
   'hi': hi,
+  'ar': ar,
+  'pt': pt,
 };
 
 // 獲取當前語言
 export const getLanguage = (): Language => {
   const saved = localStorage.getItem('tf_language');
-  const valid: Language[] = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'de', 'fr', 'hi'];
+  const valid: Language[] = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'de', 'fr', 'hi', 'ar', 'pt'];
   return valid.includes(saved as Language) ? saved as Language : 'zh-TW';
 };
 
