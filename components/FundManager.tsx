@@ -358,16 +358,17 @@ const FundManager: React.FC<Props> = ({
           {/* 篩選結果統計與快速按鈕 */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-200">
             <div className="text-sm text-slate-600">
-              {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi')
-                ? <>Showing <span className="font-semibold text-slate-800">{filteredFlows.length}</span> records</>
-                : <>顯示 <span className="font-semibold text-slate-800">{filteredFlows.length}</span> 筆記錄</>
-              }
+              {translate('funds.showRecords', language, { count: filteredFlows.length }).split('{count}').map((part, index, array) => 
+                index === array.length - 1 ? part : (
+                  <React.Fragment key={index}>
+                    {part}
+                    <span className="font-semibold text-slate-800">{filteredFlows.length}</span>
+                  </React.Fragment>
+                )
+              )}
               {filteredFlows.length !== cashFlows.length && (
                 <span className="text-slate-500">
-                  {(language === 'en' || language === 'de' || language === 'fr' || language === 'hi')
-                    ? <> (Total {cashFlows.length})</>
-                    : <>（共 {cashFlows.length} 筆）</>
-                  }
+                  {' '}{translate('funds.totalRecords', language, { total: cashFlows.length })}
                 </span>
               )}
             </div>
