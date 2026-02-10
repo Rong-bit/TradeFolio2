@@ -447,14 +447,14 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
             <thead className="bg-slate-50 text-slate-500 uppercase font-medium">
               <tr>
                 <th className="px-3 py-2 w-12">{translations.rebalance.enable}</th>
-                <th className="px-3 py-2">{translations.rebalance.symbol} {language === 'zh-TW' ? '(帳戶)' : '(Account)'}</th>
+                <th className="px-3 py-2">{translations.rebalance.symbol} {translations.rebalance.accountLabel}</th>
                 <th className="px-3 py-2 text-right">{translations.rebalance.currentPrice}</th>
                 <th className="px-3 py-2 text-right">{translations.rebalance.currentValue} ({showInUSD ? translations.dashboard.usd : baseCurrency})</th>
                 <th className="px-3 py-2 text-right">{translations.rebalance.currentWeight}</th>
                 <th className="px-3 py-2 text-right w-36">{translations.rebalance.targetWeight} %</th>
                 <th className="px-3 py-2 text-right">{translations.rebalance.targetValue}</th>
                 <th className="px-3 py-2 text-right">{translations.rebalance.adjustAmount}</th>
-                <th className="px-3 py-2 text-right">{translations.rebalance.suggestedAction} {language === 'zh-TW' ? '(股)' : '(Shares)'}</th>
+                <th className="px-3 py-2 text-right">{translations.rebalance.suggestedAction} {translations.rebalance.sharesLabel}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -462,7 +462,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
                 const isBuy = row.diffValTwd > 0;
                 const isEnabled = row.isEnabled;
                 const accountInfo = row.accountIds.length > 1 
-                  ? (language === 'zh-TW' ? ` (${row.accountIds.length}個帳戶)` : ` (${row.accountIds.length}${translations.rebalance.accounts})`) 
+                  ? ` (${row.accountIds.length}${translations.rebalance.accountCount})` 
                   : '';
                 
                 // 根據貨幣切換狀態計算顯示的金額
@@ -601,7 +601,7 @@ const RebalanceView: React.FC<Props> = ({ summary, holdings, baseCurrency, excha
             </tbody>
             <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300">
                <tr>
-                 <td colSpan={5} className="px-3 py-2 text-right">{language === 'zh-TW' ? '總計 (' : 'Total ('}{translations.rebalance.totalEnabled}{language === 'zh-TW' ? ')' : ')'}</td>
+                 <td colSpan={5} className="px-3 py-2 text-right">{translations.rebalance.totalLabel}{translations.rebalance.totalEnabled})</td>
                  <td className={`px-3 py-2 text-right ${Math.abs(totalTargetPct + cashTargetPct - 100) > 0.01 ? 'text-red-600' : 'text-slate-800'}`}>
                    {(totalTargetPct + cashTargetPct).toFixed(2)}%
                  </td>

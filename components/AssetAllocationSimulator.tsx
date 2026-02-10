@@ -388,11 +388,11 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
 
   // 準備圖表數據
   const chartData = simulationResult?.yearlyProjections.map(yp => ({
-    [language === 'zh-TW' ? '年份' : 'Year']: yp.year,
-    [language === 'zh-TW' ? '資產價值' : 'Asset Value']: Math.round(yp.value),
-    [language === 'zh-TW' ? '年度報酬' : 'Yearly Return']: Math.round(yp.return),
-    [language === 'zh-TW' ? '累積投入' : 'Cumulative Investment']: yp.cumulativeInvestment ? Math.round(yp.cumulativeInvestment) : initialAmount,
-    [language === 'zh-TW' ? '初始金額' : 'Initial Amount']: initialAmount
+    [translations.simulator.year]: yp.year,
+    [translations.simulator.assetValue]: Math.round(yp.value),
+    [translations.simulator.yearlyReturn]: Math.round(yp.return),
+    [translations.simulator.cumulativeInvestment]: yp.cumulativeInvestment ? Math.round(yp.cumulativeInvestment) : initialAmount,
+    [translations.simulator.initial]: initialAmount
   })) || [];
 
   return (
@@ -631,7 +631,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
             onClick={addInputRow}
             className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 active:bg-green-200 active:scale-95 active:shadow-inner transition-all duration-150 text-sm font-medium border border-green-200 hover:border-green-300"
           >
-            + {language === 'zh-TW' ? '添加行' : 'Add Row'}
+            + {translations.simulator.addRow}
           </button>
         </div>
         
@@ -661,7 +661,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                 <th className="px-3 py-2 text-left">{translations.simulator.market}</th>
                 <th className="px-3 py-2 text-left">{translations.simulator.annualReturn}</th>
                 <th className="px-3 py-2 text-left">{translations.simulator.allocation}</th>
-                <th className="px-3 py-2 text-center">{language === 'zh-TW' ? '操作' : 'Action'}</th>
+                <th className="px-3 py-2 text-center">{translations.simulator.action}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -776,7 +776,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                       disabled={inputRows.length === 1}
                       className="text-red-500 hover:text-red-700 active:text-red-900 active:scale-95 transition-all duration-150 text-sm px-2 py-1 rounded hover:bg-red-50 active:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {language === 'zh-TW' ? '刪除' : 'Delete'}
+                      {translations.simulator.delete}
                     </button>
                   </td>
                 </tr>
@@ -791,7 +791,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
             onClick={batchAddAssets}
             className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 active:bg-slate-950 active:scale-95 active:shadow-inner transition-all duration-150 font-medium shadow-md hover:shadow-lg"
           >
-            {language === 'zh-TW' ? '批量添加所有' : 'Add All'}
+            {translations.simulator.addAll}
           </button>
         </div>
       </div>
@@ -894,7 +894,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                           onClick={() => removeAsset(asset.id)}
                           className="text-red-500 hover:text-red-700 active:text-red-900 active:scale-95 transition-all duration-150 text-sm px-2 py-1 rounded hover:bg-red-50 active:bg-red-100"
                         >
-                          {language === 'zh-TW' ? '刪除' : 'Delete'}
+                          {translations.simulator.delete}
                         </button>
                       </td>
                     </tr>
@@ -970,7 +970,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey={language === 'zh-TW' ? '年份' : 'Year'} stroke="#64748b" fontSize={12} />
+                  <XAxis dataKey={translations.simulator.year} stroke="#64748b" fontSize={12} />
                   <YAxis 
                     stroke="#64748b" 
                     fontSize={12} 
@@ -983,7 +983,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                   <Legend />
                   <Line 
                     type="monotone" 
-                    dataKey={language === 'zh-TW' ? '資產價值' : 'Asset Value'} 
+                    dataKey={translations.simulator.assetValue} 
                     stroke="#3b82f6" 
                     strokeWidth={3} 
                     dot={{ r: 4 }} 
@@ -991,7 +991,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                   />
                   <Line 
                     type="monotone" 
-                    dataKey={language === 'zh-TW' ? '累積投入' : 'Cumulative Investment'} 
+                    dataKey={translations.simulator.cumulativeInvestment} 
                     stroke="#10b981" 
                     strokeWidth={2} 
                     strokeDasharray="3 3" 
@@ -1000,7 +1000,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                   />
                   <Line 
                     type="monotone" 
-                    dataKey={language === 'zh-TW' ? '初始金額' : 'Initial Amount'} 
+                    dataKey={translations.simulator.initial} 
                     stroke="#8b5cf6" 
                     strokeWidth={2} 
                     strokeDasharray="5 5" 
@@ -1019,7 +1019,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey={language === 'zh-TW' ? '年份' : 'Year'} stroke="#64748b" fontSize={12} />
+                  <XAxis dataKey={translations.simulator.year} stroke="#64748b" fontSize={12} />
                   <YAxis 
                     stroke="#64748b" 
                     fontSize={12} 
@@ -1030,7 +1030,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                     formatter={(value: number) => formatCurrency(toBase(value), baseCurrency)}
                   />
                   <Legend />
-                  <Bar dataKey={language === 'zh-TW' ? '年度報酬' : 'Yearly Return'} fill="#10b981" name={translations.simulator.yearlyReturn} />
+                  <Bar dataKey={translations.simulator.yearlyReturn} fill="#10b981" name={translations.simulator.yearlyReturn} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1048,7 +1048,7 @@ const AssetAllocationSimulator: React.FC<Props> = ({ holdings = [], baseCurrency
                     <th className="px-6 py-3">{translations.simulator.year}</th>
                     <th className="px-6 py-3 text-right">{translations.simulator.assetValue}</th>
                     {simulationResult.regularInvestment && (
-                      <th className="px-6 py-3 text-right">{language === 'zh-TW' ? '年度投入' : 'Yearly Investment'}</th>
+                      <th className="px-6 py-3 text-right">{translations.simulator.yearlyInvestment}</th>
                     )}
                     <th className="px-6 py-3 text-right">{translations.simulator.cumulativeInvestment}</th>
                     <th className="px-6 py-3 text-right">{translations.simulator.yearlyReturn}</th>
