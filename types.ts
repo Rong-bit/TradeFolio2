@@ -22,6 +22,7 @@ export enum Currency {
   HKD = 'HKD',
   SGD = 'SGD',
   CNY = 'CNY',
+  INR = 'INR',
   KRW = 'KRW',
   THB = 'THB',
   MYR = 'MYR',
