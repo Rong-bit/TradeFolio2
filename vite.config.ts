@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => {
     // 設定 base 為相對路徑 './'，確保在 GitHub Pages 子路徑能運作
     base: './',
     server: {
+      // 確保正確的 MIME 類型
+      headers: {
+        'Content-Type': 'application/javascript; charset=utf-8'
+      },
+      // 允許訪問
       cors: true
     },
     build: {

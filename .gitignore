@@ -33,9 +33,6 @@ gradle.properties
 # Node
 node_modules/
 dist/
-.env
-.env.local
-.env.*.local
 *.log
 npm-debug.log*
 
@@ -52,5 +49,4 @@ BUILD_SUCCESS.md
 
 # 嵌入的 Git 倉庫
 rong-bit.github.io/
-TradeFolio/
 
