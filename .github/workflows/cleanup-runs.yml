@@ -17,33 +17,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup GitHub CLI
+      - name: Cleanup old workflow runs
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: workflows } = await github.rest.actions.listWorkflowsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
+            // 获取所有工作流
+            const workflows = await github.paginate(
+              github.rest.actions.listRepoWorkflows,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              }
+            );
 
-            console.log(`找到 ${workflows.workflows.length} 个工作流`);
+            console.log(`找到 ${workflows.length} 个工作流`);
 
-            for (const workflow of workflows.workflows) {
+            for (const workflow of workflows) {
               console.log(`\n处理工作流: ${workflow.name} (ID: ${workflow.id})`);
               
               // 获取该工作流的所有运行记录
-              const { data: runs } = await github.rest.actions.listWorkflowRuns({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: workflow.id,
-                per_page: 100,
-              });
+              const runs = await github.paginate(
+                github.rest.actions.listWorkflowRuns,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflow.id,
+                }
+              );
 
-              console.log(`  找到 ${runs.workflow_runs.length} 个运行记录`);
+              console.log(`  找到 ${runs.length} 个运行记录`);
 
               // 如果运行记录超过6个，删除旧的
-              if (runs.workflow_runs.length > 6) {
-                const runsToDelete = runs.workflow_runs.slice(6);
+              if (runs.length > 6) {
+                const runsToDelete = runs.slice(6);
                 console.log(`  将删除 ${runsToDelete.length} 个旧运行记录`);
 
                 for (const run of runsToDelete) {
